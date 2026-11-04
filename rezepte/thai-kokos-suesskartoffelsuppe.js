@@ -5,7 +5,7 @@ Rezept({
   kategorie: 'Suppe',
   tags: ['Vegan', 'Thai', 'Schnell'],
   personen: 4,
-  zeit: { vorbereitung: 15, kochen: 20 },
+  zeit: { vorbereitung: 15, kochen: 15 },
   schwierigkeit: 'einfach',
   bild: 'bilder/thai-kokos-suesskartoffelsuppe.jpg',
 
