@@ -28,7 +28,7 @@ Mengen nicht in die Arbeitsschritte schreiben („die Hälfte der Milch“ statt
 ## GitHub Pages
 
 Einmalig im Repo auf GitHub: **Settings → Pages → Build and deployment → Source: „Deploy from a branch“, Branch: `main`, Ordner `/ (root)`** → Save.
-Nach ca. einer Minute ist die Seite unter `https://dstiehler97.github.io/rezepte/` erreichbar.
+Nach ca. einer Minute ist die Seite unter `https://dstiehler97.github.io/Rezepte/` erreichbar.
 
 ## Aufbau
 
