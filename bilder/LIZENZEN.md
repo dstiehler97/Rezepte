@@ -10,3 +10,4 @@
 | cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen.jpg | KptnCook | urheberrechtlich geschützt (privat) |
 | suesskartoffelragout-mit-bulgur-cashewkernen.jpg | KptnCook | urheberrechtlich geschützt (privat) |
 | pfifferlinge-mit-spinatknoedeln-in-salbeibutter.jpg | KptnCook | urheberrechtlich geschützt (privat) |
+| chinesische-pilzpfanne-mit-austernsauce-reis.jpg | KptnCook | urheberrechtlich geschützt (privat) |
