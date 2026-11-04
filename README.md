@@ -23,6 +23,10 @@ Läuft ohne Installation: `index.html` im Browser öffnen, oder über GitHub Pag
 2. Ausfüllen – Mengen immer für 4 Personen.
 3. `node tools/pruefen.js` ausführen: prüft das Rezept, trägt es in `rezepte/liste.js` ein, exportiert die Icons und testet die Rundung.
 
+**Aus KptnCook:** `node tools/kptncook.js <link>` legt einen Entwurf `rezepte/_<id>.js` mit Zutaten (auf 4 Personen umgerechnet), Zeiten und Foto an. Die Webseite zeigt nur die ersten Schritte – Rest aus Screenshots ergänzen, dann in `rezepte/<id>.js` umbenennen.
+
+**Fotos** liegen in `bilder/` (`bild: 'bilder/<id>.jpg'`) und erscheinen auf der Übersicht, im Rezeptkopf und im Ausdruck oben rechts.
+
 Mengen nicht in die Arbeitsschritte schreiben („die Hälfte der Milch“ statt „250 ml Milch“), sonst stimmen sie nach dem Umrechnen nicht.
 
 ## GitHub Pages
@@ -42,3 +46,5 @@ Nach ca. einer Minute ist die Seite unter `https://dstiehler97.github.io/Rezepte
 | `assets/style.css` | Bildschirm- und Druck-Layout |
 | `rezepte/*.js` | ein Rezept pro Datei |
 | `tools/pruefen.js` | Prüfung + `liste.js` + Icon-Export |
+| `tools/kptncook.js` | Entwurf aus KptnCook-Link |
+| `bilder/` | Gerichtsfotos |

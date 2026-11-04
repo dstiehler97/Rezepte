@@ -231,10 +231,13 @@
         </div>
 
         <div class="r-inhalt">
-          <section class="r-zutaten">
-            <h2>Zutaten</h2>
-            <ul>${zutaten}</ul>
-          </section>
+          <div class="r-links">
+            <section class="r-zutaten">
+              <h2>Zutaten</h2>
+              <ul>${zutaten}</ul>
+            </section>
+            ${(r.tipps && r.tipps.length) ? `<section class="r-tipps"><h2>Tipps</h2><ul>${r.tipps.map((t) => `<li>${fett(t)}</li>`).join('')}</ul></section>` : ''}
+          </div>
           <section class="r-schritte">
             <h2>Zubereitung</h2>
             ${schritte}
@@ -242,7 +245,6 @@
         </div>
 
         ${naehrwertHTML(r, personen)}
-        ${(r.tipps && r.tipps.length) ? `<section class="r-tipps"><h2>Tipps</h2><ul>${r.tipps.map((t) => `<li>${fett(t)}</li>`).join('')}</ul></section>` : ''}
         ${r.quelle ? `<p class="r-quelle">Quelle: ${esc(r.quelle)}</p>` : ''}
       </article>`;
   }

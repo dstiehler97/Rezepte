@@ -7,6 +7,7 @@ Rezept({
   personen: 4,
   zeit: { vorbereitung: 15, kochen: 20 },
   schwierigkeit: 'einfach',
+  bild: 'bilder/thai-kokos-suesskartoffelsuppe.jpg',
 
   zutaten: [
     { abschnitt: 'Für die Suppe' },
@@ -40,5 +41,5 @@ Rezept({
   tipps: [
     'Eine Limette als Spalten zum Servieren aufheben, wenn man es gern frischer mag.',
   ],
-  quelle: '',
+  quelle: 'KptnCook',
 });

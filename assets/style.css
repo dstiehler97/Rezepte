@@ -110,7 +110,7 @@ label.inline input { width: 4.5rem; }
 .r-titelblock { flex: 1; }
 .r-kopf h1 { font-size: 2.3rem; margin: .2rem 0 .4rem; }
 .r-beschreibung { margin: 0; color: var(--leise); font-size: 1.05rem; }
-.r-bild { width: 34%; aspect-ratio: 4/3; object-fit: cover; border-radius: 8px; }
+.r-bild { width: 38%; aspect-ratio: 16/10; object-fit: cover; border-radius: 8px; flex: none; }
 .r-meta {
   display: flex; flex-wrap: wrap; gap: .5rem 2rem; margin: 1.25rem 0 1.5rem; padding: .8rem 0;
   border-top: 1px solid var(--linie); border-bottom: 1px solid var(--linie);
@@ -150,7 +150,8 @@ label.inline input { width: 4.5rem; }
 }
 .schritt p { margin: .15rem 0 0; }
 .schritt-abschnitt { font-size: 1rem; margin: 1.2rem 0 .6rem; }
-.r-tipps { margin-top: 1.75rem; padding: 1rem 1.25rem; background: var(--papier); border-radius: 8px; break-inside: avoid; }
+.r-links { min-width: 0; }
+.r-tipps { margin-top: 1.5rem; padding: 1rem 1.25rem; background: var(--papier); border-radius: 8px; break-inside: avoid; }
 .r-tipps h2 { border: 0; padding: 0; margin-bottom: .4rem; }
 .r-tipps ul { margin: 0; padding-left: 1.2rem; }
 .r-naehrwerte { margin-top: 1.75rem; break-inside: avoid; }
@@ -230,7 +231,7 @@ label.inline input { width: 4.5rem; }
 @page { size: A4; margin: 15mm 15mm 14mm; }
 @media print {
   :root { --akzent: #000; --akzent-hell: #fff; --linie: #bbb; --leise: #555; }
-  body { background: #fff; font-size: 10.5pt; line-height: 1.45; color: #000; }
+  body { background: #fff; font-size: 10pt; line-height: 1.4; color: #000; }
   .nur-bildschirm, .leiste, #meldung { display: none !important; }
   .nur-druck { display: inline; }
   main { max-width: none; padding: 0; }
@@ -244,27 +245,29 @@ label.inline input { width: 4.5rem; }
   .r-kat { font-size: 8pt; color: #555; }
   .r-kopf h1 { font-size: 24pt; margin: 1mm 0 2mm; }
   .r-beschreibung { font-size: 11pt; color: #333; }
-  .r-bild { width: 55mm; }
+  .r-bild { width: 62mm; aspect-ratio: 16/10; border-radius: 2mm; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .r-kopf { gap: 7mm; }
   .r-meta { margin: 4mm 0 5mm; padding: 2.5mm 0; border-color: #000; gap: 2mm 8mm; flex-wrap: nowrap; }
   .meta-feld > .icon { color: #000; }
   .muetzen .an { color: #000; }
   .muetzen .aus { color: #ccc; }
   .r-inhalt { grid-template-columns: 62mm minmax(0, 1fr); gap: 9mm; }
   .r-inhalt h2, .r-tipps h2 { font-size: 12pt; border-bottom: 1.5pt solid #000; }
-  .zutat { grid-template-columns: 5mm 20mm minmax(0, 1fr); gap: 2mm; padding: .9mm 0; break-inside: avoid; }
+  .zutat { grid-template-columns: 5mm 20mm minmax(0, 1fr); gap: 2mm; padding: .7mm 0; break-inside: avoid; }
   .zutat .icon { color: #444; }
   .schritt { gap: 3mm; margin-bottom: 2.5mm; }
   .schritt-abschnitt { margin: 3.5mm 0 2mm; font-size: 10.5pt; }
   .r-inhalt h2 { margin-bottom: 2.5mm; }
   .schritt .nr { width: 6mm; height: 6mm; border: 1pt solid #000; font-size: 9pt; background: none; color: #000; }
-  .r-naehrwerte { margin-top: 5mm; }
+  .r-naehrwerte { margin-top: 4mm; }
   .r-naehrwerte h2 { font-size: 12pt; border-bottom: 1.5pt solid #000; }
   .r-naehrwerte table { font-size: 9pt; }
   .r-naehrwerte thead th { font-size: 7pt; }
   .r-naehrwerte th, .r-naehrwerte td { padding: .8mm 1.5mm; }
   .nw-hinweis { font-size: 7.5pt; }
   .kcal-marke { color: #000; }
-  .r-tipps { background: none; border: 1pt solid #bbb; padding: 2.5mm 4mm; margin-top: 4mm; }
+  .r-tipps { background: none; border: 1pt solid #bbb; padding: 2.5mm 3mm; margin-top: 5mm; font-size: 9.5pt; }
+  .r-tipps ul { padding-left: 4mm; }
 
   /* Einkaufsliste kompakt */
   .ek-fuer { margin: 0 0 4mm; color: #333; }
