@@ -1,9 +1,9 @@
 Rezept({
   id: 'one-pot-hackfleisch-porree-nudeln',
-  titel: 'One-Pot Hackfleisch-Porree-Nudeln',
+  titel: 'One-Pot-Hackfleisch-Porree-Nudeln',
   beschreibung: 'Hack, Porree und Orecchiette aus einer Pfanne – die Pasta gart direkt in der Brühe.',
   kategorie: 'Hauptgericht',
-  tags: ['Pasta', 'One-Pot', 'Fleisch', 'Schnell'],
+  tags: ['Pasta', 'One-Pot', 'Fleisch'],
   personen: 4,
   zeit: { vorbereitung: 15, kochen: 15 },
   schwierigkeit: 'einfach',

@@ -118,6 +118,7 @@
     'hefe':          { k: KU, icon: 'mehl' },
     'gnocchi':       { k: KU, icon: 'nudeln' },
     'pfannenkäse':   { k: KU, icon: 'kaese' },
+    'käsetaler':     { k: KU, icon: 'kaese' },
     'tofu':          { k: KU },
     'blätterteig':   { k: KU, icon: 'mehl' },
 
@@ -244,7 +245,8 @@
 
 
   /*
-   * Ernährungsform je Zutat: fleisch | fisch (auch Meeresfrüchte) | tierisch (Ei, Milch, Honig – noch vegetarisch).
+   * Ernährungsform je Zutat: fleisch | fisch (auch Meeresfrüchte) | fischzutat (Würzmittel aus Fisch/Meeresfrüchten
+   * wie Austern- oder Fischsauce: nicht vegetarisch, aber kein Fischgericht) | tierisch (Ei, Milch, Honig – noch vegetarisch).
    * Nicht aufgeführte Zutaten gelten als vegan. 'vegan' hebt Wortende-Treffer auf (Kokosmilch ≠ Milch).
    */
   const TIERISCH = {
@@ -261,9 +263,13 @@
     // Fisch & Meeresfrüchte
     'fisch': 'fisch', 'lachs': 'fisch', 'thunfisch': 'fisch', 'kabeljau': 'fisch', 'forelle': 'fisch',
     'garnele': 'fisch', 'shrimps': 'fisch', 'krabben': 'fisch', 'muscheln': 'fisch', 'tintenfisch': 'fisch',
-    'sardellen': 'fisch', 'anchovis': 'fisch', 'fischsauce': 'fisch', 'fischfond': 'fisch',
+    'sardellen': 'fisch', 'anchovis': 'fisch', 'fischfond': 'fisch',
     'lachsfilet': 'fisch', 'fischfilet': 'fisch', 'scampi': 'fisch',
-    'austernsauce': 'fisch', 'worcestershiresauce': 'fisch', 'bonito': 'fisch', 'dashi': 'fisch',
+    // aus Fisch/Meeresfrüchten gewonnene Würzmittel: nicht vegetarisch, aber kein Fischgericht
+    'austernsauce': 'fischzutat', 'fischsauce': 'fischzutat', 'worcestershiresauce': 'fischzutat',
+    'worcestershire': 'fischzutat', 'worcestersauce': 'fischzutat', 'dashi': 'fischzutat', 'bonito': 'fischzutat',
+    'bonitoflocken': 'fischzutat', 'sardellenpaste': 'fischzutat', 'anchovispaste': 'fischzutat',
+    'garnelenpaste': 'fischzutat', 'krabbenpaste': 'fischzutat', 'shrimppaste': 'fischzutat',
     // tierisch, aber vegetarisch
     'eigelb': 'tierisch', 'eiweiß': 'tierisch', 'butter': 'tierisch',
     'butterschmalz': 'tierisch', 'ghee': 'tierisch', 'milch': 'tierisch', 'buttermilch': 'tierisch',
@@ -271,7 +277,7 @@
     'quark': 'tierisch', 'käse': 'tierisch', 'frischkäse': 'tierisch', 'parmesan': 'tierisch',
     'mozzarella': 'tierisch', 'gouda': 'tierisch', 'feta': 'tierisch', 'schafkäse': 'tierisch', 'ricotta': 'tierisch',
     'mascarpone': 'tierisch', 'pecorino': 'tierisch', 'grana padano': 'tierisch', 'burrata': 'tierisch',
-    'halloumi': 'tierisch', 'pesto': 'tierisch', 'honig': 'tierisch', 'mayonnaise': 'tierisch',
+    'halloumi': 'tierisch', 'bergkäse': 'tierisch', 'käsetaler': 'tierisch', 'pesto': 'tierisch', 'honig': 'tierisch', 'mayonnaise': 'tierisch',
     // pflanzlich trotz ähnlichem Namen
     'kokosmilch': 'vegan', 'hafermilch': 'vegan', 'sojamilch': 'vegan', 'mandelmilch': 'vegan',
     'kokossahne': 'vegan', 'hafersahne': 'vegan', 'sojasahne': 'vegan', 'sojajoghurt': 'vegan',
@@ -279,7 +285,7 @@
     'tofusteak': 'vegan', 'blumenkohlsteak': 'vegan',
   };
 
-  /** fleisch | fisch | tierisch | vegan – Angabe "ernaehrung" an der Zutat hat Vorrang */
+  /** fleisch | fisch | fischzutat | tierisch | vegan – Angabe "ernaehrung" an der Zutat hat Vorrang */
   function art(zutat) {
     if (zutat.ernaehrung) return zutat.ernaehrung;
     const n = normal(zutat.name);
@@ -291,27 +297,46 @@
   }
 
   /*
-   * Ernährungsform eines Rezepts: vegan < vegetarisch < fisch < fleisch.
+   * Ernährungsform eines Rezepts: vegan < vegetarisch < fischzutat < fisch < fleisch.
+   * fischzutat = nicht vegetarisch wegen Austernsauce & Co., aber kein Fischgericht (kein Filter „Mit Fisch“).
    * Optionale Zutaten zählen nicht. rezept.ernaehrung überschreibt das Ergebnis.
-   * Liefert { id, auto, fisch, fleisch, gruende: [Zutatennamen] }.
+   * Liefert { id, auto, fisch, fleisch, fischzutat, gruende: [Zutatennamen] }.
    */
-  const ERNAEHRUNG = ['vegan', 'vegetarisch', 'fisch', 'fleisch'];
+  const ERNAEHRUNG = ['vegan', 'vegetarisch', 'fischzutat', 'fisch', 'fleisch'];
   function ernaehrung(rezept) {
-    const gruende = { fleisch: [], fisch: [], tierisch: [] };
+    const gruende = { fleisch: [], fisch: [], fischzutat: [], tierisch: [] };
     for (const z of rezept.zutaten || []) {
       if (z.abschnitt || z.optional) continue;
       const a = art(z);
       if (gruende[a] && !gruende[a].includes(z.name)) gruende[a].push(z.name);
     }
-    const auto = gruende.fleisch.length ? 'fleisch' : gruende.fisch.length ? 'fisch' : gruende.tierisch.length ? 'vegetarisch' : 'vegan';
+    const auto = gruende.fleisch.length ? 'fleisch' : gruende.fisch.length ? 'fisch' : gruende.fischzutat.length ? 'fischzutat'
+      : gruende.tierisch.length ? 'vegetarisch' : 'vegan';
     const id = ERNAEHRUNG.includes(rezept.ernaehrung) ? rezept.ernaehrung : auto;
-    const grund = id === 'fleisch' ? gruende.fleisch : id === 'fisch' ? gruende.fisch : id === 'vegetarisch' ? gruende.tierisch : [];
+    const grund = { fleisch: gruende.fleisch, fisch: gruende.fisch, fischzutat: gruende.fischzutat, vegetarisch: gruende.tierisch }[id] || [];
     return {
       id, auto,
       fleisch: id === 'fleisch',
       fisch: id === 'fisch' || (id === 'fleisch' && gruende.fisch.length > 0),
+      // enthält Würzmittel aus Fisch/Meeresfrüchten (wichtig für „ohne Fisch“)
+      fischzutat: id === 'fischzutat' || (['fisch', 'fleisch'].includes(id) && gruende.fischzutat.length > 0),
       gruende: id === auto ? grund : [],
     };
+  }
+
+  /*
+   * Hartkäse wird oft mit tierischem Lab hergestellt: vegetarische Rezepte damit bekommen einen einheitlichen Tipp.
+   * Liefert den Tipp-Text oder ''.
+   */
+  const LAB_KAESE = Object.fromEntries(['parmesan', 'parmigiano', 'grana padano', 'grana', 'pecorino', 'bergkäse', 'hartkäse',
+    'gruyère', 'emmentaler', 'pesto'].map((k) => [k, true]));
+  function labTipp(rezept) {
+    if (!['vegetarisch'].includes(ernaehrung(rezept).id)) return '';
+    const namen = (rezept.zutaten || []).filter((z) => !z.abschnitt && z.ernaehrung !== 'vegan' && suchen(z.name, LAB_KAESE));
+    if (!namen.length) return '';
+    const nurPesto = namen.every((z) => /pesto/.test(normal(z.name)));
+    return nurPesto ? 'Für streng vegetarisch ein Pesto mit Hartkäse ohne tierisches Lab verwenden.'
+      : 'Für streng vegetarisch Hartkäse ohne tierisches Lab verwenden.';
   }
 
   function normal(text) {
@@ -437,5 +462,5 @@
     if (e && m && e !== m && !MEHRZAHL[m]) { MEHRZAHL[m] = einzahlWort(e); formCache.clear(); }
   }
 
-  g.Zutaten = { suchform, passtSuche, KATEGORIEN, LEXIKON, info, normal, suchen, art, ernaehrung, ERNAEHRUNG, grundform, istEinzahl, formenLernen };
+  g.Zutaten = { suchform, passtSuche, KATEGORIEN, LEXIKON, info, normal, suchen, art, ernaehrung, ERNAEHRUNG, labTipp, grundform, istEinzahl, formenLernen };
 })(globalThis);

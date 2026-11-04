@@ -1,10 +1,11 @@
 Rezept({
   id: 'apfel-bananen-muffins',
   titel: 'Apfel-Bananen-Muffins',
-  beschreibung: 'Saftige vegane Muffins aus Dinkelmehl, reifen Bananen und Apfelstückchen, mit Apfelspalten belegt – die Menge ergibt ca. 12 Muffins (3 pro Portion).',
+  beschreibung: 'Saftige vegane Muffins aus Dinkelmehl, reifen Bananen und Apfelstückchen, mit Apfelspalten belegt.',
   kategorie: 'Backen',
   tags: ['Vegan', 'Muffins', 'Apfel', 'Banane'],
   personen: 4,
+  ergibt: { menge: 12, einheit: 'Muffins' },
   zeit: { vorbereitung: 20, backen: 15 },
   schwierigkeit: 'einfach',
   bild: 'bilder/apfel-bananen-muffins.jpg',
@@ -12,7 +13,7 @@ Rezept({
   zutaten: [
     { abschnitt: 'Für den Teig' },
     { menge: 3, name: 'Banane', mehrzahl: 'Bananen', hinweis: 'reif' },
-    { menge: 2, name: 'Apfel', mehrzahl: 'Äpfel', hinweis: 'rot; für Teig und Belag' },
+    { menge: 1, name: 'Apfel', mehrzahl: 'Äpfel' },
     { menge: 2, einheit: 'EL', name: 'Pflanzlicher Drink', hinweis: 'z. B. Haferdrink' },
     { menge: 30, einheit: 'ml', name: 'Kokosöl', hinweis: 'geschmolzen' },
     { menge: 230, einheit: 'g', name: 'Dinkelmehl' },
@@ -20,14 +21,15 @@ Rezept({
     { menge: 1, einheit: 'TL', name: 'Natron' },
     { menge: 0.5, einheit: 'TL', name: 'Backpulver' },
     { menge: 0.5, einheit: 'TL', name: 'Zimt', hinweis: 'gemahlen' },
-    { abschnitt: 'Zum Servieren' },
+    { abschnitt: 'Für den Belag' },
+    { menge: 1, name: 'Apfel', mehrzahl: 'Äpfel' },
     { name: 'Zimt', hinweis: 'zum Bestreuen', optional: true },
   ],
 
   schritte: [
     { abschnitt: 'Vorbereiten' },
-    'Backofen auf **200 °C Ober-/Unterhitze** (oder 180 °C Umluft) vorheizen. Muffinform einfetten oder mit Papierförmchen auslegen.',
-    'Äpfel waschen. Die Hälfte der Äpfel in kleine Würfel schneiden, die übrigen vierteln und in feine Spalten schneiden.',
+    'Backofen auf **200 °C Ober-/Unterhitze** (oder 180 °C Umluft) vorheizen. Ein 12er-Muffinblech einfetten oder mit Papierförmchen auslegen.',
+    'Äpfel waschen. Apfel für den Teig in kleine Würfel schneiden, Apfel für den Belag vierteln und in feine Spalten schneiden.',
     { abschnitt: 'Teig' },
     'Bananen schälen und in einer Schüssel mit einer Gabel zerdrücken. Apfelwürfel, pflanzlichen Drink und Kokosöl zugeben und vermischen.',
     'In einer zweiten Schüssel Dinkelmehl, Kokosblütenzucker, Natron, Backpulver und Zimt mischen.',
@@ -39,8 +41,7 @@ Rezept({
   ],
 
   tipps: [
-    'Die Menge ergibt ca. 12 Muffins (ein 12er-Muffinblech) – eine Portion entspricht 3 Muffins.',
     'Je reifer die Bananen, desto süßer und saftiger werden die Muffins.',
-    'Kokosöl ist bei Zimmertemperatur fest – vorher kurz schmelzen. Statt Kokosblütenzucker geht auch brauner Zucker.',
+    'Rote Äpfel sehen als Belag besonders hübsch aus. Statt Kokosblütenzucker geht auch brauner Zucker.',
   ],
 });

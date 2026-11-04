@@ -1,6 +1,6 @@
 Rezept({
   id: 'one-pot-reis-mit-spinat',
-  titel: 'One Pot-Reis mit Spinat',
+  titel: 'One-Pot-Reis mit Spinat',
   beschreibung: 'Reis mit frischem Blattspinat und gehäuteten Tomaten nach türkischer Art aus einem Topf, serviert mit Joghurt und Chiliflocken.',
   kategorie: 'Hauptgericht',
   tags: ['Türkisch', 'Vegetarisch', 'Reis', 'Spinat', 'One-Pot'],

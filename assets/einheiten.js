@@ -35,6 +35,8 @@
     'Würfel':    { schritt: 0.5, min: 0.5, mz: 'Würfel' },
   };
 
+  const PRISEN_PRO_TL = 16;
+
   const BRUECHE = [[0, ''], [0.25, '¼'], [0.5, '½'], [0.75, '¾']];
 
   function runden(wert, schritt) {
@@ -65,8 +67,8 @@
       if (w >= 1000 && w % 10 === 0) return { zahl: dezimal(w / 1000), einheit: gross, wert: w };
       return { zahl: String(w), einheit: klein, wert: w };
     }
-    if (wert >= 975) {
-      const v = runden(wert, 50) / 1000;
+    if (wert >= 975) {   // ab 1 kg / 1 l auf 100 g / 100 ml (1,1 kg statt 1,05 kg)
+      const v = runden(wert, 100) / 1000;
       return { zahl: dezimal(v), einheit: gross, wert: v * 1000 };
     }
     const schritt = wert < 10 ? 1 : wert < 250 ? 5 : 25;
@@ -106,6 +108,8 @@
     if (basis === 'ml') return metrisch(wert, 'ml', 'l', opt.exakt);
     if (basis === 'TL') return loeffel(wert, opt.einheit);
     const e = EINHEITEN[basis];
+    // Prisen wachsen nicht beliebig: mehr als 2 Prisen werden zu ¼ TL, ½ TL … (1 Prise ≈ 1/16 TL)
+    if (basis === 'Prise' && runden(wert, 1) > 2) return loeffel(wert / PRISEN_PRO_TL, 'TL');
     if (opt.aufrunden) wert = Math.ceil(wert - 1e-6); // Einkauf: halbe Zwiebel gibt es nicht
     const schritt = opt.ganz ? 1 : e.schritt;
     const min = opt.ganz ? 1 : e.min;
@@ -117,5 +121,5 @@
     };
   }
 
-  g.Einheiten = { EINHEITEN, skalieren, format, zahlText };
+  g.Einheiten = { EINHEITEN, PRISEN_PRO_TL, skalieren, format, zahlText };
 })(globalThis);

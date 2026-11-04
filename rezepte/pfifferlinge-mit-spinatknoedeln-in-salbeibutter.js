@@ -17,7 +17,7 @@ Rezept({
     { menge: 4, einheit: 'EL', name: 'Olivenöl' },
     { menge: 2, name: 'Brötchen', mehrzahl: 'Brötchen', hinweis: 'vom Vortag' },
     { menge: 160, einheit: 'g', name: 'Mehl', hinweis: 'Typ 405' },
-    { menge: 2, name: 'Eier' },
+    { menge: 2, name: 'Ei', mehrzahl: 'Eier' },
     { name: 'Salz' },
     { name: 'Pfeffer' },
     { abschnitt: 'Für die Pfifferlinge' },
