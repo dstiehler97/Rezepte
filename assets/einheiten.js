@@ -68,9 +68,10 @@
     return { zahl: String(v), einheit: klein, wert: v };
   }
 
-  function loeffel(tl) {
+  // bevorzugt = Einheit aus dem Rezept: steht dort TL, bleibt es TL bis 2 EL
+  function loeffel(tl, bevorzugt) {
     if (tl < 0.15) return { zahl: '1', einheit: 'Prise', wert: 0 };
-    if (tl < 2.75) {
+    if (tl < (bevorzugt === 'TL' ? 5.75 : 2.75)) {
       const v = tl < 1 ? Math.max(0.25, runden(tl, 0.25)) : runden(tl, 0.5);
       return { zahl: zahlText(v), einheit: 'TL', wert: v };
     }
@@ -88,16 +89,18 @@
     const e = EINHEITEN[name];
     if (!e) throw new Error('Unbekannte Einheit "' + name + '" bei ' + zutat.name);
     const f = zutat.fix ? 1 : faktor;
-    return { wert: zutat.menge * (e.faktor || 1) * f, basis: e.basis || name };
+    return { wert: zutat.menge * (e.faktor || 1) * f, basis: e.basis || name, einheit: name };
   }
 
-  /** Formatiert eine Menge in Basiseinheit. opt.ganz = nur ganze Stück (Eier). */
+  /** Formatiert eine Menge in Basiseinheit. opt.ganz = nur ganze Stück (Eier), opt.einheit = Einheit im Rezept,
+   *  opt.aufrunden = Zähleinheiten auf ganze aufrunden (Einkaufsliste). */
   function format(wert, basis, opt) {
     opt = opt || {};
     if (basis === 'g') return metrisch(wert, 'g', 'kg');
     if (basis === 'ml') return metrisch(wert, 'ml', 'l');
-    if (basis === 'TL') return loeffel(wert);
+    if (basis === 'TL') return loeffel(wert, opt.einheit);
     const e = EINHEITEN[basis];
+    if (opt.aufrunden) wert = Math.ceil(wert - 1e-6); // Einkauf: halbe Zwiebel gibt es nicht
     const schritt = opt.ganz ? 1 : e.schritt;
     const min = opt.ganz ? 1 : e.min;
     const v = Math.max(min, runden(wert, schritt));

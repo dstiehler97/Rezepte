@@ -73,7 +73,7 @@ console.log(`  ${Object.keys(Icons.ICONS).length} Icons nach /icons exportiert`)
 // ---------------------------------------------------------------- 4. Rundung
 const fall = (menge, einheit, faktor, erwartet, opt) => {
   const m = Einheiten.skalieren({ menge, einheit, name: 'x' }, faktor);
-  const f = Einheiten.format(m.wert, m.basis, opt);
+  const f = Einheiten.format(m.wert, m.basis, Object.assign({ einheit: m.einheit }, opt));
   const ist = (f.zahl + ' ' + f.einheit).trim();
   if (ist !== erwartet) melde('Rundung', `${menge} ${einheit || ''} × ${faktor} → "${ist}", erwartet "${erwartet}"`);
 };
@@ -90,7 +90,11 @@ fall(1, 'EL', 0.25, '¾ TL');
 fall(1, 'EL', 0.5, '1½ TL');
 fall(1, 'TL', 0.25, '¼ TL');
 fall(1, 'TL', 0.1, '1 Prise');
-fall(1, 'TL', 3, '1 EL');
+fall(1, 'TL', 3, '3 TL');
+fall(4, 'TL', 1, '4 TL');
+fall(4, 'TL', 0.75, '3 TL');
+fall(4, 'TL', 1.5, '2 EL');
+fall(1, 'EL', 1, '1 EL');
 fall(2, 'EL', 1.65, '3½ EL');
 fall(1, 'Prise', 2, '2 Prisen');
 fall(1, undefined, 0.25, '½');
@@ -101,6 +105,8 @@ fall(4, undefined, 1.25, '5', { ganz: true });
 fall(2, 'Zehe', 0.25, '1 Zehe');
 fall(2, 'Zehe', 1.5, '3 Zehen');
 fall(1, 'Dose', 1.5, '1½ Dosen');
+fall(2, undefined, 0.75, '2', { aufrunden: true });
+fall(2, undefined, 0.5, '1', { aufrunden: true });
 console.log('Rundungstests ' + (fehler ? 'mit Fehlern' : 'ok'));
 
 console.log(fehler ? `\n${fehler} Fehler.` : '\nAlles in Ordnung.');

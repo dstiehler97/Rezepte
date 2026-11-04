@@ -57,7 +57,7 @@
     const info = Zutaten.info(z);
     const m = skalieren(z, faktor);
     if (!m) return { menge: '', name: z.name, info };
-    const f = format(m.wert, m.basis, { ganz: info.ganz });
+    const f = format(m.wert, m.basis, { ganz: info.ganz, einheit: m.einheit });
     const menge = f.zahl + (f.einheit ? ' ' + f.einheit : '');
     const plural = f.wert > 1 && !f.einheit && z.mehrzahl;
     return { menge, name: plural ? z.mehrzahl : z.name, info };
@@ -364,11 +364,11 @@
         const schluessel = Zutaten.normal(z.name) + '|' + (m ? m.basis : '-');
         let p = map.get(schluessel);
         if (!p) {
-          p = { schluessel, name: z.name, mehrzahl: z.mehrzahl, basis: m && m.basis, wert: 0, mitMenge: false,
+          p = { schluessel, name: z.name, mehrzahl: z.mehrzahl, basis: m && m.basis, einheit: m && m.einheit, wert: 0, mitMenge: false,
             kategorie: info.kategorie, vorrat: info.vorrat, ganz: info.ganz, icon: info.icon, optional: true, rezepte: new Set() };
           map.set(schluessel, p);
         }
-        if (m) { p.wert += m.wert; p.mitMenge = true; }
+        if (m) { p.wert += m.wert; p.mitMenge = true; if (p.einheit !== m.einheit) p.einheit = null; }
         p.optional = p.optional && !!z.optional;
         p.rezepte.add(r.titel);
       }
@@ -378,7 +378,7 @@
     const posten = [...map.values()].filter((p) => p.mitMenge || !mitMenge.has(Zutaten.normal(p.name))).map((p) => {
       let menge = '', name = p.name;
       if (p.mitMenge) {
-        const f = format(p.wert, p.basis, { ganz: p.ganz });
+        const f = format(p.wert, p.basis, { ganz: p.ganz, einheit: p.einheit, aufrunden: true });
         menge = f.zahl + (f.einheit ? ' ' + f.einheit : '');
         if (f.wert > 1 && !f.einheit && p.mehrzahl) name = p.mehrzahl;
       }

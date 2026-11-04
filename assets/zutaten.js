@@ -21,7 +21,7 @@
     'Brot & Backwaren',
     'Nudeln, Reis & Getreide',
     'Konserven & Gläser',
-    'Backen',
+    'Backen & Nüsse',
     'Gewürze & Öle',
     'Getränke',
     'Tiefkühl',
@@ -30,7 +30,7 @@
 
   const OG = 'Obst & Gemüse', KR = 'Kräuter', FF = 'Fleisch & Fisch', KU = 'Kühlregal',
     BR = 'Brot & Backwaren', NR = 'Nudeln, Reis & Getreide', KO = 'Konserven & Gläser',
-    BA = 'Backen', GW = 'Gewürze & Öle', GE = 'Getränke';
+    BA = 'Backen & Nüsse', GW = 'Gewürze & Öle', GE = 'Getränke';
 
   const LEXIKON = {
     // Gewürze & Grundvorrat
@@ -51,6 +51,8 @@
     'brühe':         { k: GW, icon: 'gewuerz', vorrat: true },
     'senf':          { k: GW, icon: 'gewuerz' },
     'sojasauce':     { k: GW, icon: 'oel' },
+    'chilisauce':    { k: GW, icon: 'chili' },
+    'sriracha':      { k: GW, icon: 'chili' },
     'honig':         { k: GW, icon: 'gewuerz' },
     'wasser':        { icon: 'wasser', nie: true },
 
@@ -60,6 +62,11 @@
     'backpulver':    { k: BA, icon: 'mehl', vorrat: true },
     'speisestärke':  { k: BA, icon: 'mehl', vorrat: true },
     'vanillezucker': { k: BA, icon: 'zucker' },
+    'erdnüsse':      { k: BA, icon: 'nuss' },
+    'nüsse':         { k: BA, icon: 'nuss' },
+    'mandeln':       { k: BA, icon: 'nuss' },
+    'cashewkerne':   { k: BA, icon: 'nuss' },
+    'walnüsse':      { k: BA, icon: 'nuss' },
 
     // Kühlregal
     'butter':        { k: KU, icon: 'butter' },
@@ -92,6 +99,7 @@
     'karotte':       { k: OG, icon: 'karotte' },
     'möhre':         { k: OG, icon: 'karotte' },
     'kartoffel':     { k: OG, icon: 'kartoffel' },
+    'süßkartoffel':  { k: OG, icon: 'kartoffel' },
     'paprika':       { k: OG },
     'paprikaschote': { k: OG },
     'staudensellerie': { k: OG },
