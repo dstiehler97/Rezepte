@@ -1,0 +1,45 @@
+Rezept({
+  id: 'gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips',
+  titel: 'Gnocchi in Salbei-Sahne-Sauce mit knusprigen Grünkohl-Chips',
+  beschreibung: 'Gnocchi in einer Sahnesauce mit Knoblauch und Salbei, dazu Grünkohl-Chips aus dem Airfryer, Parmesan und Chiliflocken.',
+  kategorie: 'Hauptgericht',
+  tags: ['Italienisch', 'Vegetarisch', 'Gnocchi', 'Grünkohl', 'Airfryer'],
+  personen: 4,
+  zeit: { vorbereitung: 15, kochen: 25 },
+  schwierigkeit: 'einfach',
+  bild: 'bilder/gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips.jpg',
+
+  zutaten: [
+    { menge: 800, einheit: 'g', name: 'Gnocchi', hinweis: 'aus dem Kühlregal' },
+    { menge: 600, einheit: 'g', name: 'Grünkohl' },
+    { menge: 2, einheit: 'Zehe', name: 'Knoblauch' },
+    { menge: 16, einheit: 'Blatt', name: 'Salbei', hinweis: 'frisch' },
+    { menge: 200, einheit: 'g', name: 'Schlagsahne' },
+    { menge: 4, einheit: 'TL', name: 'Weißweinessig' },
+    { menge: 4, einheit: 'Prise', name: 'Muskatnuss', hinweis: 'gerieben' },
+    { menge: 4, einheit: 'EL', name: 'Olivenöl' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+    { abschnitt: 'Zum Servieren' },
+    { menge: 20, einheit: 'g', name: 'Parmesan' },
+    { menge: 4, einheit: 'Prise', name: 'Chiliflocken' },
+  ],
+
+  schritte: [
+    { abschnitt: 'Grünkohl-Chips' },
+    'Grünkohl waschen und gut trocken schütteln. Die harten Strünke entfernen und die Blätter in mundgerechte Stücke zupfen.',
+    'Grünkohl mit der Hälfte des Olivenöls, Salz und Pfeffer mischen und im Airfryer bei **160 °C** ca. **6–8 Minuten** knusprig backen – je nach Gerät **in mehreren Portionen**.',
+    { abschnitt: 'Gnocchi & Sauce' },
+    'Gnocchi nach Packungsanleitung in Salzwasser garen und abgießen. Währenddessen Knoblauch schälen und hacken, Salbei waschen, trocken schütteln und die Blätter in feine Streifen schneiden.',
+    'Restliches Olivenöl in einer Pfanne erhitzen, Knoblauch und Salbei darin kurz anschwitzen.',
+    'Hitze reduzieren, Sahne und Weißweinessig zugeben. Mit Muskatnuss, Salz und Pfeffer würzen und **2–3 Minuten** leicht köcheln lassen.',
+    'Gekochte Gnocchi in die Salbei-Sahne-Sauce geben und gut mischen.',
+    { abschnitt: 'Servieren' },
+    'Parmesan reiben. Gnocchi mit der Sauce auf Teller verteilen, mit Grünkohl-Chips, Chiliflocken und Parmesan anrichten.',
+  ],
+
+  tipps: [
+    'Ohne Airfryer: Grünkohl im Ofen bei **150 °C Umluft** ca. **15 Minuten** backen.',
+    'Parmesan enthält tierisches Lab – streng vegetarisch Hartkäse mit mikrobiellem Lab nehmen.',
+  ],
+});

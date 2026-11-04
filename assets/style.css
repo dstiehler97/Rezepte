@@ -100,12 +100,26 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
 .feld input, .feld select { width: 100%; }
 .merkmal-chips .chip.aktiv { background: var(--akzent); border-color: var(--akzent); color: #fff; }
 #filter-weg { justify-self: start; padding-left: 0; }
-.treffer { margin: -.5rem 0 .75rem; min-height: 1em; }
+.treffer { margin: 0; min-height: 1em; }
+.sortier-zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; margin: -.5rem 0 .9rem; }
+.sortieren { display: flex; align-items: center; gap: .4rem; min-width: 0; margin-left: auto; }
+.sortieren select { min-width: 0; padding: .4rem .6rem; }
+.richtung { padding: .4rem .7rem; white-space: nowrap; font-size: .9rem; }
+.richtung[hidden] { display: none; }
+.ern-chips .chip::before { content: ''; display: inline-block; width: .55em; height: .55em; margin-right: .4em; border-radius: 50%; background: var(--leise); vertical-align: .05em; }
+.ern-chips .chip[data-e=""]::before { display: none; }
+.ern-chips .e-vegan::before { background: #3d8a34; }
+.ern-chips .e-vegetarisch::before { background: #8fbf6a; }
+.ern-chips .e-fisch::before { background: #3a78b5; }
+.ern-chips .e-fleisch::before { background: #a8435f; }
 .merkmale { display: flex; flex-wrap: wrap; gap: .3rem; }
 .karte .merkmale { margin-top: .15rem; }
 .merkmal { font-size: .72rem; font-weight: 600; padding: .12rem .5rem; border-radius: 999px; background: var(--papier); color: var(--leise); border: 1px solid var(--linie); white-space: nowrap; }
 .m-eiweiss { background: #e6f0fa; border-color: #c4d9ef; color: #2b5d8a; }
-.m-veggie { background: #e8f3e6; border-color: #c8e1c3; color: #3d6b34; }
+.m-vegan, .m-vegetarisch { background: #e8f3e6; border-color: #c8e1c3; color: #3d6b34; }
+.m-vegan { background: #dcefd8; border-color: #b5d9ad; color: #2f5f27; }
+.m-fisch { background: #e3eef8; border-color: #bfd6ec; color: #2b5d8a; }
+.m-fleisch { background: #f5e6eb; border-color: #e5c7d1; color: #8a3550; }
 .m-leicht, .m-fettarm, .m-lowcarb { background: #eef5ec; border-color: #d3e6cf; color: #4a6f43; }
 .m-ballast { background: #f3efe3; border-color: #e1d8bf; color: #6d5f33; }
 .m-fettreich { background: #fbeee6; border-color: #efd2c2; color: #93492a; }
@@ -134,7 +148,8 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
 .karte img { width: calc(100% + 2.4rem); margin: -1.1rem -1.2rem .4rem; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--radius) var(--radius) 0 0; }
 .karte-kat, .r-kat { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--akzent); font-weight: 600; }
 .karte p { margin: 0; color: var(--leise); font-size: .95rem; }
-.karte-meta { display: flex; gap: 1rem; margin-top: auto; padding-top: .5rem; color: var(--leise); font-size: .85rem; }
+.karte-meta { display: flex; flex-wrap: wrap; gap: .2rem 1rem; margin-top: auto; padding-top: .5rem; color: var(--leise); font-size: .85rem; }
+.karte-meta .sortwert { color: var(--akzent); font-weight: 600; }
 
 /* ============================================================ Rezept */
 .rezept {
@@ -309,6 +324,7 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
   .r-inhalt { grid-template-columns: 1fr; gap: 1.5rem; }
   .r-naehrwerte { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem 1rem; margin-top: -.25rem; }
   .nw-titel { grid-column: 1 / -1; flex-direction: row; gap: .6rem; align-items: baseline; }
+  .nw-name { white-space: normal; font-size: .62rem; letter-spacing: .02em; overflow-wrap: anywhere; }
   .zutat { grid-template-columns: 1.4rem 5.2rem minmax(0, 1fr); padding: .45rem 0; }
   .schritt { gap: .75rem; }
 
@@ -321,6 +337,8 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
   .rezept > .merkmale { margin-top: -.75rem; }
   .chips { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 0 16px .2rem; scrollbar-width: none; }
   .chip { white-space: nowrap; padding: .45rem .95rem; }
+  .sortier-zeile { margin-top: -.25rem; }
+  .sortieren select, .richtung { min-height: 2.5rem; }
 
   /* Wochenplan */
   .plan-neu select { width: 100%; min-width: 0; min-height: 2.75rem; }
@@ -335,6 +353,15 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
   .ek-neu input { min-height: 2.75rem; }
   .ek-posten { grid-template-columns: 1.5rem 1.3rem 5rem minmax(0, 1fr) auto; padding: .7rem 0; }
   .ek-posten .box { width: 1.35rem; height: 1.35rem; border-radius: 4px; }
+}
+@media screen and (max-width: 720px) {
+  .chips.ern-chips { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; gap: .35rem; }
+  .ern-chips .chip { padding: .3rem .8rem; font-size: .85rem; }
+  .sortieren { flex: 1 1 100%; }
+  .sortieren select { flex: 1; }
+}
+@media screen and (max-width: 400px) {
+  .sortieren label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 }
 
 /* ============================================================ Druck (A4) */

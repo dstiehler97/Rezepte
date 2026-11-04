@@ -36,6 +36,10 @@
     'chilisauce': N(95, 1.9, 19, 15, 0.9, 2.2, { dichte: 1.1 }),
     'austernsauce': N(110, 2.5, 22, 15, 0.3, 0.3, { dichte: 1.2 }),
     'gewürzmischung': N(300, 12, 35, 5, 10, 30, { dichte: 0.5 }),
+    'italienische kräuter': N(280, 10, 40, 4, 6, 35, { dichte: 0.3 }),
+    'kräuter der provence': N(280, 10, 40, 4, 6, 35, { dichte: 0.3 }),
+    'knoblauchpulver': N(330, 17, 73, 2.4, 0.7, 9, { dichte: 0.6 }),
+    'pesto': N(450, 5, 6, 2, 45, 2, { dichte: 0.9, glas: 190 }),
     'sriracha': N(95, 1.9, 19, 15, 0.9, 2.2, { dichte: 1.1 }),
     'honig': N(305, 0.3, 80, 75, 0, 0, { dichte: 1.4 }),
     'wasser': N(0, 0, 0, 0, 0, 0),
@@ -45,6 +49,10 @@
     'vanillezucker': N(400, 0, 100, 100, 0, 0, { paeckchen: 8, dichte: 0.85 }),
     'mehl': N(348, 10, 72, 0.5, 1, 4, { dichte: 0.6 }),
     'backpulver': N(100, 0, 25, 0, 0, 0, { paeckchen: 15, dichte: 0.9 }),
+    'natron': N(0, 0, 0, 0, 0, 0, { paeckchen: 5, dichte: 1 }),
+    'dinkelmehl': N(340, 12, 70, 1, 1.5, 4, { dichte: 0.6 }),
+    'kokosblütenzucker': N(380, 1, 92, 88, 0.5, 0, { dichte: 0.8 }),
+    'kokosöl': N(880, 0, 0, 0, 99, 0, { dichte: 0.92 }),
     'speisestärke': N(350, 0.3, 86, 0, 0.1, 0, { dichte: 0.6 }),
     'erdnüsse': N(585, 25, 12, 4, 50, 8, { handvoll: 30 }),
     'nüsse': N(650, 15, 10, 4, 62, 7, { handvoll: 30 }),
@@ -74,6 +82,9 @@
     'gouda': N(355, 25, 0, 0, 28, 0, { scheibe: 20 }),
     'feta': N(262, 17, 0.7, 0.7, 21, 0, { packung: 200, stueck: 200 }),
     'hefe': N(100, 12, 9, 0, 1, 7, { wuerfel: 42, paeckchen: 7 }),
+    'gnocchi': N(155, 4, 32, 1, 0.6, 2, { packung: 400 }),         // Frischware, Kühlregal
+    'pfannenkäse': N(300, 17, 12, 1, 21, 1, { stueck: 25 }),      // panierter Ofenkäse
+    'tofu': N(125, 13, 1.5, 0.5, 7.5, 1.5, { packung: 200, stueck: 200 }),
 
     // Obst & Gemüse
     'zwiebel': N(40, 1.2, 8, 4.7, 0.1, 1.8, { stueck: 80 }),
@@ -83,6 +94,7 @@
     'knoblauchzehe': N(149, 6.4, 30, 1, 0.5, 2.1, { stueck: 4, zehe: 4 }),
     'tomate': N(18, 0.9, 2.6, 2.6, 0.2, 1.2, { stueck: 80 }),
     'kirschtomate': N(18, 0.9, 2.6, 2.6, 0.2, 1.2, { stueck: 15 }),
+    'cherrytomate': N(18, 0.9, 2.6, 2.6, 0.2, 1.2, { stueck: 15 }),
     'zitrone': N(25, 0.4, 7, 2.5, 0.2, 0.3, { stueck: 40 }),   // Saft
     'limette': N(25, 0.4, 7, 1.7, 0.1, 0.4, { stueck: 35 }),   // Saft
     'chili': N(40, 1.9, 7, 5, 0.4, 1.5, { stueck: 10 }),
@@ -104,11 +116,14 @@
     'lauch': N(29, 2.2, 3.3, 2, 0.3, 2.3, { stange: 200 }),
     'porree': N(29, 2.2, 3.3, 2, 0.3, 2.3, { stange: 200 }),
     'spinat': N(23, 2.9, 0.6, 0.4, 0.4, 2.6, { handvoll: 30 }),
+    'grünkohl': N(49, 4.3, 2.5, 1.7, 0.9, 4.2),
     'salat': N(15, 1.2, 1.5, 1, 0.2, 1.5, { stueck: 300, handvoll: 25 }),
+    'salat-mix': N(17, 1.5, 1.8, 1, 0.3, 1.8, { handvoll: 25, packung: 125 }),
     'gurke': N(12, 0.6, 1.8, 1.8, 0.2, 0.5, { stueck: 400 }),
     'grüne bohnen': N(33, 2.4, 5, 1.4, 0.2, 1.9),
     'brechbohnen': N(33, 2.4, 5, 1.4, 0.2, 1.9),
     'apfel': N(54, 0.3, 14, 10, 0.2, 2, { stueck: 150 }),
+    'banane': N(93, 1.2, 20, 17, 0.2, 2, { stueck: 120 }),
     'ingwer': N(80, 1.8, 16, 1.7, 0.8, 2, { stueck: 20 }),
 
     // Kräuter
@@ -158,7 +173,10 @@
     'tomatenmark': N(82, 4.3, 15, 12, 0.5, 4, { dichte: 1.1, dose: 70 }),
     'stückige tomaten': N(21, 1.1, 3.5, 3, 0.2, 1, { dose: 400, packung: 400 }),
     'passierte tomaten': N(30, 1.4, 5, 4, 0.2, 1, { packung: 500, glas: 500 }),
+    'geschälte tomaten': N(20, 1, 3, 3, 0.2, 1, { dose: 400 }),
+    'getrocknete tomaten': N(210, 5, 23, 15, 12, 6, { glas: 280 }), // in Öl, abgetropft
     'kokosmilch': N(195, 1.8, 3, 2, 19, 0.5, { dose: 400 }),
+    'pflanzlicher drink': N(45, 0.5, 7, 4, 1.5, 0.8),   // z. B. Haferdrink
     'preiselbeeren': N(180, 0.3, 43, 40, 0.3, 2, { glas: 400, dichte: 1.2 }),
     'kichererbsen': N(120, 7, 16, 1, 2.6, 5, { dose: 240 }),     // abgetropft
     'mais': N(80, 3, 14, 4, 1.2, 3, { dose: 285 }),

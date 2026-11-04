@@ -1,0 +1,45 @@
+Rezept({
+  id: 'crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree',
+  titel: 'Crunchy Gnocchi mit knusprigen Käse-Talern & Tomaten-Zucchini-Püree',
+  beschreibung: 'Knusprige Kräuter-Gnocchi und Käsetaler aus dem Airfryer auf Tomaten-Zucchini-Püree.',
+  kategorie: 'Hauptgericht',
+  tags: ['Italienisch', 'Vegetarisch', 'Gnocchi', 'Airfryer'],
+  personen: 4,
+  zeit: { vorbereitung: 15, kochen: 25 },
+  schwierigkeit: 'einfach',
+  bild: 'bilder/crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree.jpg',
+
+  zutaten: [
+    { abschnitt: 'Für Gnocchi & Käsetaler' },
+    { menge: 800, einheit: 'g', name: 'Gnocchi', hinweis: 'aus dem Kühlregal' },
+    { menge: 12, name: 'Mini Ofen- & Pfannenkäse', hinweis: 'z. B. panierte Käsetaler' },
+    { abschnitt: 'Für das Püree' },
+    { menge: 480, einheit: 'g', name: 'Geschälte Tomaten', hinweis: 'aus der Dose' },
+    { menge: 400, einheit: 'g', name: 'Zucchini' },
+    { menge: 2, name: 'Zwiebel', mehrzahl: 'Zwiebeln' },
+    { menge: 2, einheit: 'Zehe', name: 'Knoblauch' },
+    { menge: 6, einheit: 'EL', name: 'Olivenöl' },
+    { menge: 2, einheit: 'TL', name: 'Italienische Kräuter', hinweis: 'getrocknet' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+    { menge: 8, einheit: 'g', name: 'Basilikum', hinweis: 'frisch' },
+  ],
+
+  schritte: [
+    { abschnitt: 'Gnocchi & Käsetaler' },
+    'Gnocchi mit dem größten Teil des Olivenöls, einem Teil der italienischen Kräuter, Salz und Pfeffer mischen und im Airfryer bei **180 °C** ca. **10 Minuten** knusprig backen.',
+    'Käsetaler dazugeben und weitere **4–5 Minuten** backen, bis sich die Oberseite leicht wölbt. Alternativ Gnocchi und Käsetaler in einer Pfanne bei mittlerer Hitze knusprig braten.',
+    { abschnitt: 'Tomaten-Zucchini-Püree (parallel)' },
+    'Währenddessen Zwiebeln und Knoblauch schälen und fein würfeln. Zucchini waschen, der Länge nach vierteln und in kleine Stücke schneiden.',
+    'Geschälte Tomaten mit den Händen zerdrücken und abtropfen lassen, den Saft auffangen. Restliches Olivenöl in einer Pfanne erhitzen und die Zwiebeln ca. **2–3 Minuten** andünsten.',
+    'Knoblauch und Zucchini zugeben, ca. **5 Minuten** anschwitzen und mit Salz und Pfeffer würzen.',
+    'Abgetropfte Tomaten zugeben und bei mittlerer Hitze ca. **10 Minuten** köcheln lassen. Mit den restlichen italienischen Kräutern, Salz und Pfeffer würzen, bei Bedarf etwas aufgefangenen Tomatensaft zugeben.',
+    'Alles mit dem Stabmixer fein pürieren. Basilikumblätter abzupfen.',
+    { abschnitt: 'Servieren' },
+    'Püree auf Teller verteilen, knusprige Gnocchi und Käsetaler daraufsetzen und mit Basilikum garnieren.',
+  ],
+
+  tipps: [
+    'Bei kleinem Airfryer Gnocchi und Käsetaler in zwei Durchgängen backen, damit alles gleichmäßig knusprig wird.',
+  ],
+});

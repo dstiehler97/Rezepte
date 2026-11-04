@@ -135,30 +135,55 @@
   }
 
   // ---------------------------------------------------------------- Übersicht
-  // Filter: Kategorie, Merkmale (Ernährung, Vegetarisch, Schnell), Suche, Zutaten; dazu Sortierung
+  // Filter: Kategorie, Ernährungsform, Merkmale (Nährwerte, Schnell), Suche, Zutaten; dazu Sortierung
   const SCHNELL_MIN = 30;
+  const titelVergleich = (a, b) => a.titel.localeCompare(b.titel, 'de');
+  /** [id, Name, Wert, Standard-Richtung, Text aufsteigend, Text absteigend, Gruppe] */
   const SORTIERUNGEN = [
-    ['name', 'Name A–Z', (a, b) => a.titel.localeCompare(b.titel, 'de')],
-    ['zeit', 'Schnellste zuerst', (a, b) => gesamtzeit(a.zeit) - gesamtzeit(b.zeit)],
-    ['kcal', 'Wenigste Kalorien', (a, b) => nwp(a).kcal - nwp(b).kcal],
-    ['eiweiss', 'Meistes Eiweiß', (a, b) => nwp(b).eiweiss - nwp(a).eiweiss],
-    ['fett', 'Wenigstes Fett', (a, b) => nwp(a).fett - nwp(b).fett],
-    ['kh', 'Wenigste Kohlenhydrate', (a, b) => nwp(a).kh - nwp(b).kh],
-    ['zuhause', 'Am meisten zuhause', (a, b) => fehlend(a) - fehlend(b) || a.titel.localeCompare(b.titel, 'de')],
+    ['name', 'Name', null, 'auf', 'A–Z', 'Z–A'],
+    ['schwierigkeit', 'Schwierigkeit', (r) => SCHWIERIGKEIT[r.schwierigkeit] || 1, 'auf', 'einfach zuerst', 'schwer zuerst'],
+    ['zeit', 'Zeit', (r) => gesamtzeit(r.zeit), 'auf', 'schnell zuerst', 'lang zuerst'],
+    ['kcal', 'Kalorien', (r) => nwp(r).kcal, 'auf', 'wenig zuerst', 'viel zuerst', 'nw'],
+    ['eiweiss', 'Eiweiß', (r) => nwp(r).eiweiss, 'ab', 'wenig zuerst', 'viel zuerst', 'nw'],
+    ['fett', 'Fett', (r) => nwp(r).fett, 'auf', 'wenig zuerst', 'viel zuerst', 'nw'],
+    ['kh', 'Kohlenhydrate', (r) => nwp(r).kh, 'auf', 'wenig zuerst', 'viel zuerst', 'nw'],
+    ['zuhause', 'Am meisten zuhause', (r) => fehlend(r), 'auf'],
   ];
+  const sortierung = (o) => SORTIERUNGEN.find((x) => x[0] === o) || SORTIERUNGEN[0];
+  /** Vergleich für Sortierung o in Richtung d ('auf' | 'ab'); bei Gleichstand nach Name */
+  function vergleich(o, d) {
+    const [, , wert] = sortierung(o);
+    const r = d === 'ab' ? -1 : 1;
+    if (!wert) return (a, b) => r * titelVergleich(a, b);
+    return (a, b) => r * (wert(a) - wert(b)) || (o === 'schwierigkeit' ? gesamtzeit(a.zeit) - gesamtzeit(b.zeit) : 0) || titelVergleich(a, b);
+  }
   /** Anzahl Zutaten mit Menge, die nicht zuhause sind (Salz & Co. nach Geschmack zählen nicht) */
   const fehlend = (r) => nurZutaten(r).filter((z) => z.menge != null && !z.optional && !Zutaten.info(z).nie && !istZuhause(z.name)).length;
   const nwCache = new Map();
   const nwp = (r) => { if (!nwCache.has(r)) nwCache.set(r, Naehrwerte.berechnen(r).portion); return nwCache.get(r); };
-  const istVegetarisch = (r) => (r.tags || []).some((t) => /^vegetarisch$|^vegan$/i.test(t));
+
+  // Ernährungsform aus den Zutaten (assets/zutaten.js), im Rezept mit ernaehrung: '…' überschreibbar
+  const ERNAEHRUNG = [
+    { id: 'vegan', name: 'Vegan', passt: (e) => e.id === 'vegan' },
+    { id: 'vegetarisch', name: 'Vegetarisch', passt: (e) => e.id === 'vegan' || e.id === 'vegetarisch' },
+    { id: 'fisch', name: 'Mit Fisch', passt: (e) => e.fisch },
+    { id: 'fleisch', name: 'Mit Fleisch', passt: (e) => e.fleisch },
+  ];
+  const ernCache = new Map();
+  const ernaehrungVon = (r) => { if (!ernCache.has(r)) ernCache.set(r, Zutaten.ernaehrung(r)); return ernCache.get(r); };
+  function ernaehrungHTML(r) {
+    const e = ernaehrungVon(r);
+    const name = ERNAEHRUNG.find((x) => x.id === e.id).name;
+    // Fisch/Fleisch nur am Bildschirm, damit der Druck unverändert bleibt
+    return `<span class="merkmal m-${e.id}${e.fisch || e.fleisch ? ' nur-bildschirm' : ''}"${e.gruende.length ? ` title="${esc('Wegen: ' + e.gruende.join(', '))}"` : ''}>${name}</span>`;
+  }
   /** Merkmale eines Rezepts als Liste {id, name} */
   function merkmaleVon(r) {
     const m = Naehrwerte.merkmale(r).map((x) => ({ id: x.id, name: x.name }));
-    if (istVegetarisch(r)) m.unshift({ id: 'veggie', name: (r.tags || []).some((t) => /^vegan$/i.test(t)) ? 'Vegan' : 'Vegetarisch' });
     if (gesamtzeit(r.zeit) && gesamtzeit(r.zeit) <= SCHNELL_MIN) m.push({ id: 'schnell', name: 'Schnell' });
     return m;
   }
-  const FILTER_MERKMALE = [{ id: 'veggie', name: 'Vegetarisch' }, { id: 'schnell', name: 'Schnell (≤ 30 Min.)' },
+  const FILTER_MERKMALE = [{ id: 'schnell', name: 'Schnell (≤ 30 Min.)' },
     ...Naehrwerte.MERKMALE.map((m) => ({ id: m.id, name: m.name }))];
 
   /** Zutaten-Eingabe: "Spinat, Käse, -Pilze" -> mit Spinat UND Käse, ohne Pilze */
@@ -173,9 +198,10 @@
   function filtern(f) {
     const n = Zutaten.normal(f.s);
     const zf = zutatenFilter(f.z);
-    const sort = (SORTIERUNGEN.find((x) => x[0] === f.o) || SORTIERUNGEN[0])[2];
+    const ern = ERNAEHRUNG.find((x) => x.id === f.e);
     return rezepte.filter((r) => {
       if (f.k && r.kategorie !== f.k) return false;
+      if (ern && !ern.passt(ernaehrungVon(r))) return false;
       if (f.m.length) {
         const ids = merkmaleVon(r).map((x) => x.id);
         if (!f.m.every((m) => ids.includes(m))) return false;
@@ -184,17 +210,23 @@
       if (zf.mit.some((w) => !namen.some((nm) => nm.includes(w)))) return false;
       if (zf.ohne.some((w) => namen.some((nm) => nm.includes(w)))) return false;
       if (!n) return true;
-      const text = Zutaten.normal([r.titel, r.beschreibung, r.kategorie, (r.tags || []).join(' '), namen.join(' ')].join(' '));
+      const ernText = ERNAEHRUNG.filter((x) => x.passt(ernaehrungVon(r))).map((x) => x.name).join(' ');
+      const text = Zutaten.normal([r.titel, r.beschreibung, r.kategorie, (r.tags || []).join(' '), ernText, namen.join(' ')].join(' '));
       return n.split(' ').every((w) => text.includes(w));
-    }).sort(sort);
+    }).sort(vergleich(f.o, f.d));
   }
 
   function seiteUebersicht(q) {
     document.title = 'Rezepte';
-    const f = { s: q.get('s') || '', k: q.get('k') || '', z: q.get('z') || '', o: q.get('o') || 'name',
-      m: (q.get('m') || '').split(',').filter(Boolean) };
+    const m = (q.get('m') || '').split(',').filter(Boolean);
+    const f = { s: q.get('s') || '', k: q.get('k') || '', z: q.get('z') || '',
+      e: q.get('e') || (m.includes('veggie') ? 'vegetarisch' : ''),   // alte Links: m=veggie
+      m: m.filter((x) => x !== 'veggie'), o: sortierung(q.get('o'))[0], d: q.get('d') || '' };
+    if (!ERNAEHRUNG.some((x) => x.id === f.e)) f.e = '';
+    if (!['auf', 'ab'].includes(f.d)) f.d = sortierung(f.o)[3];
     const kategorien = [...new Set(rezepte.map((r) => r.kategorie).filter(Boolean))].sort();
-    const offen = !!(f.z || f.m.length || f.o !== 'name');
+    const offen = !!(f.z || f.m.length);
+    const option = ([id, name]) => `<option value="${id}"${id === f.o ? ' selected' : ''}>${name}</option>`;
 
     app.innerHTML = `
       <section class="kopf-seite nur-bildschirm">
@@ -206,20 +238,21 @@
             </label>
             <button type="button" class="knopf filter-knopf${offen ? ' an' : ''}" id="filter-auf" aria-expanded="${offen}">${svg('filter')} <span>Filter</span><span class="zahl" id="filter-zahl"></span></button>
           </div>
-          <div class="chips" id="kat-chips">
+          <div class="chips" id="kat-chips" aria-label="Kategorie">
             <button type="button" class="chip" data-k="">Alle</button>
             ${kategorien.map((k) => `<button type="button" class="chip" data-k="${esc(k)}">${esc(k)}</button>`).join('')}
+          </div>
+          <div class="chips ern-chips" id="ern-chips" aria-label="Ernährung">
+            <button type="button" class="chip" data-e="">Alle</button>
+            ${ERNAEHRUNG.map((x) => `<button type="button" class="chip e-${x.id}" data-e="${x.id}">${x.name}</button>`).join('')}
           </div>
           <div class="filter-feld" id="filter-feld"${offen ? '' : ' hidden'}>
             <label class="feld"><span>Mit Zutaten</span>
               <input id="zutaten" type="search" placeholder="z. B. Spinat, Käse  ·  ohne: -Pilze" value="${esc(f.z)}" autocomplete="off">
             </label>
-            <label class="feld"><span>Sortieren</span>
-              <select id="sortierung">${SORTIERUNGEN.map(([id, name]) => `<option value="${id}"${id === f.o ? ' selected' : ''}>${name}</option>`).join('')}</select>
-            </label>
             <div class="feld"><span>Eigenschaften</span>
               <div class="chips merkmal-chips" id="merkmal-chips">
-                ${FILTER_MERKMALE.map((m) => `<button type="button" class="chip" data-m="${m.id}">${esc(m.name)}</button>`).join('')}
+                ${FILTER_MERKMALE.map((x) => `<button type="button" class="chip" data-m="${x.id}">${esc(x.name)}</button>`).join('')}
               </div>
             </div>
             <button type="button" class="knopf leise" id="filter-weg">Filter zurücksetzen</button>
@@ -227,7 +260,18 @@
         </div>
       </section>
       ${ladefehler.length ? `<p class="hinweis fehler">Nicht geladen: ${ladefehler.map(esc).join(', ')} – Datei in /rezepte prüfen.</p>` : ''}
-      <p class="treffer klein" id="treffer"></p>
+      <div class="sortier-zeile nur-bildschirm">
+        <p class="treffer klein" id="treffer"></p>
+        <div class="sortieren">
+          <label for="sortierung" class="klein">Sortieren</label>
+          <select id="sortierung">
+            ${SORTIERUNGEN.filter((x) => !x[6]).slice(0, 3).map(option).join('')}
+            <optgroup label="Nährwerte pro Portion">${SORTIERUNGEN.filter((x) => x[6] === 'nw').map(option).join('')}</optgroup>
+            <optgroup label="Vorrat">${option(sortierung('zuhause'))}</optgroup>
+          </select>
+          <button type="button" class="knopf richtung" id="richtung"></button>
+        </div>
+      </div>
       <div class="karten" id="karten"></div>`;
 
     const $ = (id) => document.getElementById(id);
@@ -235,24 +279,33 @@
       const p = new URLSearchParams();
       if (f.s) p.set('s', f.s);
       if (f.k) p.set('k', f.k);
+      if (f.e) p.set('e', f.e);
       if (f.z) p.set('z', f.z);
       if (f.m.length) p.set('m', f.m.join(','));
       if (f.o !== 'name') p.set('o', f.o);
+      if (f.d !== sortierung(f.o)[3]) p.set('d', f.d);
       history.replaceState(null, '', '#/' + (p.toString() ? '?' + p.toString() : ''));
       const liste = filtern(f);
-      $('karten').innerHTML = liste.map(karte).join('') || '<p class="leer">Keine Rezepte gefunden. Filter lockern?</p>';
-      const aktiv = f.m.length + (f.z ? 1 : 0) + (f.o !== 'name' ? 1 : 0);
+      $('karten').innerHTML = liste.map((r) => karte(r, f.o)).join('') || '<p class="leer">Keine Rezepte gefunden. Filter lockern?</p>';
+      const aktiv = f.m.length + (f.z ? 1 : 0);
       $('filter-zahl').textContent = aktiv || '';
-      $('treffer').textContent = (aktiv || f.s || f.k) ? liste.length + ' von ' + rezepte.length + ' Rezepten' : '';
+      $('treffer').textContent = (aktiv || f.s || f.k || f.e) ? liste.length + ' von ' + rezepte.length + ' Rezepten' : rezepte.length + ' Rezepte';
+      const s = sortierung(f.o);
+      const knopf = $('richtung');
+      knopf.hidden = !s[4] || !s[5];
+      knopf.innerHTML = `<span aria-hidden="true">${f.d === 'ab' ? '↓' : '↑'}</span> ${esc(f.d === 'ab' ? s[5] : s[4])}`;
+      knopf.setAttribute('aria-label', 'Reihenfolge: ' + (f.d === 'ab' ? s[5] : s[4]) + ' – umdrehen');
       document.querySelectorAll('#kat-chips .chip').forEach((c) => c.classList.toggle('aktiv', c.dataset.k === f.k));
+      document.querySelectorAll('#ern-chips .chip').forEach((c) => c.classList.toggle('aktiv', c.dataset.e === f.e));
       document.querySelectorAll('#merkmal-chips .chip').forEach((c) => c.classList.toggle('aktiv', f.m.includes(c.dataset.m)));
     }
-    let t;
-    const tippen = (el, feld) => el.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { f[feld] = el.value; aktualisieren(); }, 150); });
+    const tippen = (el, feld) => { let t; el.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { f[feld] = el.value; aktualisieren(); }, 150); }); };
     tippen($('suche'), 's');
     tippen($('zutaten'), 'z');
-    $('sortierung').addEventListener('change', (e) => { f.o = e.target.value; aktualisieren(); });
+    $('sortierung').addEventListener('change', (e) => { f.o = e.target.value; f.d = sortierung(f.o)[3]; aktualisieren(); });
+    $('richtung').addEventListener('click', () => { f.d = f.d === 'ab' ? 'auf' : 'ab'; aktualisieren(); });
     $('kat-chips').addEventListener('click', (e) => { const c = e.target.closest('[data-k]'); if (c) { f.k = c.dataset.k; aktualisieren(); } });
+    $('ern-chips').addEventListener('click', (e) => { const c = e.target.closest('[data-e]'); if (c) { f.e = c.dataset.e; aktualisieren(); } });
     $('merkmal-chips').addEventListener('click', (e) => {
       const c = e.target.closest('[data-m]'); if (!c) return;
       f.m = f.m.includes(c.dataset.m) ? f.m.filter((x) => x !== c.dataset.m) : [...f.m, c.dataset.m];
@@ -264,13 +317,16 @@
       e.currentTarget.classList.toggle('an', !feld.hidden);
     });
     $('filter-weg').addEventListener('click', () => {
-      f.z = ''; f.m = []; f.o = 'name'; $('zutaten').value = ''; $('sortierung').value = 'name'; aktualisieren();
+      f.z = ''; f.m = []; $('zutaten').value = ''; aktualisieren();
     });
     aktualisieren();
   }
 
-  function karte(r) {
+  /** Sortierter Wert auf der Karte hervorheben (o = Sortierung) */
+  function karte(r, o) {
     const z = gesamtzeit(r.zeit);
+    const an = (id) => (o === id ? ' class="sortwert"' : '');
+    const nw = { eiweiss: 'Eiweiß', fett: 'Fett', kh: 'Kohlenhydrate' }[o];
     return `
       <a class="karte" href="#/rezept/${esc(r.id)}">
         ${r.bild ? `<img src="${esc(r.bild)}" alt="" loading="lazy">` : ''}
@@ -278,17 +334,17 @@
         <h2>${esc(r.titel)}</h2>
         ${r.beschreibung ? `<p>${esc(r.beschreibung)}</p>` : ''}
         <span class="karte-meta">
-          ${z ? `<span>${svg('uhr')} ${dauer(z)}</span>` : ''}
-          <span>${svg('muetze')} ${esc(r.schwierigkeit || '')}</span>
-          <span>${nwZahl(nwp(r).kcal, 'kcal')}</span>
+          ${z ? `<span${an('zeit')}>${svg('uhr')} ${dauer(z)}</span>` : ''}
+          <span${an('schwierigkeit')}>${svg('muetze')} ${esc(r.schwierigkeit || '')}</span>
+          <span${an('kcal')}>${nwZahl(nwp(r).kcal, 'kcal')}</span>
+          ${nw ? `<span class="sortwert">${nwZahl(nwp(r)[o], 'g')} ${nw}</span>` : ''}
           ${zuhause.length ? `<span class="fehlt">${fehlend(r) ? 'fehlt: ' + fehlend(r) : 'alles da'}</span>` : ''}
         </span>
         ${merkmalHTML(r)}
       </a>`;
   }
   function merkmalHTML(r) {
-    const m = merkmaleVon(r);
-    return m.length ? `<span class="merkmale">${m.map((x) => `<span class="merkmal m-${x.id}">${esc(x.name)}</span>`).join('')}</span>` : '';
+    return `<span class="merkmale">${ernaehrungHTML(r)}${merkmaleVon(r).map((x) => `<span class="merkmal m-${x.id}">${esc(x.name)}</span>`).join('')}</span>`;
   }
 
   // ---------------------------------------------------------------- Rezept
