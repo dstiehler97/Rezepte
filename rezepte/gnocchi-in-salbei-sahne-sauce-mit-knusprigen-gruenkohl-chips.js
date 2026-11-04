@@ -10,16 +10,13 @@ Rezept({
   bild: 'bilder/gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips.jpg',
 
   zutaten: [
-    { abschnitt: 'Für die Grünkohl-Chips' },
-    { menge: 600, einheit: 'g', name: 'Grünkohl' },
-    { abschnitt: 'Für die Gnocchi' },
     { menge: 800, einheit: 'g', name: 'Gnocchi', hinweis: 'aus dem Kühlregal' },
+    { menge: 600, einheit: 'g', name: 'Grünkohl' },
     { menge: 2, einheit: 'Zehe', name: 'Knoblauch' },
     { menge: 16, einheit: 'Blatt', name: 'Salbei', hinweis: 'frisch' },
     { menge: 200, einheit: 'g', name: 'Schlagsahne' },
     { menge: 4, einheit: 'TL', name: 'Weißweinessig' },
     { menge: 4, einheit: 'Prise', name: 'Muskatnuss', hinweis: 'gerieben' },
-    { abschnitt: 'Außerdem' },
     { menge: 4, einheit: 'EL', name: 'Olivenöl' },
     { name: 'Salz' },
     { name: 'Pfeffer' },
@@ -42,8 +39,7 @@ Rezept({
   ],
 
   tipps: [
-    'Ohne Airfryer: Grünkohl auf einem Blech im Ofen bei **150 °C Umluft** ca. **15 Minuten** backen, dabei einmal wenden.',
-    'Die Chips werden nur knusprig, wenn der Grünkohl vorher wirklich trocken ist.',
-    'Streng vegetarisch: Parmesan enthält tierisches Lab – dann einen Hartkäse mit mikrobiellem Lab nehmen.',
+    'Ohne Airfryer: Grünkohl im Ofen bei **150 °C Umluft** ca. **15 Minuten** backen.',
+    'Parmesan enthält tierisches Lab – streng vegetarisch Hartkäse mit mikrobiellem Lab nehmen.',
   ],
 });

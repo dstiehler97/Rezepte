@@ -101,6 +101,7 @@
     'hefe':          { k: KU, icon: 'mehl' },
     'gnocchi':       { k: KU, icon: 'nudeln' },
     'pfannenkäse':   { k: KU, icon: 'kaese' },
+    'tofu':          { k: KU },
 
     // Obst & Gemüse
     'zwiebel':       { k: OG, icon: 'zwiebel' },
@@ -110,6 +111,7 @@
     'knoblauchzehe': { k: OG, icon: 'knoblauch' },
     'tomate':        { k: OG, icon: 'tomate' },
     'kirschtomate':  { k: OG, icon: 'tomate' },
+    'cherrytomate':  { k: OG, icon: 'tomate' },
     'zitrone':       { k: OG, icon: 'zitrone' },
     'limette':       { k: OG, icon: 'zitrone' },
     'chili':         { k: OG, icon: 'chili' },
@@ -194,6 +196,7 @@
     'stückige tomaten':  { k: KO, icon: 'tomate' },
     'passierte tomaten': { k: KO, icon: 'tomate' },
     'geschälte tomaten': { k: KO, icon: 'tomate' },
+    'getrocknete tomaten': { k: KO, icon: 'tomate' },
     'kokosmilch':        { k: KO, icon: 'milch' },
     'preiselbeeren':     { k: KO },
     'kichererbsen':      { k: KO },

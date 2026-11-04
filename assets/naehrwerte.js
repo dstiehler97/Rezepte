@@ -77,6 +77,7 @@
     'hefe': N(100, 12, 9, 0, 1, 7, { wuerfel: 42, paeckchen: 7 }),
     'gnocchi': N(155, 4, 32, 1, 0.6, 2, { packung: 400 }),         // Frischware, Kühlregal
     'pfannenkäse': N(300, 17, 12, 1, 21, 1, { stueck: 25 }),      // panierter Ofenkäse
+    'tofu': N(125, 13, 1.5, 0.5, 7.5, 1.5, { packung: 200, stueck: 200 }),
 
     // Obst & Gemüse
     'zwiebel': N(40, 1.2, 8, 4.7, 0.1, 1.8, { stueck: 80 }),
@@ -86,6 +87,7 @@
     'knoblauchzehe': N(149, 6.4, 30, 1, 0.5, 2.1, { stueck: 4, zehe: 4 }),
     'tomate': N(18, 0.9, 2.6, 2.6, 0.2, 1.2, { stueck: 80 }),
     'kirschtomate': N(18, 0.9, 2.6, 2.6, 0.2, 1.2, { stueck: 15 }),
+    'cherrytomate': N(18, 0.9, 2.6, 2.6, 0.2, 1.2, { stueck: 15 }),
     'zitrone': N(25, 0.4, 7, 2.5, 0.2, 0.3, { stueck: 40 }),   // Saft
     'limette': N(25, 0.4, 7, 1.7, 0.1, 0.4, { stueck: 35 }),   // Saft
     'chili': N(40, 1.9, 7, 5, 0.4, 1.5, { stueck: 10 }),
@@ -163,6 +165,7 @@
     'stückige tomaten': N(21, 1.1, 3.5, 3, 0.2, 1, { dose: 400, packung: 400 }),
     'passierte tomaten': N(30, 1.4, 5, 4, 0.2, 1, { packung: 500, glas: 500 }),
     'geschälte tomaten': N(20, 1, 3, 3, 0.2, 1, { dose: 400 }),
+    'getrocknete tomaten': N(210, 5, 23, 15, 12, 6, { glas: 280 }), // in Öl, abgetropft
     'kokosmilch': N(195, 1.8, 3, 2, 19, 0.5, { dose: 400 }),
     'preiselbeeren': N(180, 0.3, 43, 40, 0.3, 2, { glas: 400, dichte: 1.2 }),
     'kichererbsen': N(120, 7, 16, 1, 2.6, 5, { dose: 240 }),     // abgetropft
