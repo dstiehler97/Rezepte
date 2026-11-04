@@ -82,6 +82,8 @@ h2 { font-size: 1.25rem; }
 .hinweis { color: var(--leise); }
 .hinweis.fehler { color: var(--akzent); }
 .nur-druck { display: none; }
+/* width/height an Fotos nur fürs Seitenverhältnis (kein Springen beim Laden) – die Größe bestimmt das CSS */
+:where(img[width][height]) { height: auto; }
 main { max-width: 1040px; margin: 0 auto; padding: 1.25rem max(16px, env(safe-area-inset-right)) 4rem max(16px, env(safe-area-inset-left)); }
 
 /* ============================================================ Kopfleiste */
@@ -278,13 +280,20 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
 .ek-name em { color: var(--leise); font-style: normal; font-size: .85rem; }
 
 /* ============================================================ Meldung */
+/* Breite: eine Zeile, wo möglich (width: max-content – sonst begrenzt left: 50% auf die halbe Breite);
+   Position: über den festen Leisten unten, bei offenem Blatt oben (siehe Ende der Datei und melden() in app.js) */
 #meldung {
   z-index: 30;
   position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 1rem);
-  padding: .6rem 1rem; border-radius: 8px; background: var(--text); color: var(--papier);
+  display: flex; align-items: center; gap: .25rem .5rem; box-sizing: border-box;
+  width: max-content; max-width: min(92vw, 420px); min-height: 2.75rem;
+  padding: .5rem 1rem; border-radius: 8px; background: var(--text); color: var(--papier);
+  font-size: .95rem; line-height: 1.35;
   opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
 }
+#meldung .m-text { flex: 0 1 auto; min-width: 0; }
 #meldung.sichtbar { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#meldung.mit-aktion { cursor: pointer; }
 
 /* ============================================================ Handy */
 /* ============================================================ Untere Navigation (nur Handy) */
@@ -296,7 +305,10 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
   font-size: 1.1rem; line-height: 1; cursor: pointer; }
 .ek-chip > .klein:last-child { padding-right: .35rem; }
 .ek-export { display: flex; gap: .5rem; flex-wrap: wrap; }
-#meldung a { color: inherit; font-weight: 600; margin-left: .5rem; }
+#meldung a, #meldung button {
+  flex: none; display: inline-flex; align-items: center; min-height: 2.75rem; margin: -.5rem -.6rem -.5rem 0; padding: 0 .6rem;
+  border: 0; background: none; color: inherit; font: inherit; font-weight: 650; text-decoration: underline; text-underline-offset: .15em; cursor: pointer;
+}
 
 @media screen and (max-width: 720px) {
   body { font-size: 17px; padding-bottom: calc(var(--tabs-h, 4.2rem) + var(--timer-h, 0px) + .5rem); }
@@ -319,7 +331,7 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
   .tabs .icon { width: 1.55rem; height: 1.55rem; }
   .tabs a.aktiv { color: var(--akzent); }
   .tabs .zahl:not(:empty) { position: absolute; top: 0; left: calc(50% + .45rem); margin: 0; font-size: .68rem; }
-  #meldung { bottom: calc(var(--tabs-h, 4.2rem) + var(--timer-h, 0px) + .75rem); max-width: calc(100% - 32px); }
+  #meldung { bottom: calc(var(--tabs-h, 4.2rem) + var(--timer-h, 0px) + .75rem); }
 
   /* Knöpfe: groß genug zum Tippen */
   .knopf { min-height: 2.75rem; }
@@ -387,6 +399,8 @@ a.mehr-zeile:hover { background: var(--papier); }
 .mehr-pfeil { color: var(--leise); display: grid; }
 .mehr-steuer { flex: none; display: flex; gap: .4rem; align-items: center; }
 .mehr-info { max-width: 640px; margin-top: 2rem; text-align: center; line-height: 1.6; }
+.mehr-offline::before { content: ''; display: inline-block; width: .5rem; height: .5rem; margin-right: .4rem; border-radius: 50%; background: var(--gruen); vertical-align: .05em; }
+.mehr-offline.aus::before { background: var(--akzent); }
 
 /* ============================================================ Timer */
 .timer-chip {
@@ -974,6 +988,7 @@ body.blatt-an { overflow: hidden; }
 .tag-knopf { flex-direction: column; align-items: flex-start; gap: 0; min-height: 3.4rem; padding: .5rem .8rem; text-align: left; line-height: 1.3; }
 .tag-knopf small { color: var(--leise); font-size: .8rem; }
 .tag-knopf.an { border-color: var(--akzent); background: var(--akzent-hell); }
+.tag-knopf.schon small { color: var(--akzent); font-weight: 600; }
 @media screen and (max-width: 720px) {
   /* 7 Tage auf 288 px: Lücke über den Rand statt Abstand, damit jeder Tag ≥ 44 px breit bleibt */
   .kal-streifen { gap: 0; margin: 0 -12px; }
@@ -1411,4 +1426,19 @@ body.druck .plan-eintrag.gekocht { background: none; }
 @media screen and (max-width: 360px) {
   /* SE: Titel allein in der ersten Zeile, runde Knöpfe darunter statt eines einzelnen Nachzüglers */
   body:is([data-seite="plan"], [data-seite="zuhause"]):not(.druck) .werkzeuge:has(> .knopf ~ .knopf) > h1 { flex-basis: 100%; }
+}
+
+/* ============================================================ Meldung: Lage über Kochmodus-Knöpfen und offenen Blättern */
+@media screen {
+  body[data-seite="kochen"] #meldung { bottom: calc(var(--tabs-h, 0px) + var(--timer-h, 0px) + var(--fuss-h, 0px) + .5rem); }
+  /* Blatt offen: oben am Bildschirm (unter der Statusleiste); das Blatt lässt oben Platz dafür */
+  body.blatt-an #meldung { top: calc(max(.5rem, env(safe-area-inset-top)) + .25rem); bottom: auto; transform: translate(-50%, -.75rem); }
+  body.blatt-an #meldung.sichtbar { transform: translate(-50%, 0); }
+}
+@media screen and (max-width: 720px) {
+  .blatt-hinter { padding-top: calc(max(.5rem, env(safe-area-inset-top)) + 3.5rem); }
+}
+@media screen and (max-width: 360px) {
+  #meldung { font-size: .875rem; padding-left: .8rem; padding-right: .8rem; }
+  #meldung a, #meldung button { padding: 0 .5rem; margin-right: -.5rem; }
 }

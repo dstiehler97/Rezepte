@@ -11,6 +11,8 @@ Gilt für jedes Rezept, das in `rezepte/` aufgenommen wird – egal ob aus KptnC
 3. Entwurf löschen, fertiges Rezept als `rezepte/<id>.js` schreiben (Vorlage: `rezepte/_vorlage.js`).
 4. Neue Zutaten in `assets/zutaten.js` (Kategorie, Icon, ggf. `vorrat`/`trocken`) **und** `assets/naehrwerte.js` (Werte pro 100 g, Stückgewichte) ergänzen.
 5. `node tools/pruefen.js` → muss „Alles in Ordnung.“ melden, keine `!`-Warnungen zu fehlenden Nährwerten.
+   Erzeugt dabei auch das Vorschaubild `bilder/klein/<id>.jpg` (verkleinert zu große Fotos auf 1200 px) und
+   die neue Offline-Version in `sw.js` / `rezepte/liste.js` – beide Dateien mit abgeben.
 6. `node tools/pdf.js <ordner> <id>` → **genau 1 Seite** (Verkleinerung bis 85 % ist ok). Sonst Text straffen.
 
 ## Inhalt

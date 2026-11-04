@@ -184,7 +184,7 @@
   function passt(zutatName, vorratName) {
     const z = Zutaten.normal(zutatName), v = Zutaten.normal(vorratName);
     if (!v) return false;
-    if (z === v) return true;
+    if (z === v || Zutaten.grundform(zutatName) === Zutaten.grundform(vorratName)) return true;   // Eier ↔ Ei, Äpfel ↔ Apfel
     if (v.includes(' ')) return z.includes(v);
     const vf = formen(v);
     // Wortende nur bei Grundvorrat (Salz -> Meersalz, Öl -> Olivenöl), nicht Zwiebel -> Frühlingszwiebel
@@ -207,6 +207,7 @@
     }))).then(() => {
       rezepte.sort((a, b) => a.titel.localeCompare(b.titel, 'de'));
       nachId = Object.fromEntries(rezepte.map((r) => [r.id, r]));
+      formenSammeln();
       datenPruefen();
     });
   }
@@ -737,7 +738,7 @@
       const st = kochStand(r.id), fortsetzen = kochFrisch(st) && st.s > 1;
       return `
         <article class="heute-gericht" data-uid="${e.uid}">
-          ${r.bild ? `<a class="hg-bild" href="#/rezept/${esc(r.id)}?p=${p}" tabindex="-1" aria-hidden="true"><img src="${esc(r.bild)}" alt=""></a>` : ''}
+          ${r.bild ? `<a class="hg-bild" href="#/rezept/${esc(r.id)}?p=${p}" tabindex="-1" aria-hidden="true">${bildHTML(r, 'auswahl', 'sizes="(min-width: 721px) 520px, 100vw"')}</a>` : ''}
           <div class="hg-text">
             <span class="karte-kat">${esc(r.kategorie || '')}</span>
             <h3><a href="#/rezept/${esc(r.id)}?p=${p}">${esc(r.titel)}</a></h3>
@@ -823,9 +824,23 @@
     });
   }
 
+  /*
+   * Rezeptfotos: groß (bilder/<id>.jpg, höchstens 1200 px) für Rezeptkopf und Druck, klein (bilder/klein/<id>.jpg,
+   * 600 px) für Karten, Reihen, Würfel und Kalender. Maße und Vorschaubilder stehen in rezepte/liste.js
+   * (window.REZEPT_BILDER, von tools/pruefen.js). Fehlt ein Vorschaubild, wird das große Foto genommen.
+   * art: 'klein' | 'gross' | 'auswahl' (Browser wählt per srcset; attr sollte dann sizes enthalten)
+   */
+  const BILDER = window.REZEPT_BILDER || {};
+  function bildHTML(r, art, attr) {
+    const m = BILDER[r.bild] || {};
+    const klein = art !== 'gross' && m.klein;
+    const [b, h] = klein ? [m.kb, m.kh] : [m.b, m.h];
+    const auswahl = art === 'auswahl' && m.klein && m.b ? ` srcset="${esc(m.klein)} ${m.kb}w, ${esc(r.bild)} ${m.b}w"` : '';
+    return `<img src="${esc(klein && !auswahl ? m.klein : r.bild)}"${auswahl}${b && h ? ` width="${b}" height="${h}"` : ''} alt="" decoding="async"${attr ? ' ' + attr : ''}>`;
+  }
   /** Bildfläche einer Karte: Foto oder Platzhalter (Farbfläche mit Initiale), Ton aus der id */
   function bildFlaeche(r) {
-    if (r.bild) return `<img src="${esc(r.bild)}" alt="" loading="lazy" decoding="async">`;
+    if (r.bild) return bildHTML(r, 'klein', 'loading="lazy"');
     let h = 0;
     for (const c of String(r.id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
     return `<span class="platzhalter ton-${h % 4}" aria-hidden="true"><span class="ph-initiale">${esc((r.titel || '?').trim().charAt(0).toUpperCase())}</span>${svg('topf')}</span>`;
@@ -902,7 +917,7 @@
         t === Infinity ? 'noch nie gekocht' : 'gekocht ' + vorText(t)].filter(Boolean);
       b.zeigen(`
         <div class="wf-karte">
-          ${r.bild ? `<img src="${esc(r.bild)}" alt="">` : ''}
+          ${r.bild ? bildHTML(r, 'klein') : ''}
           <span class="karte-kat">${esc(r.kategorie || '')}</span>
           <h3>${esc(r.titel)}</h3>
           <p class="wf-info">${info.join('<span aria-hidden="true"> · </span>')}</p>
@@ -915,11 +930,8 @@
        <button type="button" class="knopf" id="wf-liste" data-f="wf-liste">${svg('korb')} <span>Auf Einkaufsliste</span></button>
        <a class="knopf haupt" href="#/kochen/${esc(r.id)}?p=${personen}&amp;s=1">${svg('topf')} Jetzt kochen</a>`, true);
       b.el.querySelector('#wf-liste').addEventListener('click', (e) => {
-        liste.push({ uid: uid(), id: r.id, personen });
-        sichern(); zaehlerAktualisieren();
-        e.currentTarget.disabled = true;
-        e.currentTarget.innerHTML = svg('haken') + ' <span>Auf der Liste</span>';
-        melden('Zutaten für ' + personen + ' P. auf der Einkaufsliste', '#/einkauf', 'Ansehen');
+        const k = e.currentTarget;
+        aufListe(r, personen, () => { k.disabled = true; k.innerHTML = svg('haken') + ' <span>Auf der Liste</span>'; });
       });
     }
     b.el.addEventListener('click', (e) => { if (e.target.closest('#wf-nochmal')) zeigen(); });
@@ -966,7 +978,7 @@
             ${interaktiv ? sterneHTML(r) : ''}
             ${interaktiv ? kochKnopfHTML(r, personen) : ''}
           </div>
-          ${r.bild ? `<img class="r-bild" src="${esc(r.bild)}" alt="">` : ''}
+          ${r.bild ? bildHTML(r, 'gross', 'class="r-bild"') : ''}
         </header>
 
         <div class="r-meta">
@@ -1194,18 +1206,76 @@
     verlassen = notizenJetzt;
     document.getElementById('zum-plan').addEventListener('click', (e) => {
       // Personenzahl selbst gewählt → so übernehmen, sonst isst der Standard-Haushalt mit (falls angelegt)
-      const neu = planEintrag(r.id, gewaehlt ? personen : 0);
-      plan.push(neu);
-      sichern(); zaehlerAktualisieren();
-      e.currentTarget.innerHTML = svg('haken') + ' <span>Im Plan</span>';
-      melden(r.titel + ' für ' + portionenHTML(neu, true).replace(/<[^>]+>/g, '') + ' eingeplant');
+      const k = e.currentTarget;
+      einplanen(r.id, gewaehlt ? personen : 0, '', () => { k.innerHTML = svg('haken') + ' <span>Im Plan</span>'; });
     });
     app.querySelectorAll('[data-zur-liste]').forEach((k) => k.addEventListener('click', () => {
-      liste.push({ uid: uid(), id: r.id, personen });
-      sichern(); zaehlerAktualisieren();
-      app.querySelectorAll('[data-zur-liste]').forEach((x) => { x.innerHTML = svg('haken') + ' <span>Auf der Liste</span>'; });
-      melden('Zutaten für ' + personen + ' P. auf der Einkaufsliste', '#/einkauf', 'Ansehen');
+      aufListe(r, personen, () => app.querySelectorAll('[data-zur-liste]').forEach((x) => { x.innerHTML = svg('haken') + ' <span>Auf der Liste</span>'; }));
     }));
+  }
+
+  // ---------------------------------------------------------------- Kein doppeltes Hinzufügen
+  /** Rezept direkt auf die Einkaufsliste. Steht es schon drauf: Rückfrage (Portionen zusammenzählen, ändern, abbrechen). */
+  function aufListe(r, personen, fertig) {
+    const da = liste.find((x) => x.id === r.id);
+    const gemerkt = (n) => {
+      sichern(); zaehlerAktualisieren();
+      if (fertig) fertig();
+      melden('Auf der Einkaufsliste · ' + n + ' P.', '#/einkauf', 'Ansehen');
+    };
+    if (!da) { liste.push({ uid: uid(), id: r.id, personen }); gemerkt(personen); return; }
+    const summe = begrenzen(da.personen + personen);
+    const b = blattAuf('Schon auf der Einkaufsliste');
+    b.zeigen(`
+      <p><strong>${esc(r.titel)}</strong> steht schon mit <strong>${da.personen} P.</strong> auf der Einkaufsliste.</p>
+      <div class="sg-wahl">
+        ${summe > da.personen ? `<button type="button" class="knopf wahl-knopf" data-al="summe">${svg('plus')}<span><strong>Auf ${summe} P. erhöhen</strong>
+          <small>${da.personen} + ${personen} P. – zum Beispiel für zwei Mahlzeiten</small></span></button>` : ''}
+        ${personen !== da.personen ? `<button type="button" class="knopf wahl-knopf" data-al="ersetzen">${svg('personen')}<span><strong>Auf ${personen} P. ändern</strong>
+          <small>Statt ${da.personen} P.</small></span></button>` : ''}
+      </div>`,
+    '<button type="button" class="knopf leise" data-blatt-zu>So lassen</button><a class="knopf" href="#/einkauf">Einkaufsliste</a>');
+    b.el.addEventListener('click', (e) => {
+      const k = e.target.closest('[data-al]');
+      if (!k) return;
+      da.personen = k.dataset.al === 'summe' ? summe : personen;
+      b.schliessen();
+      gemerkt(da.personen);
+    });
+  }
+  /**
+   * Rezept in den Wochenplan (tag '' = ohne Tag). Steht es dort am selben Tag schon offen: Rückfrage mit Tageswahl
+   * (an anderen Tagen ist dasselbe Rezept erlaubt). fertig(eintrag) nach dem Einplanen; still = ohne Meldung.
+   */
+  function einplanen(id, personen, tag, fertig, still) {
+    const r = nachId[id];
+    const amTag = (t) => plan.filter((e) => e.id === id && !e.gekocht && (e.tag || '') === t);
+    const hinzu = (t) => {
+      const e = planEintrag(id, personen, t);
+      plan.push(e);
+      sichern(); zaehlerAktualisieren();
+      if (fertig) fertig(e);
+      if (!still) melden(r.titel + ' für ' + portionenHTML(e, true).replace(/<[^>]+>/g, '') + ' eingeplant' + (t ? ' (' + t + ')' : ''), '#/plan', 'Plan');
+    };
+    if (!amTag(tag || '').length) { hinzu(tag || ''); return; }
+    const daten = wocheDaten(), heute = heuteTag();
+    const schon = amTag(tag || '')[0];
+    const b = blattAuf('Schon im Wochenplan', { klasse: 'tag-blatt' });
+    b.zeigen(`
+      <p class="klein"><strong>${esc(r.titel)}</strong> steht schon im Plan (${esc(tag || 'ohne Tag')}, ${portionenHTML(schon, true)}).
+        An welchem Tag zusätzlich einplanen?</p>
+      <div class="tag-wahl">${[...TAGE, ''].map((t, i) => {
+        const n = amTag(t).length;
+        const unter = [t ? daten[i].toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }) : 'noch offen', t === heute ? 'heute' : '', n ? 'schon geplant' : ''].filter(Boolean).join(' · ');
+        return `<button type="button" class="knopf tag-knopf${n ? ' schon' : ''}" data-tag-wahl="${t}"><strong>${t || 'Ohne Tag'}</strong><small>${esc(unter)}</small></button>`;
+      }).join('')}</div>`,
+    '<button type="button" class="knopf leise" data-blatt-zu>Abbrechen</button>');
+    b.el.addEventListener('click', (ev) => {
+      const k = ev.target.closest('[data-tag-wahl]');
+      if (!k) return;
+      b.schliessen();
+      hinzu(k.dataset.tagWahl);
+    });
   }
 
   // ---------------------------------------------------------------- Kochbuch (alles drucken)
@@ -1516,6 +1586,7 @@
           <ul class="mehr-liste">${a.eintraege.map(zeile).join('')}</ul>
         </section>`).join('')}
       <p class="mehr-info klein">${rezepte.length} Rezepte · Version vom ${stand}<br>
+        <span class="mehr-offline${navigator.onLine === false ? ' aus' : ''}">${esc(offlineText())}</span><br>
         Wochenplan, Einkaufsliste, Zuhause, Favoriten und Notizen werden nur auf diesem Gerät gespeichert.</p>`;
     MEHR.forEach((a) => a.eintraege.forEach((e) => { if (e.binden) e.binden(document.getElementById('mehr-' + e.id)); }));
   }
@@ -1906,7 +1977,7 @@
     const daten = wocheDaten(), heute = heuteTag();
     const bildchen = (e) => {
       const r = nachId[e.id];
-      return `<span class="kal-bild${e.gekocht ? ' gekocht' : ''}">${r.bild ? `<img src="${esc(r.bild)}" alt="" loading="lazy">` : esc(r.titel.slice(0, 1))}</span>`;
+      return `<span class="kal-bild${e.gekocht ? ' gekocht' : ''}">${r.bild ? bildHTML(r, 'klein', 'loading="lazy"') : esc(r.titel.slice(0, 1))}</span>`;
     };
     const ohne = plan.filter((e) => !e.tag);
     const von = daten[0].toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
@@ -1971,7 +2042,7 @@
         <li class="plan-eintrag${e.gekocht ? ' gekocht' : ''}" data-uid="${e.uid}">
           <div class="pe-kopf">
             <button type="button" class="pe-haken nur-bildschirm" data-gekocht aria-pressed="${!!e.gekocht}" aria-label="${e.gekocht ? 'Doch nicht gekocht' : 'Als gekocht abhaken'}" title="${e.gekocht ? 'Doch nicht gekocht' : 'Gekocht'}"><span class="box">${svg('haken')}</span></button>
-            ${r.bild ? `<img class="pe-bild nur-bildschirm" src="${esc(r.bild)}" alt="" loading="lazy">` : ''}
+            ${r.bild ? bildHTML(r, 'klein', 'class="pe-bild nur-bildschirm" loading="lazy"') : ''}
             <a href="#/rezept/${esc(r.id)}?p=${begrenzen(portionen(e))}"><span class="pe-titel">${esc(r.titel)}</span>${e.gekocht ? `<small>gekocht am ${datumText(e.gekocht)}</small>` : ''}</a>
             <button type="button" class="knopf leise icon-knopf pe-weg nur-bildschirm" data-weg aria-label="Entfernen" title="Aus dem Plan nehmen">${svg('muell')}</button>
           </div>
@@ -2042,7 +2113,8 @@
     }));
     document.getElementById('plan-rezept').addEventListener('change', (ev) => {
       const r = nachId[ev.target.value];
-      if (r) { plan.push(planEintrag(r.id, 0, neuFuer)); sichern(); zeichnen(); }
+      ev.target.value = '';
+      if (r) einplanen(r.id, 0, neuFuer, zeichnen, true);
     });
     document.getElementById('plan-vorschlag').addEventListener('click', vorschlagBlatt);
     const leeren = document.getElementById('plan-leeren');
@@ -2252,6 +2324,71 @@
   }
 
   // ---------------------------------------------------------------- Einkaufsliste
+  // Gleiche Zutaten stehen in einer Zeile: Schlüssel ist die Grundform (Zutaten.grundform: Ei/Eier, Cherrytomate/
+  // Cherrytomaten zusammen; „rote Zwiebel“ bleibt neben „Zwiebel“ eigener Posten). Verschiedene Einheiten werden über
+  // Gewicht umgerechnet (assets/naehrwerte.js: Dichte, Stückgewicht): natürliche Einkaufseinheit (Lexikon „kauf“:
+  // Eier, Zwiebeln, Zitronen … in Stück, Petersilie in Bund) aufgerundet, Flüssiges in ml, sonst g.
+  // Lässt sich etwas nicht umrechnen, steht es zusammen in einer Zeile: „1 kg + 2 Stück Zucchini“.
+  // Schlüssel eines Postens (für abgehakt): 'z|' + Grundform; eigene Einträge 'extra|' + uid.
+  let namensFormen = {};          // Grundform -> {einzahl, mehrzahl} (Anzeige), aus allen Rezepten
+  function formenSammeln() {
+    namensFormen = {};
+    for (const r of rezepte) for (const z of nurZutaten(r)) Zutaten.formenLernen(z.name, z.mehrzahl);
+    for (const r of rezepte) for (const z of nurZutaten(r)) {
+      const f = namensFormen[Zutaten.grundform(z.name)] = namensFormen[Zutaten.grundform(z.name)] || {};
+      if (z.mehrzahl && Zutaten.normal(z.mehrzahl) !== Zutaten.normal(z.name)) f.mehrzahl = f.mehrzahl || z.mehrzahl;
+      if (Zutaten.istEinzahl(z.name)) f.einzahl = f.einzahl || z.name;
+      else f.mehrzahl = f.mehrzahl || z.name;
+    }
+  }
+  const TEIL_FOLGE = ['g', 'ml', 'TL'];
+  const LOEFFEL_MAX = 30;         // TL (= 10 EL)
+  const FLUESSIG_KATEGORIEN = ['Gewürze & Öle', 'Getränke'];
+  const mengeVon = (f) => f.zahl + (f.einheit ? ' ' + f.einheit : '');
+  /** Umgerechnete Summe auf die Stufe von Einheiten.format aufrunden (280 g → 300 g, nicht 275 g) */
+  const aufStufe = (x) => { const st = x < 10 ? 1 : x < 250 ? 5 : x < 975 ? 25 : 50; return Math.max(st, Math.ceil(x / st - 1e-9) * st); };
+  /** Menge eines Postens: {menge, art: 'stueck' | 'mass' (g/ml) | 'einheit' (EL, Bund …) | 'gemischt', wert} */
+  function postenMenge(p) {
+    const teile = [...p.teile].sort((a, b) => (TEIL_FOLGE.indexOf(a[0]) + 1 || 9) - (TEIL_FOLGE.indexOf(b[0]) + 1 || 9));
+    const art = (basis, f) => (!f.einheit ? 'stueck' : ['g', 'ml'].includes(basis) ? 'mass' : 'einheit');
+    if (teile.length === 1) {
+      const [basis, t] = teile[0];
+      // ab 10 EL: Öle, Saucen in ml (so steht es auf der Flasche), anderes in g
+      if (basis === 'TL' && t.wert >= LOEFFEL_MAX) {
+        if (FLUESSIG_KATEGORIEN.includes(p.kategorie)) return { menge: mengeVon(format(t.wert * 5, 'ml')), art: 'mass', wert: 2 };
+        if (p.gramm != null) return { menge: mengeVon(format(p.gramm, 'g')), art: 'mass', wert: 2 };
+      }
+      const f = format(t.wert, basis, { ganz: p.ganz, einheit: t.einheit, aufrunden: true });
+      return { menge: mengeVon(f), art: art(basis, f), wert: f.wert };
+    }
+    if (p.gramm != null) {
+      const proEinheit = p.kauf && Naehrwerte.gramm({ name: p.name, menge: 1, einheit: p.kauf });
+      if (proEinheit) {
+        const f = format(Math.max(1, Math.ceil(p.gramm / proEinheit - 0.05)), p.kauf, { ganz: true, aufrunden: true });
+        return { menge: mengeVon(f), art: art(p.kauf, f), wert: f.wert };
+      }
+      // Gewürzmengen (größter Teil in Löffeln, zusammen wenig) in TL/EL
+      const groesster = teile.slice().sort((a, b) => b[1].gramm - a[1].gramm)[0][0];
+      const proTL = Naehrwerte.gramm({ name: p.name, menge: 1, einheit: 'TL' });
+      if (groesster === 'TL' && p.gramm < 30 && proTL) {
+        const f = format(p.gramm / proTL, 'TL', { einheit: p.teile.get('TL').einheit });
+        return { menge: mengeVon(f), art: 'einheit', wert: f.wert };
+      }
+      // Flüssiges (ein Teil in ml, größter Teil ml oder Löffel) in ml, sonst g
+      if (p.teile.has('ml') && ['ml', 'TL'].includes(groesster)) {
+        const dichte = Naehrwerte.gramm({ name: p.name, menge: 1, einheit: 'ml' }) || 1;
+        const f = format(aufStufe(p.gramm / dichte), 'ml', { exakt: true });
+        return { menge: mengeVon(f), art: 'mass', wert: f.wert };
+      }
+      const f = format(aufStufe(p.gramm), 'g', { exakt: true });
+      return { menge: mengeVon(f), art: 'mass', wert: f.wert };
+    }
+    const menge = teile.map(([basis, t]) => {
+      const f = format(t.wert, basis, { ganz: p.ganz, einheit: t.einheit, aufrunden: true });
+      return mengeVon(f) + (f.einheit ? '' : ' Stück');
+    }).join(' + ');
+    return { menge, art: 'gemischt', wert: 2 };
+  }
   function einkaufsliste() {
     const map = new Map();
     for (const e of fuerEinkauf()) {
@@ -2261,26 +2398,37 @@
         const info = Zutaten.info(z);
         if (info.nie) continue;
         const m = skalieren(z, faktor);
-        const schluessel = Zutaten.normal(z.name) + '|' + (m ? m.basis : '-');
-        let p = map.get(schluessel);
+        const grund = Zutaten.grundform(z.name);
+        let p = map.get(grund);
         if (!p) {
-          p = { schluessel, name: z.name, mehrzahl: z.mehrzahl, basis: m && m.basis, einheit: m && m.einheit, wert: 0, mitMenge: false,
-            kategorie: info.kategorie, vorrat: info.vorrat, ganz: info.ganz, icon: info.icon, optional: true, rezepte: new Set() };
-          map.set(schluessel, p);
+          p = { schluessel: 'z|' + grund, grund, name: z.name, teile: new Map(), gramm: 0, mitMenge: false,
+            kategorie: info.kategorie, vorrat: info.vorrat, ganz: info.ganz, icon: info.icon, kauf: info.kauf, optional: true, rezepte: new Set() };
+          map.set(grund, p);
         }
-        if (m) { p.wert += m.wert; p.mitMenge = true; if (p.einheit !== m.einheit) p.einheit = null; }
+        if (m) {
+          const t = p.teile.get(m.basis) || { wert: 0, einheit: m.einheit, gramm: 0 };
+          t.wert += m.wert;
+          if (t.einheit !== m.einheit) t.einheit = null;
+          const gr = Naehrwerte.gramm(z);
+          if (gr == null || p.gramm == null) p.gramm = null;
+          else { p.gramm += gr * (z.fix ? 1 : faktor); t.gramm += gr * (z.fix ? 1 : faktor); }
+          p.teile.set(m.basis, t);
+          p.mitMenge = true;
+        }
         p.optional = p.optional && !!z.optional;
         p.rezepte.add(r.titel);
       }
     }
-    // "Salz" ohne Menge fällt weg, wenn dieselbe Zutat schon mit Menge auf der Liste steht
-    const mitMenge = new Set([...map.values()].filter((p) => p.mitMenge).map((p) => Zutaten.normal(p.name)));
-    const posten = [...map.values()].filter((p) => p.mitMenge || !mitMenge.has(Zutaten.normal(p.name))).map((p) => {
+    // "Salz" ohne Menge steht in derselben Zeile wie Salz mit Menge (gleiche Grundform) und zeigt dann die Menge
+    const posten = [...map.values()].map((p) => {
+      const fo = namensFormen[p.grund] || {};
       let menge = '', name = p.name;
       if (p.mitMenge) {
-        const f = format(p.wert, p.basis, { ganz: p.ganz, einheit: p.einheit, aufrunden: true });
-        menge = f.zahl + (f.einheit ? ' ' + f.einheit : '');
-        if (f.wert > 1 && !f.einheit && p.mehrzahl) name = p.mehrzahl;
+        const m = postenMenge(p);
+        menge = m.menge;
+        // Mehrzahl auch bei g/ml („300 g Cherrytomaten“); bei EL, Bund, Dose … die Einzahl
+        name = m.art === 'stueck' ? (m.wert > 1 ? fo.mehrzahl || p.name : fo.einzahl || p.name)
+          : m.art === 'einheit' ? fo.einzahl || p.name : fo.mehrzahl || p.name;
       }
       return Object.assign(p, { menge, anzeigeName: name });
     });
@@ -2364,7 +2512,7 @@
                   <span class="ek-name">${esc(p.anzeigeName)}${p.optional ? ' <em>(optional)</em>' : ''}</span>
                   ${p.extra ? `<button type="button" class="knopf leise icon-knopf nur-bildschirm" data-extra="${p.uid}" aria-label="Entfernen">${svg('muell')}</button>`
                     : g.zuhause ? `<button type="button" class="knopf leise icon-knopf nur-bildschirm haus-an" data-nicht-da="${esc(p.name)}" aria-label="Doch nicht zuhause" title="Doch nicht zuhause">${svg('haus')}</button>`
-                    : `<button type="button" class="knopf leise icon-knopf nur-bildschirm" data-da="${esc(p.name)}" aria-label="Hab ich zuhause" title="Hab ich zuhause">${svg('haus')}</button>`}
+                    : `<button type="button" class="knopf leise icon-knopf nur-bildschirm" data-da="${esc(p.anzeigeName)}" aria-label="Hab ich zuhause" title="Hab ich zuhause">${svg('haus')}</button>`}
                 </li>`).join('')}
             </ul>
           </section>`).join('')}
@@ -2430,7 +2578,7 @@
   function einkaufErledigt(gruppen) {
     const namen = [];
     for (const p of gekauftePosten(gruppen)) {
-      if (!namen.some((n) => Zutaten.normal(n) === Zutaten.normal(p.name))) namen.push(p.name);
+      if (!namen.some((n) => Zutaten.grundform(n) === p.grund)) namen.push(p.anzeigeName);
     }
     const eigene = gekaufteExtras();
     const b = blattAuf('Einkauf erledigt');
@@ -2629,12 +2777,33 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  function melden(text, link, linkText) {
+  /**
+   * Kurze Meldung (Toast). Liegt über Tab-, Timer- und Aktionsleiste (CSS: --tabs-h, --timer-h, --aktion-h, --fuss-h),
+   * bei offenem Blatt oben am Bildschirm – nie über Knöpfen: ist ein Blatt so hoch, dass es darunter reichen würde,
+   * rückt es für die Dauer der Meldung nach unten (meldungPlatz).
+   * opt: { knopf: 'Aktualisieren', aktion: () => …, dauer: ms }
+   */
+  function melden(text, link, linkText, opt) {
+    opt = opt || {};
     const el = document.getElementById('meldung');
-    el.innerHTML = esc(text) + (link ? ` <a href="${link}">${esc(linkText)}</a>` : '');
+    el.innerHTML = `<span class="m-text">${esc(text)}</span>` + (link ? `<a href="${link}">${esc(linkText)}</a>` : '') +
+      (opt.knopf ? `<button type="button">${esc(opt.knopf)}</button>` : '');
+    el.onclick = opt.aktion || null;
+    el.classList.toggle('mit-aktion', !!opt.aktion);
     el.classList.add('sichtbar');
+    meldungPlatz();
     clearTimeout(melden.t);
-    melden.t = setTimeout(() => el.classList.remove('sichtbar'), link ? 4000 : 2200);
+    melden.t = setTimeout(() => { el.classList.remove('sichtbar'); el.onclick = null; meldungPlatz(); }, opt.dauer || (link || opt.knopf ? 4000 : 2200));
+  }
+  function meldungPlatz() {
+    if (!blatt) return;
+    const el = document.getElementById('meldung'), h = blatt.hinter;
+    h.style.paddingTop = ''; blatt.el.style.maxHeight = '';
+    if (!el.classList.contains('sichtbar')) return;
+    const unten = el.offsetTop + el.offsetHeight + 8;     // ohne Einblend-Verschiebung
+    if (blatt.el.getBoundingClientRect().top >= unten) return;
+    h.style.paddingTop = unten + 'px';
+    if (getComputedStyle(h).display !== 'flex') blatt.el.style.maxHeight = Math.max(200, innerHeight - unten - 16) + 'px';   // PC: Dialog in der Mitte
   }
 
   // ---------------------------------------------------------------- Blatt (Dialog)
@@ -2676,6 +2845,7 @@
       if (e.target === hinter || e.target.closest('[data-blatt-zu]')) b.schliessen();
     });
     el.querySelector('h2').focus({ preventScroll: true });
+    requestAnimationFrame(meldungPlatz);
     return b;
   }
   function blattZu() {
@@ -2779,6 +2949,7 @@
     document.documentElement.style.setProperty('--timer-h', (t ? t + 8 : 0) + 'px');   // + Abstand der schwebenden Leiste
     document.documentElement.style.setProperty('--aktion-h', h('#app .r-aktion') + 'px');   // fester „Jetzt kochen“-Knopf (Rezept, Handy)
     document.documentElement.style.setProperty('--kopf-h', kopfHoehe() + 'px');   // kompakte Kopfleiste oben (Handy)
+    document.documentElement.style.setProperty('--fuss-h', h('#app .km-fuss') + 'px');   // Zurück/Weiter im Kochmodus
   }
   window.addEventListener('resize', abstaendeMessen);
   window.addEventListener('timerleiste', abstaendeMessen);
@@ -2793,7 +2964,60 @@
     portionen, kategorienFolge,
     favorit: istFavorit, bewertung: sterneVon, notiz: notizVon,
   };
+  // ---------------------------------------------------------------- Offline (Service Worker sw.js)
+  // Nur über https (GitHub Pages) oder localhost; unter file:// still übersprungen. sw.js holt Seiten und Skripte
+  // frisch aus dem Netz und nimmt nur ohne Netz die gespeicherte Kopie – Änderungen kommen also beim nächsten Öffnen an.
+  // Läuft die App schon länger (iPhone: im Hintergrund), sucht sie beim Zurückholen nach einer neuen Version und
+  // bietet dann „Aktualisieren“ an (Vergleich window.APP_VERSION aus rezepte/liste.js mit der Version von sw.js).
+  const offlineMoeglich = 'serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname));
+  let swVersion = null;
+  function swVersionFragen() {
+    const c = offlineMoeglich && navigator.serviceWorker.controller;
+    if (!c) return Promise.resolve(null);
+    return new Promise((fertig) => {
+      const k = new MessageChannel();
+      k.port1.onmessage = (e) => fertig(e.data);
+      c.postMessage('version', [k.port2]);
+      setTimeout(() => fertig(null), 3000);
+    });
+  }
+  function offlineText() {
+    if (!offlineMoeglich) return 'Offline-Speicher nur in der Web-App (https)';
+    if (!navigator.serviceWorker.controller) return 'Offline-Speicher wird eingerichtet …';
+    return (navigator.onLine === false ? 'Gerade offline – gespeicherte Rezepte verfügbar' : 'Offline verfügbar') + (swVersion ? ' · ' + swVersion.slice(0, 7) : '');
+  }
+  function swStarten() {
+    if (!offlineMoeglich) return;
+    let hatteSteuerung = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      const erstes = !hatteSteuerung;
+      hatteSteuerung = true;
+      swVersionFragen().then((v) => {
+        swVersion = v;
+        offlineZeigen();
+        if (erstes || !v || !window.APP_VERSION || v === window.APP_VERSION) return;
+        melden('Neue Version verfügbar', null, null, { knopf: 'Aktualisieren', aktion: () => { notizenJetzt(); location.reload(); }, dauer: 15000 });
+      });
+    });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+      const suchen = () => reg.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') suchen(); });
+      setInterval(suchen, 3600e3);
+    }).catch(() => { /* z. B. privater Modus */ });
+    swVersionFragen().then((v) => { swVersion = v; offlineZeigen(); });
+  }
+  function offlineZeigen() {
+    const el = document.querySelector('.mehr-offline');
+    if (el) { el.textContent = offlineText(); el.classList.toggle('aus', navigator.onLine === false); }
+  }
+  window.addEventListener('offline', () => { melden('Offline – gespeicherte Rezepte verfügbar'); offlineZeigen(); });
+  window.addEventListener('online', () => { melden('Wieder online'); offlineZeigen(); });
+  swStarten();
+
   // Browser bitten, die Daten dauerhaft zu behalten (nicht bei Speicherknappheit löschen)
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* egal */ }
-  laden().then(zeichnen);
+  laden().then(() => {
+    zeichnen();
+    if (navigator.onLine === false) melden('Offline – gespeicherte Rezepte verfügbar');
+  });
 })();

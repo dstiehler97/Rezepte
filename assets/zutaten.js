@@ -8,6 +8,8 @@
  *   ganz  = nur ganze Stück (z. B. Eier)
  *   nie   = nie auf die Einkaufsliste (Wasser)
  *   trocken = Menge immer als Trockengewicht in g (wie auf der Packung)
+ *   kauf  = natürliche Einkaufseinheit ('Stück' | 'Bund'): stehen auf der Einkaufsliste verschiedene Einheiten
+ *           (z. B. 1 Zucchini + 500 g Zucchini), wird darin zusammengezählt (aufgerundet, Gewicht aus naehrwerte.js)
  * Gefunden wird über den Namen: exakt, oder als Wortende (Meersalz -> salz).
  * In einem Rezept kann man alles überschreiben (einkauf, icon, vorrat, ganz, ernaehrung).
  * Ernährungsform (vegan/vegetarisch/fisch/fleisch) kommt aus der Tabelle TIERISCH weiter unten.
@@ -99,8 +101,8 @@
 
     // Kühlregal
     'butter':        { k: KU, icon: 'butter' },
-    'ei':            { k: KU, icon: 'ei', ganz: true },
-    'eier':          { k: KU, icon: 'ei', ganz: true },
+    'ei':            { k: KU, icon: 'ei', ganz: true, kauf: 'Stück' },
+    'eier':          { k: KU, icon: 'ei', ganz: true, kauf: 'Stück' },
     'milch':         { k: KU, icon: 'milch' },
     'sahne':         { k: KU, icon: 'milch' },
     'schmand':       { k: KU, icon: 'milch' },
@@ -108,8 +110,8 @@
     'quark':         { k: KU, icon: 'milch' },
     'käse':          { k: KU, icon: 'kaese' },
     'parmesan':      { k: KU, icon: 'kaese' },
-    'mozzarella':    { k: KU, icon: 'kaese' },
-    'burrata':       { k: KU, icon: 'kaese' },
+    'mozzarella':    { k: KU, icon: 'kaese', kauf: 'Stück' },
+    'burrata':       { k: KU, icon: 'kaese', kauf: 'Stück' },
     'gouda':         { k: KU, icon: 'kaese' },
     'feta':          { k: KU, icon: 'kaese' },
     'schafkäse':     { k: KU, icon: 'kaese' },
@@ -120,28 +122,28 @@
     'blätterteig':   { k: KU, icon: 'mehl' },
 
     // Obst & Gemüse
-    'zwiebel':       { k: OG, icon: 'zwiebel' },
-    'schalotte':     { k: OG, icon: 'zwiebel' },
+    'zwiebel':       { k: OG, icon: 'zwiebel', kauf: 'Stück' },
+    'schalotte':     { k: OG, icon: 'zwiebel', kauf: 'Stück' },
     'frühlingszwiebel': { k: OG, icon: 'kraeuter' },
     'knoblauch':     { k: OG, icon: 'knoblauch' },
     'knoblauchzehe': { k: OG, icon: 'knoblauch' },
     'tomate':        { k: OG, icon: 'tomate' },
     'kirschtomate':  { k: OG, icon: 'tomate' },
     'cherrytomate':  { k: OG, icon: 'tomate' },
-    'zitrone':       { k: OG, icon: 'zitrone' },
-    'limette':       { k: OG, icon: 'zitrone' },
+    'zitrone':       { k: OG, icon: 'zitrone', kauf: 'Stück' },
+    'limette':       { k: OG, icon: 'zitrone', kauf: 'Stück' },
     'chili':         { k: OG, icon: 'chili' },
     'chilischote':   { k: OG, icon: 'chili' },
     'karotte':       { k: OG, icon: 'karotte' },
     'möhre':         { k: OG, icon: 'karotte' },
     'kartoffel':     { k: OG, icon: 'kartoffel' },
     'süßkartoffel':  { k: OG, icon: 'kartoffel' },
-    'paprika':       { k: OG },
-    'paprikaschote': { k: OG },
+    'paprika':       { k: OG, kauf: 'Stück' },
+    'paprikaschote': { k: OG, kauf: 'Stück' },
     'staudensellerie': { k: OG },
     'sellerie':      { k: OG },
-    'zucchini':      { k: OG },
-    'aubergine':     { k: OG },
+    'zucchini':      { k: OG, kauf: 'Stück' },
+    'aubergine':     { k: OG, kauf: 'Stück' },
     'champignon':    { k: OG },
     'pfifferlinge':  { k: OG },
     'austernpilze':  { k: OG },
@@ -153,23 +155,23 @@
     'salat':         { k: OG, icon: 'kraeuter' },
     'salat-mix':     { k: OG, icon: 'kraeuter' },
     'rucola':        { k: OG, icon: 'kraeuter' },
-    'gurke':         { k: OG },
+    'gurke':         { k: OG, kauf: 'Stück' },
     'grüne bohnen':  { k: OG },
     'brechbohnen':   { k: OG },
-    'apfel':         { k: OG },
-    'banane':        { k: OG },
+    'apfel':         { k: OG, kauf: 'Stück' },
+    'banane':        { k: OG, kauf: 'Stück' },
     'ingwer':        { k: OG },
-    'avocado':       { k: OG },
-    'radieschen':    { k: OG },
+    'avocado':       { k: OG, kauf: 'Stück' },
+    'radieschen':    { k: OG, kauf: 'Bund' },
 
     // Kräuter (frisch)
-    'petersilie':    { k: KR, icon: 'kraeuter' },
+    'petersilie':    { k: KR, icon: 'kraeuter', kauf: 'Bund' },
     'basilikum':     { k: KR, icon: 'kraeuter' },
-    'schnittlauch':  { k: KR, icon: 'kraeuter' },
+    'schnittlauch':  { k: KR, icon: 'kraeuter', kauf: 'Bund' },
     'thymian':       { k: KR, icon: 'kraeuter' },
     'rosmarin':      { k: KR, icon: 'kraeuter' },
-    'koriander':     { k: KR, icon: 'kraeuter' },
-    'dill':          { k: KR, icon: 'kraeuter' },
+    'koriander':     { k: KR, icon: 'kraeuter', kauf: 'Bund' },
+    'dill':          { k: KR, icon: 'kraeuter', kauf: 'Bund' },
     'minze':         { k: KR, icon: 'kraeuter' },
     'salbei':        { k: KR, icon: 'kraeuter' },
 
@@ -390,8 +392,50 @@
       ganz: zutat.ganz !== undefined ? zutat.ganz : !!l.ganz,
       nie: zutat.nie !== undefined ? zutat.nie : !!l.nie,
       trocken: !!l.trocken,
+      kauf: l.kauf || null,
     };
   }
 
-  g.Zutaten = { suchform, passtSuche, KATEGORIEN, LEXIKON, info, normal, suchen, art, ernaehrung, ERNAEHRUNG };
+  /*
+   * Grundform (Einkaufsliste, Zuhause-Abgleich): gleiche Zutat = gleicher Schlüssel.
+   *   'Eier' → 'ei', 'Cherrytomaten' → 'cherrytomate', 'rote Zwiebeln' → 'rote zwiebel' (Zusätze bleiben: eigener Posten),
+   *   'Kirschtomaten' → 'cherrytomate' (GLEICH), 'Äpfel' → 'apfel' (Mehrzahl aus den Rezepten, formenLernen).
+   * Nur das letzte Wort kommt in die Einzahl – und nur, wenn das Lexikon diese Einzahl kennt
+   * (exakt oder als Wortende: Strauchtomaten → strauchtomate). Unbekanntes bleibt, wie es ist.
+   */
+  const GLEICH = { 'kirschtomate': 'cherrytomate', 'möhre': 'karotte', 'schlagsahne': 'sahne', 'paprikaschote': 'paprika' };
+  const MEHRZAHL = { 'eier': 'ei', 'äpfel': 'apfel' };   // Mehrzahl (normal) → Einzahl; ergänzt durch formenLernen
+  let einwort = null;
+  const bekannt = (w) => {
+    if (LEXIKON[w]) return true;
+    if (!einwort) einwort = Object.keys(LEXIKON).filter((k) => !k.includes(' '));
+    return einwort.some((k) => w.length > k.length + 2 && w.endsWith(k));
+  };
+  function einzahlWort(w) {
+    if (MEHRZAHL[w]) return MEHRZAHL[w];
+    for (const f of [w, w.replace(/n$/, ''), w.replace(/en$/, ''), w.replace(/s$/, '')]) if (f && bekannt(f)) return f;
+    return w;
+  }
+  const formCache = new Map();
+  /** → { schluessel, einzahl: true, wenn der Name selbst schon die Einzahl ist } */
+  function form(name) {
+    const n = normal(name);
+    if (formCache.has(n)) return formCache.get(n);
+    const w = n.split(' ');
+    const letztes = einzahlWort(w[w.length - 1] || '');
+    const ohneGleich = [...w.slice(0, -1), letztes].join(' ');
+    const f = { schluessel: [...w.slice(0, -1), GLEICH[letztes] || letztes].join(' '), einzahl: ohneGleich === n };
+    formCache.set(n, f);
+    return f;
+  }
+  const grundform = (name) => form(name).schluessel;
+  const istEinzahl = (name) => form(name).einzahl;
+  /** Mehrzahl aus einem Rezept merken (Apfel/Äpfel), damit beide dieselbe Grundform haben */
+  function formenLernen(name, mehrzahl) {
+    if (!mehrzahl) return;
+    const e = normal(name).split(' ').pop(), m = normal(mehrzahl).split(' ').pop();
+    if (e && m && e !== m && !MEHRZAHL[m]) { MEHRZAHL[m] = einzahlWort(e); formCache.clear(); }
+  }
+
+  g.Zutaten = { suchform, passtSuche, KATEGORIEN, LEXIKON, info, normal, suchen, art, ernaehrung, ERNAEHRUNG, grundform, istEinzahl, formenLernen };
 })(globalThis);
