@@ -129,6 +129,7 @@
       '<path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H20v-3"/><path d="M8 7h8"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
+    haus: '<path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
     minus: '<path d="M5 12h14"/>',
     suche: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
     zurueck: '<path d="M15 5l-7 7 7 7"/>',

@@ -56,6 +56,7 @@
     'brühe':         { k: GW, icon: 'gewuerz', vorrat: true },
     'senf':          { k: GW, icon: 'gewuerz' },
     'sojasauce':     { k: GW, icon: 'oel' },
+    'mirin':         { k: GW, icon: 'oel' },
     'chilisauce':    { k: GW, icon: 'chili' },
     'austernsauce':  { k: GW, icon: 'oel' },
     'gewürzmischung': { k: GW, icon: 'gewuerz', vorrat: true },
@@ -78,6 +79,8 @@
     'walnusskerne':  { k: BA, icon: 'nuss' },
     'rosinen':       { k: BA },
     'haselnusskerne': { k: BA, icon: 'nuss' },
+    'sesamsaat':     { k: BA, icon: 'nuss' },
+    'sesam':         { k: BA, icon: 'nuss' },
 
     // Kühlregal
     'butter':        { k: KU, icon: 'butter' },
@@ -178,6 +181,8 @@
     'reisnudeln':    { k: NR, icon: 'nudeln', trocken: true },
     'basmatireis':   { k: NR, icon: 'reis', trocken: true },
     'jasminreis':    { k: NR, icon: 'reis', trocken: true },
+    'sushireis':     { k: NR, icon: 'reis', trocken: true },
+    'sojagranulat':  { k: NR, trocken: true },
 
     // Konserven
     'tomatenmark':       { k: KO, icon: 'tomate' },

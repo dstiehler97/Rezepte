@@ -111,6 +111,14 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
 .m-fettreich { background: #fbeee6; border-color: #efd2c2; color: #93492a; }
 .m-schnell { background: #f1ecf7; border-color: #ddd1ec; color: #5e4787; }
 .rezept > .merkmale { margin: -1rem 0 1.5rem; }
+.fehlt { color: var(--akzent); font-weight: 600; }
+.zutat.da .z-name::after { content: ' · zuhause'; color: #4a6f43; font-size: .78rem; font-weight: 600; }
+.ek-gruppe.zuhause h2 { border-color: #c8e1c3; color: #4a6f43; }
+.ek-gruppe.zuhause .ek-name, .ek-gruppe.zuhause .ek-menge { color: var(--leise); }
+.haus-an { color: #4a6f43; }
+.zh-posten { grid-template-columns: 1.3rem minmax(0, 1fr) auto !important; cursor: default; }
+.zh-schnell { margin-bottom: 1.25rem; }
+.zh-schnell .chips { flex-wrap: wrap !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
 .chip {
   padding: .3rem .8rem; border-radius: 999px; border: 1px solid var(--linie);
   background: var(--flaeche); color: var(--text); text-decoration: none; font-size: .9rem;
@@ -245,7 +253,7 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
 .tabs { display: none; }
 .ek-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .35rem .2rem .7rem; margin: 0 .35rem .35rem 0;
   border: 1px solid var(--linie); border-radius: 999px; background: var(--flaeche); color: var(--text); font-size: .9rem; }
-.ek-chip .klein { font-size: .8rem; }
+.ek-chip .klein { font-size: .8rem; white-space: nowrap; }
 .ek-chip button { border: 0; background: var(--papier); color: var(--leise); width: 1.6rem; height: 1.6rem; border-radius: 50%;
   font-size: 1.1rem; line-height: 1; cursor: pointer; }
 .ek-chip > .klein:last-child { padding-right: .35rem; }
@@ -374,6 +382,7 @@ body.druck .nw-name { font-size: 6.5pt; }
 body.druck .nw-titel span, body.druck .nw-ges { font-size: 7.5pt; }
 body.druck .nw-wert.kcal strong { color: #000; }
 body.druck .rezept > .merkmale { margin: -3mm 0 5mm; }
+body.druck .zutat.da .z-name::after { content: none; }
 body.druck .merkmal { background: none; border-color: #999; color: #000; font-size: 7.5pt; padding: .3mm 2mm; }
 body.druck .r-tipps { background: none; border: 1pt solid #bbb; padding: 2.5mm 3mm; margin-top: 5mm; font-size: 9.5pt; }
 body.druck .r-tipps ul { padding-left: 4mm; }

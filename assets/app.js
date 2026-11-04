@@ -26,7 +26,9 @@
   let abgehakt = speicher.lesen('abgehakt', {});   // {schluessel: true}
   let extras = speicher.lesen('extras', []);       // [{uid, text}]
   let liste = speicher.lesen('liste', []);         // Rezepte direkt auf der Einkaufsliste [{uid, id, personen}]
+  let zuhause = speicher.lesen('zuhause', []);     // Was man da hat [{uid, name}]
   const sichern = () => {
+    speicher.schreiben('zuhause', zuhause);
     speicher.schreiben('liste', liste);
     speicher.schreiben('plan', plan);
     speicher.schreiben('abgehakt', abgehakt);
@@ -64,6 +66,20 @@
     const plural = f.wert > 1 && !f.einheit && z.mehrzahl;
     return { menge, name: plural ? z.mehrzahl : z.name, info };
   }
+
+  /** Ist eine Zutat zuhause? "Olivenöl" passt zu "Olivenöl", "Meersalz" zu "Salz", "Zwiebeln" zu "Zwiebel". */
+  function formen(w) { return [w, w.replace(/n$/, ''), w.replace(/en$/, ''), w.replace(/s$/, ''), w.replace(/e$/, ''), w.replace(/er$/, '')]; }
+  function passt(zutatName, vorratName) {
+    const z = Zutaten.normal(zutatName), v = Zutaten.normal(vorratName);
+    if (!v) return false;
+    if (z === v) return true;
+    if (v.includes(' ')) return z.includes(v);
+    const vf = formen(v);
+    // Wortende nur bei Grundvorrat (Salz -> Meersalz, Öl -> Olivenöl), nicht Zwiebel -> Frühlingszwiebel
+    const grund = Zutaten.info({ name: vorratName }).vorrat;
+    return z.split(' ').some((w) => formen(w).some((f) => vf.includes(f) || (grund && f.length > v.length + 2 && vf.some((x) => f.endsWith(x)))));
+  }
+  const istZuhause = (name) => zuhause.find((x) => passt(name, x.name));
 
   // ---------------------------------------------------------------- Laden
   window.Rezept = function (r) { rezepte.push(r); };
@@ -104,6 +120,7 @@
       seiteRezept(r, begrenzen(q.get('p') || r.personen || STANDARD_PERSONEN));
     } else if (teile[0] === 'plan') seitePlan();
     else if (teile[0] === 'einkauf') seiteEinkauf();
+    else if (teile[0] === 'zuhause') seiteZuhause();
     else if (teile[0] === 'kochbuch') seiteKochbuch(q);
     else seiteUebersicht(q);
     window.scrollTo(0, 0);
@@ -114,6 +131,7 @@
   function zaehlerAktualisieren() {
     document.querySelectorAll('[data-zahl="plan"]').forEach((el) => { el.textContent = plan.length || ''; });
     document.querySelectorAll('[data-zahl="einkauf"]').forEach((el) => { el.textContent = fuerEinkauf().length + extras.length || ''; });
+    document.querySelectorAll('[data-zahl="zuhause"]').forEach((el) => { el.textContent = zuhause.length || ''; });
   }
 
   // ---------------------------------------------------------------- Übersicht
@@ -126,7 +144,10 @@
     ['eiweiss', 'Meistes Eiweiß', (a, b) => nwp(b).eiweiss - nwp(a).eiweiss],
     ['fett', 'Wenigstes Fett', (a, b) => nwp(a).fett - nwp(b).fett],
     ['kh', 'Wenigste Kohlenhydrate', (a, b) => nwp(a).kh - nwp(b).kh],
+    ['zuhause', 'Am meisten zuhause', (a, b) => fehlend(a) - fehlend(b) || a.titel.localeCompare(b.titel, 'de')],
   ];
+  /** Anzahl Zutaten mit Menge, die nicht zuhause sind (Salz & Co. nach Geschmack zählen nicht) */
+  const fehlend = (r) => nurZutaten(r).filter((z) => z.menge != null && !z.optional && !Zutaten.info(z).nie && !istZuhause(z.name)).length;
   const nwCache = new Map();
   const nwp = (r) => { if (!nwCache.has(r)) nwCache.set(r, Naehrwerte.berechnen(r).portion); return nwCache.get(r); };
   const istVegetarisch = (r) => (r.tags || []).some((t) => /^vegetarisch$|^vegan$/i.test(t));
@@ -260,6 +281,7 @@
           ${z ? `<span>${svg('uhr')} ${dauer(z)}</span>` : ''}
           <span>${svg('muetze')} ${esc(r.schwierigkeit || '')}</span>
           <span>${nwZahl(nwp(r).kcal, 'kcal')}</span>
+          ${zuhause.length ? `<span class="fehlt">${fehlend(r) ? 'fehlt: ' + fehlend(r) : 'alles da'}</span>` : ''}
         </span>
         ${merkmalHTML(r)}
       </a>`;
@@ -278,7 +300,7 @@
     const zutaten = (r.zutaten || []).map((z) => {
       if (z.abschnitt) return `<li class="abschnitt">${esc(z.abschnitt)}</li>`;
       const t = zutatText(z, faktor);
-      return `<li class="zutat${z.optional ? ' optional' : ''}">
+      return `<li class="zutat${z.optional ? ' optional' : ''}${interaktiv && istZuhause(z.name) ? ' da' : ''}">
           <span class="z-icon">${t.info.icon ? svg(t.info.icon) : ''}</span>
           <span class="z-menge">${esc(t.menge)}</span>
           <span class="z-name">${esc(t.name)}${z.optional ? ' <em>(optional)</em>' : ''}${z.hinweis || t.info.trocken ? `<small>${esc([t.info.trocken ? 'Trockengewicht' : '', z.hinweis].filter(Boolean).join(', '))}</small>` : ''}${!t.menge && z.menge == null ? '<small>nach Geschmack</small>' : ''}</span>
@@ -528,7 +550,15 @@
     if (eigene.length) gruppen.push({ titel: 'Eigene Einträge', liste: eigene });
     const vorrat = posten.filter((p) => p.vorrat).sort((a, b) => a.anzeigeName.localeCompare(b.anzeigeName, 'de'));
     if (vorrat.length) gruppen.push({ titel: 'Vorrat prüfen', liste: vorrat, vorrat: true });
-    return gruppen;
+    // Was zuhause ist, aus allen Gruppen in "Schon zuhause" verschieben
+    const da = [];
+    for (const g of gruppen) {
+      if (g.titel === 'Eigene Einträge') continue;
+      g.liste = g.liste.filter((p) => (istZuhause(p.name) ? (da.push(p), false) : true));
+    }
+    const ergebnis = gruppen.filter((g) => g.liste.length);
+    if (da.length) ergebnis.push({ titel: 'Schon zuhause', liste: da.sort((a, b) => a.anzeigeName.localeCompare(b.anzeigeName, 'de')), zuhause: true });
+    return ergebnis;
   }
 
   function alsText(gruppen, markdown) {
@@ -537,7 +567,7 @@
     const box = markdown ? '- [ ] ' : '☐ ';
     let t = (markdown ? '# ' : '') + 'Einkaufsliste – ' + datum + '\n';
     if (fuer) t += (markdown ? '\n_Für: ' + fuer + '_\n' : 'Für: ' + fuer + '\n');
-    for (const g of gruppen) {
+    for (const g of gruppen.filter((x) => !x.zuhause)) {
       t += '\n' + (markdown ? '## ' + g.titel : g.titel.toUpperCase()) + '\n';
       for (const p of g.liste) {
         if (abgehakt[p.schluessel]) continue;
@@ -552,7 +582,7 @@
     const gruppen = einkaufsliste();
     const quellen = fuerEinkauf();
     const leer = !quellen.length && !extras.length;
-    const offen = gruppen.reduce((n, g) => n + g.liste.filter((p) => !abgehakt[p.schluessel]).length, 0);
+    const offen = gruppen.filter((g) => !g.zuhause).reduce((n, g) => n + g.liste.filter((p) => !abgehakt[p.schluessel]).length, 0);
 
     app.innerHTML = `
       <div class="werkzeuge">
@@ -576,9 +606,10 @@
       </form>
       <div class="ek-gruppen">
         ${gruppen.map((g) => `
-          <section class="ek-gruppe${g.vorrat ? ' vorrat' : ''}">
+          <section class="ek-gruppe${g.vorrat ? ' vorrat' : ''}${g.zuhause ? ' zuhause nur-bildschirm' : ''}">
             <h2>${esc(g.titel)}</h2>
-            ${g.vorrat ? '<p class="klein">Meist im Haus – kurz nachsehen.</p>' : ''}
+            ${g.vorrat ? '<p class="klein">Meist im Haus – kurz nachsehen. Mit ' + svg('haus') + ' als „zuhause“ merken.</p>' : ''}
+            ${g.zuhause ? '<p class="klein">Laut deiner <a href="#/zuhause">Zuhause-Liste</a> da – wird nicht exportiert.</p>' : ''}
             <ul>
               ${g.liste.map((p) => `
                 <li class="ek-posten${abgehakt[p.schluessel] ? ' erledigt' : ''}" data-k="${esc(p.schluessel)}" title="${esc([...p.rezepte].join(', '))}">
@@ -586,7 +617,9 @@
                   <span class="ek-icon">${p.icon ? svg(p.icon) : ''}</span>
                   <span class="ek-menge">${esc(p.menge)}</span>
                   <span class="ek-name">${esc(p.anzeigeName)}${p.optional ? ' <em>(optional)</em>' : ''}</span>
-                  ${p.extra ? `<button type="button" class="knopf leise icon-knopf nur-bildschirm" data-extra="${p.uid}" aria-label="Entfernen">${svg('muell')}</button>` : ''}
+                  ${p.extra ? `<button type="button" class="knopf leise icon-knopf nur-bildschirm" data-extra="${p.uid}" aria-label="Entfernen">${svg('muell')}</button>`
+                    : g.zuhause ? `<button type="button" class="knopf leise icon-knopf nur-bildschirm haus-an" data-nicht-da="${esc(p.name)}" aria-label="Doch nicht zuhause" title="Doch nicht zuhause">${svg('haus')}</button>`
+                    : `<button type="button" class="knopf leise icon-knopf nur-bildschirm" data-da="${esc(p.name)}" aria-label="Hab ich zuhause" title="Hab ich zuhause">${svg('haus')}</button>`}
                 </li>`).join('')}
             </ul>
           </section>`).join('')}
@@ -594,11 +627,17 @@
       ${leer ? '' : `<p class="nur-bildschirm klein">${offen} offen · Antippen zum Abhaken · <a href="#" id="ek-zuruecksetzen">Haken zurücksetzen</a>${liste.length || extras.length ? ' · <a href="#" id="ek-leeren">Liste leeren</a>' : ''}</p>`}`;
 
     app.querySelectorAll('.ek-posten').forEach((li) => li.addEventListener('click', (ev) => {
-      if (ev.target.closest('[data-extra]')) return;
+      if (ev.target.closest('[data-extra], [data-da], [data-nicht-da]')) return;
       const k = li.dataset.k;
       if (abgehakt[k]) delete abgehakt[k]; else abgehakt[k] = true;
       sichern();
       li.classList.toggle('erledigt');
+    }));
+    app.querySelectorAll('[data-da]').forEach((b) => b.addEventListener('click', () => {
+      zuhause.push({ uid: uid(), name: b.dataset.da }); sichern(); zeichnen(); melden(b.dataset.da + ' als zuhause gemerkt');
+    }));
+    app.querySelectorAll('[data-nicht-da]').forEach((b) => b.addEventListener('click', () => {
+      zuhause = zuhause.filter((x) => !passt(b.dataset.nichtDa, x.name)); sichern(); zeichnen();
     }));
     app.querySelectorAll('[data-weg-liste]').forEach((b) => b.addEventListener('click', () => {
       liste = liste.filter((x) => x.uid !== b.dataset.wegListe); sichern(); zeichnen();
@@ -621,6 +660,63 @@
     an('ek-txt', () => herunterladen('einkaufsliste.txt', alsText(einkaufsliste(), false), 'text/plain'));
     an('ek-md', () => herunterladen('einkaufsliste.md', alsText(einkaufsliste(), true), 'text/markdown'));
     an('ek-teilen', () => navigator.share({ title: 'Einkaufsliste', text: alsText(einkaufsliste(), false) }).catch(() => {}));
+  }
+
+  // ---------------------------------------------------------------- Zuhause
+  const GRUNDVORRAT = ['Salz', 'Pfeffer', 'Olivenöl', 'Pflanzenöl', 'Zucker', 'Mehl', 'Butter', 'Eier', 'Milch', 'Zwiebeln',
+    'Knoblauch', 'Gemüsebrühe', 'Sojasauce', 'Reis', 'Spaghetti', 'Currypulver', 'Paprikapulver', 'Tomatenmark'];
+  function seiteZuhause() {
+    document.title = 'Zuhause – Rezepte';
+    const alleZutaten = [...new Set(rezepte.flatMap((r) => nurZutaten(r).map((z) => z.name)))].sort((x, y) => x.localeCompare(y, 'de'));
+    const vorschlaege = GRUNDVORRAT.filter((n) => !istZuhause(n));
+    const gruppen = new Map();
+    for (const x of [...zuhause].sort((a, b) => a.name.localeCompare(b.name, 'de'))) {
+      const k = Zutaten.info({ name: x.name }).kategorie;
+      if (!gruppen.has(k)) gruppen.set(k, []);
+      gruppen.get(k).push(x);
+    }
+    const reihenfolge = [...gruppen.keys()].sort((a, b) => Zutaten.KATEGORIEN.indexOf(a) - Zutaten.KATEGORIEN.indexOf(b));
+
+    app.innerHTML = `
+      <div class="werkzeuge">
+        <h1>Zuhause</h1>
+        <span class="abstand"></span>
+        ${zuhause.length ? `<button class="knopf leise nur-bildschirm" id="zh-leeren">${svg('muell')} Leeren</button>` : ''}
+      </div>
+      <p class="hinweis">Was du da hast, landet auf der Einkaufsliste unter „Schon zuhause“ statt auf dem Zettel.
+        In der Rezeptübersicht kannst du nach <a href="#/?o=zuhause">„Am meisten zuhause“</a> sortieren.</p>
+      <form class="ek-neu nur-bildschirm" id="zh-neu">
+        <input id="zh-text" list="zh-vorschlag" placeholder="z. B. Basmatireis" autocomplete="off">
+        <datalist id="zh-vorschlag">${alleZutaten.map((n) => `<option value="${esc(n)}">`).join('')}</datalist>
+        <button class="knopf" type="submit">${svg('plus')} Hinzufügen</button>
+      </form>
+      ${vorschlaege.length ? `<div class="feld zh-schnell nur-bildschirm"><span>Schnell hinzufügen</span>
+        <div class="chips">${vorschlaege.map((n) => `<button type="button" class="chip" data-neu="${esc(n)}">+ ${esc(n)}</button>`).join('')}</div></div>` : ''}
+      ${zuhause.length ? `<div class="ek-gruppen">${reihenfolge.map((k) => `
+        <section class="ek-gruppe">
+          <h2>${esc(k)}</h2>
+          <ul>${gruppen.get(k).map((x) => {
+            const icon = Zutaten.info({ name: x.name }).icon;
+            return `<li class="ek-posten zh-posten">
+              <span class="ek-icon">${icon ? svg(icon) : ''}</span>
+              <span class="ek-name">${esc(x.name)}</span>
+              <button type="button" class="knopf leise icon-knopf" data-weg-zh="${x.uid}" aria-label="Entfernen">${svg('muell')}</button>
+            </li>`; }).join('')}</ul>
+        </section>`).join('')}</div>` : '<p class="leer">Noch nichts eingetragen.</p>'}`;
+
+    const hinzu = (name) => {
+      name = name.trim();
+      if (!name || zuhause.some((x) => Zutaten.normal(x.name) === Zutaten.normal(name))) return;
+      zuhause.push({ uid: uid(), name }); sichern(); zeichnen();
+      const f = document.getElementById('zh-text'); if (f) f.focus();
+    };
+    document.getElementById('zh-neu').addEventListener('submit', (e) => { e.preventDefault(); hinzu(document.getElementById('zh-text').value); });
+    app.querySelectorAll('[data-neu]').forEach((b) => b.addEventListener('click', () => hinzu(b.dataset.neu)));
+    app.querySelectorAll('[data-weg-zh]').forEach((b) => b.addEventListener('click', () => {
+      zuhause = zuhause.filter((x) => x.uid !== b.dataset.wegZh); sichern(); zeichnen();
+    }));
+    const leeren = document.getElementById('zh-leeren');
+    if (leeren) leeren.addEventListener('click', () => { if (confirm('Zuhause-Liste leeren?')) { zuhause = []; sichern(); zeichnen(); } });
   }
 
   function kopieren(text) {
@@ -698,9 +794,11 @@
   // ---------------------------------------------------------------- Start
   window.addEventListener('hashchange', zeichnen);
   window.addEventListener('storage', () => {
-    plan = speicher.lesen('plan', []); abgehakt = speicher.lesen('abgehakt', {}); extras = speicher.lesen('extras', []); liste = speicher.lesen('liste', []);
+    plan = speicher.lesen('plan', []); abgehakt = speicher.lesen('abgehakt', {}); extras = speicher.lesen('extras', []); liste = speicher.lesen('liste', []); zuhause = speicher.lesen('zuhause', []);
     zeichnen();
   });
   document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = svg(el.dataset.icon); });
+  // Browser bitten, die Daten dauerhaft zu behalten (nicht bei Speicherknappheit löschen)
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* egal */ }
   laden().then(zeichnen);
 })();
