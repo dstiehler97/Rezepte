@@ -56,9 +56,9 @@
 :root[data-theme="dark"] body:not(.druck) .m-ballast { background: #322c1d; border-color: #554a2c; color: #dccb92; }
 :root[data-theme="dark"] body:not(.druck) .m-fettreich { background: #3a2619; border-color: #5d3c27; color: #f2bb98; }
 :root[data-theme="dark"] body:not(.druck) .m-schnell { background: #2b2438; border-color: #463a5c; color: #cdb9f0; }
-:root[data-theme="dark"] .ern-chips .e-vegan::before { background: #5fb553; }
-:root[data-theme="dark"] .ern-chips .e-fisch::before { background: #5c9bd6; }
-:root[data-theme="dark"] .ern-chips .e-fleisch::before { background: #d0698a; }
+:root[data-theme="dark"] .chip.e-vegan::before { background: #5fb553; }
+:root[data-theme="dark"] .chip.e-fisch::before { background: #5c9bd6; }
+:root[data-theme="dark"] .chip.e-fleisch::before { background: #d0698a; }
 * { box-sizing: border-box; }
 html {
   -webkit-text-size-adjust: 100%;
@@ -164,25 +164,15 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
 .filter-knopf { border-radius: 999px; position: relative; }
 .filter-knopf.an { border-color: var(--text); }
 .filter-knopf .zahl:not(:empty) { margin-left: .1rem; }
-.filter-feld { display: grid; gap: .9rem; padding: 1rem; background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); max-width: 720px; }
-.filter-feld[hidden] { display: none; }
 .feld { display: grid; gap: .35rem; }
 .feld > span { font-size: .75rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--leise); }
 .feld input, .feld select { width: 100%; }
 .merkmal-chips .chip.aktiv { background: var(--akzent); border-color: var(--akzent); color: var(--auf-akzent); }
-#filter-weg { justify-self: start; padding-left: 0; }
-.treffer { margin: 0; min-height: 1em; }
-.sortier-zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; margin: -.5rem 0 .9rem; }
-.sortieren { display: flex; align-items: center; gap: .4rem; min-width: 0; margin-left: auto; }
-.sortieren select { min-width: 0; padding: .4rem .6rem; }
-.richtung { padding: .4rem .7rem; white-space: nowrap; font-size: .9rem; }
-.richtung[hidden] { display: none; }
-.ern-chips .chip::before { content: ''; display: inline-block; width: .55em; height: .55em; margin-right: .4em; border-radius: 50%; background: var(--leise); vertical-align: .05em; }
-.ern-chips .chip[data-e=""]::before { display: none; }
-.ern-chips .e-vegan::before { background: #3d8a34; }
-.ern-chips .e-vegetarisch::before { background: #8fbf6a; }
-.ern-chips .e-fisch::before { background: #3a78b5; }
-.ern-chips .e-fleisch::before { background: #a8435f; }
+.chip[data-e]::before { content: ''; display: inline-block; width: .55em; height: .55em; margin-right: .4em; border-radius: 50%; background: var(--leise); vertical-align: .05em; }
+.chip.e-vegan::before { background: #3d8a34; }
+.chip.e-vegetarisch::before { background: #8fbf6a; }
+.chip.e-fisch::before { background: #3a78b5; }
+.chip.e-fleisch::before { background: #a8435f; }
 .merkmale { display: flex; flex-wrap: wrap; gap: .3rem; }
 .karte .merkmale { margin-top: .15rem; }
 .merkmal { font-size: .72rem; font-weight: 600; padding: .12rem .5rem; border-radius: 999px; background: var(--papier); color: var(--leise); border: 1px solid var(--linie); white-space: nowrap; }
@@ -407,8 +397,6 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
   .rezept > .merkmale { margin-top: -.75rem; }
   .chips { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 0 16px .2rem; scrollbar-width: none; }
   .chip { white-space: nowrap; padding: .45rem .95rem; }
-  .sortier-zeile { margin-top: -.25rem; }
-  .sortieren select, .richtung { min-height: 2.5rem; }
 
   /* Wochenplan */
   .plan-neu select { width: 100%; min-width: 0; min-height: 2.75rem; }
@@ -422,15 +410,6 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
   .ek-neu input { min-height: 2.75rem; }
   .ek-posten { grid-template-columns: 1.5rem 1.3rem 5rem minmax(0, 1fr) auto; padding: .7rem 0; }
   .ek-posten .box { width: 1.35rem; height: 1.35rem; border-radius: 4px; }
-}
-@media screen and (max-width: 720px) {
-  .chips.ern-chips { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; gap: .35rem; }
-  .ern-chips .chip { padding: .3rem .8rem; font-size: .85rem; }
-  .sortieren { flex: 1 1 100%; }
-  .sortieren select { flex: 1; }
-}
-@media screen and (max-width: 400px) {
-  .sortieren label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 }
 
 
@@ -776,10 +755,7 @@ body.blatt-an { overflow: hidden; }
 .karte-fav .icon { width: 1.05rem; height: 1.05rem; }
 .karte-sterne { color: var(--leise); white-space: nowrap; }
 .karte-sterne:not(.sortwert)::first-letter { color: var(--stern); }
-.ern-chips .fav-chip::before { display: none; }
-.ern-chips .fav-chip { margin-left: .5rem; display: inline-flex; align-items: center; gap: .3rem; }
-.fav-chip { position: relative; }
-.fav-chip::after { content: ''; position: absolute; inset: -6px -3px; }   /* größere Tippfläche, gleiche Optik wie die Nachbar-Chips */
+.fav-chip { display: inline-flex; align-items: center; gap: .3rem; }
 .fav-chip .icon { width: 1em; height: 1em; color: var(--akzent); }
 .fav-chip.aktiv { background: var(--akzent); border-color: var(--akzent); color: var(--auf-akzent); }
 .fav-chip.aktiv .icon { color: inherit; fill: currentColor; }
@@ -828,7 +804,6 @@ body.blatt-an { overflow: hidden; }
 
 @media screen and (max-width: 720px) {
   .such-zeile .wuerfel-knopf { width: 2.75rem; height: 2.75rem; }
-  .ern-chips .fav-chip { margin-left: 0; }
   .r-kopf:not(:has(.r-bild)) .fav-knopf { margin-top: -.6rem; }
 }
 

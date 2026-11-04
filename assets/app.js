@@ -259,24 +259,34 @@
   }
 
   // Bereiche = Tabs. Jeder Tab merkt sich seine letzte Adresse (wie in Handy-Apps):
-  // Übersicht → Rezept → Kochmodus → Einkauf → Tab „Rezepte“ führt zurück zum Kochmodus.
-  // Tippen auf den schon aktiven Tab führt zu dessen Startseite.
-  const BEREICH = { '': 'rezepte', rezept: 'rezepte', kochen: 'rezepte', plan: 'plan', einkauf: 'einkauf', zuhause: 'zuhause', mehr: 'mehr', kochbuch: 'mehr' };
+  // Heute → Liste → Rezept → Kochmodus → Einkauf → Tab „Rezepte“ führt zurück zum Kochmodus.
+  // Tippen auf den schon aktiven Tab führt zu dessen Startseite („Heute“).
+  // Routen: #/ = Heute, #/rezepte?… = Liste mit Filtern (alte Links #/?s=… führen ebenfalls zur Liste)
+  const BEREICH = { '': 'rezepte', rezepte: 'rezepte', rezept: 'rezepte', kochen: 'rezepte', plan: 'plan', einkauf: 'einkauf', zuhause: 'zuhause', mehr: 'mehr', kochbuch: 'mehr' };
   const START = { rezepte: '#/', plan: '#/plan', einkauf: '#/einkauf', zuhause: '#/zuhause', mehr: '#/mehr' };
+  const LISTEN_PARAMETER = ['s', 'k', 'e', 'z', 'm', 'fav', 'o', 'd'];
   const tabStand = {};          // Bereich -> letzte Adresse
-  let letzteUebersicht = '#/';  // mit Filtern, für „Alle Rezepte“
+  let letzteUebersicht = '#/';  // Heute oder Liste mit Filtern, für den Zurück-Knopf im Rezept
+  let angezeigt = null;         // Adresse der angezeigten Seite (doppeltes Zeichnen bei popstate + hashchange vermeiden)
   const bereichVon = (seite) => BEREICH[seite || ''] || 'rezepte';
 
   /** Adresse ändern ohne neu zu zeichnen (Filter, Personen, Kochschritt) */
   function adresseSetzen(hash) {
     history.replaceState(null, '', hash);
+    angezeigt = location.hash;
     navAktualisieren();
+  }
+  /** Neue Seite öffnen und sofort zeichnen (im selben Tipp, z. B. damit iOS danach die Tastatur öffnet) */
+  function sofortOeffnen(hash) {
+    history.pushState(null, '', hash);
+    obenStarten = true;
+    zeichnen();
   }
   function navAktualisieren() {
     const seite = route().teile[0] || '';
     const b = bereichVon(seite);
     tabStand[b] = location.hash || '#/';
-    if (!seite) letzteUebersicht = location.hash || '#/';
+    if (!seite || seite === 'rezepte') letzteUebersicht = location.hash || '#/';
     document.querySelectorAll('[data-bereich]').forEach((a) => {
       const x = a.dataset.bereich;
       a.classList.toggle('aktiv', x === b);
@@ -319,6 +329,7 @@
 
     if (teile[0] === 'rezept' && nachId[teile[1]]) {
       const r = nachId[teile[1]];
+      if (obenStarten || reiterStand.id !== r.id) Object.assign(reiterStand, { id: r.id, reiter: 'zutaten' });   // neuer Besuch: Zutaten
       seiteRezept(r, begrenzen(q.get('p') || r.personen || STANDARD_PERSONEN), q.has('p'));
     } else if (teile[0] === 'kochen' && nachId[teile[1]]) seiteKochen(nachId[teile[1]], q);
     else if (teile[0] === 'plan') seitePlan();
@@ -326,11 +337,14 @@
     else if (teile[0] === 'zuhause') seiteZuhause();
     else if (teile[0] === 'kochbuch') seiteKochbuch(q);
     else if (teile[0] === 'mehr') seiteMehr();
-    else { document.body.dataset.seite = 'start'; seiteUebersicht(q); }
+    else if (teile[0] === 'rezepte' || (!teile[0] && LISTEN_PARAMETER.some((k) => q.has(k)))) { document.body.dataset.seite = 'rezepte'; seiteUebersicht(q); }
+    else { document.body.dataset.seite = 'start'; seiteHeute(); }
+    angezeigt = location.hash;
     gezeichnet = pfadVon(location.hash);
     window.scrollTo(0, obenStarten ? 0 : scrollStand[gezeichnet] || 0);
     obenStarten = false;
     Timer.markieren();
+    abstaendeMessen();
     if (nachDemZeichnen) { const f = nachDemZeichnen; nachDemZeichnen = null; f(); }
   }
   let nachDemZeichnen = null;   // einmalig nach dem nächsten Zeichnen (z. B. Dialog nach Seitenwechsel)
@@ -436,120 +450,333 @@
     }).sort(vergleich(f.o, f.d));
   }
 
-  function seiteUebersicht(q) {
-    document.title = 'Rezepte';
+  /** Filter aus der Adresse lesen (auch alte Links: #/?…, m=veggie) */
+  function filterAusAdresse(q) {
     const m = (q.get('m') || '').split(',').filter(Boolean);
     const f = { s: q.get('s') || '', k: q.get('k') || '', z: q.get('z') || '',
       e: q.get('e') || (m.includes('veggie') ? 'vegetarisch' : ''),   // alte Links: m=veggie
-      m: m.filter((x) => x !== 'veggie'), o: sortierung(q.get('o'))[0], d: q.get('d') || '', fav: q.get('fav') === '1' };
+      m: m.filter((x) => x !== 'veggie' && FILTER_MERKMALE.some((y) => y.id === x)), o: sortierung(q.get('o'))[0], d: q.get('d') || '', fav: q.get('fav') === '1' };
     if (!ERNAEHRUNG.some((x) => x.id === f.e)) f.e = '';
     if (!['auf', 'ab'].includes(f.d)) f.d = sortierung(f.o)[3];
+    return f;
+  }
+  /** Teilbare Adresse der Liste: #/rezepte?k=Suppe&o=zeit … */
+  function listenAdresse(f) {
+    const p = new URLSearchParams();
+    if (f.s) p.set('s', f.s);
+    if (f.k) p.set('k', f.k);
+    if (f.e) p.set('e', f.e);
+    if (f.z) p.set('z', f.z);
+    if (f.m.length) p.set('m', f.m.join(','));
+    if (f.fav) p.set('fav', '1');
+    if (f.o !== 'name') p.set('o', f.o);
+    if (f.d !== sortierung(f.o)[3]) p.set('d', f.d);
+    return '#/rezepte' + (p.toString() ? '?' + p.toString() : '');
+  }
+  /** „Name A–Z“, „Zeit · schnell zuerst“, „Am meisten zuhause“ */
+  function sortText(f) {
+    const s = sortierung(f.o);
+    if (!s[4]) return s[1];
+    const r = f.d === 'ab' ? s[5] : s[4];
+    return s[0] === 'name' ? s[1] + ' ' + r : s[1] + ' · ' + r;
+  }
+  /** Anzahl Filter im Blatt (Eigenschaften, Zutaten) – Zahl am Filter-Knopf */
+  const blattFilterZahl = (f) => f.m.length + (f.z ? 1 : 0);
+
+  // Liste: Suche + eine wischbare Chip-Reihe (Favoriten | Ernährung | Kategorie, aktive vorne);
+  // Sortierung, Eigenschaften und Zutaten im Blatt „Sortieren & filtern“.
+  function seiteUebersicht(q) {
+    document.title = 'Alle Rezepte – Rezepte';
+    const f = filterAusAdresse(q);
     const kategorien = [...new Set(rezepte.map((r) => r.kategorie).filter(Boolean))].sort();
-    const offen = !!(f.z || f.m.length);
-    const option = ([id, name]) => `<option value="${id}"${id === f.o ? ' selected' : ''}>${name}</option>`;
+    let fb = null;               // offenes Filter-Blatt
 
     app.innerHTML = `
-      <section class="kopf-seite nur-bildschirm">
-        <h1>Rezepte</h1>
+      <section class="kopf-seite liste-kopf nur-bildschirm">
+        <h1>Alle Rezepte</h1>
         <div class="filter">
           <div class="such-zeile">
             <label class="suchfeld">${svg('suche')}
-              <input id="suche" type="search" placeholder="Suchen: Titel, Zutat, Tag …" value="${esc(f.s)}" autocomplete="off">
+              <input id="suche" type="search" placeholder="Suchen: Titel, Zutat, Tag …" value="${esc(f.s)}" autocomplete="off" enterkeyhint="search" aria-label="Rezepte durchsuchen">
             </label>
-            <button type="button" class="knopf filter-knopf${offen ? ' an' : ''}" id="filter-auf" aria-expanded="${offen}">${svg('filter')} <span>Filter</span><span class="zahl" id="filter-zahl"></span></button>
+            <button type="button" class="knopf filter-knopf" id="filter-auf" aria-haspopup="dialog" aria-label="Sortieren und filtern">${svg('filter')} <span>Filter</span><span class="zahl" id="filter-zahl"></span></button>
             <button type="button" class="knopf icon-knopf wuerfel-knopf" id="wuerfel" aria-label="Was koche ich heute? Zufallsrezept" title="Was koche ich heute?">${svg('wuerfel')}</button>
           </div>
-          <div class="chips" id="kat-chips" aria-label="Kategorie">
-            <button type="button" class="chip" data-k="">Alle</button>
-            ${kategorien.map((k) => `<button type="button" class="chip" data-k="${esc(k)}">${esc(k)}</button>`).join('')}
-          </div>
-          <div class="chips ern-chips" id="ern-chips" aria-label="Ernährung">
-            <button type="button" class="chip" data-e="">Alle</button>
-            ${ERNAEHRUNG.map((x) => `<button type="button" class="chip e-${x.id}" data-e="${x.id}">${x.name}</button>`).join('')}
-            <button type="button" class="chip fav-chip" id="fav-chip" aria-pressed="false">${svg('herz')} Favoriten</button>
-          </div>
-          <div class="filter-feld" id="filter-feld"${offen ? '' : ' hidden'}>
-            <label class="feld"><span>Mit Zutaten</span>
-              <input id="zutaten" type="search" placeholder="z. B. Spinat, Käse  ·  ohne: -Pilze" value="${esc(f.z)}" autocomplete="off">
-            </label>
-            <div class="feld"><span>Eigenschaften</span>
-              <div class="chips merkmal-chips" id="merkmal-chips">
-                ${FILTER_MERKMALE.map((x) => `<button type="button" class="chip" data-m="${x.id}">${esc(x.name)}</button>`).join('')}
-              </div>
-            </div>
-            <button type="button" class="knopf leise" id="filter-weg">Filter zurücksetzen</button>
-          </div>
+          <div class="chips filter-chips" id="filter-chips" role="group" aria-label="Schnellfilter"></div>
         </div>
       </section>
       ${ladefehler.length ? `<p class="hinweis fehler">Nicht geladen: ${ladefehler.map(esc).join(', ')} – Datei in /rezepte prüfen.</p>` : ''}
-      <div class="sortier-zeile nur-bildschirm">
-        <p class="treffer klein" id="treffer"></p>
-        <div class="sortieren">
-          <label for="sortierung" class="klein">Sortieren</label>
-          <select id="sortierung">
-            ${SORTIERUNGEN.filter((x) => !x[6]).slice(0, 3).map(option).join('')}
-            <optgroup label="Nährwerte pro Portion">${SORTIERUNGEN.filter((x) => x[6] === 'nw').map(option).join('')}</optgroup>
-            <optgroup label="Vorrat">${option(sortierung('zuhause'))}</optgroup>
-            <optgroup label="Meine Rezepte">${SORTIERUNGEN.filter((x) => x[6] === 'ich').map(option).join('')}</optgroup>
-          </select>
-          <button type="button" class="knopf richtung" id="richtung"></button>
-        </div>
+      <div class="listen-info nur-bildschirm">
+        <button type="button" class="listen-sort" id="listen-sort" aria-haspopup="dialog"><span class="treffer" id="treffer"></span><span aria-hidden="true"> · </span><span class="sort-text" id="sort-text"></span>${svg('runter')}</button>
+        <span class="aktiv-chips" id="aktiv-chips"></span>
       </div>
       <div class="karten" id="karten"></div>`;
 
     const $ = (id) => document.getElementById(id);
+    /** Chip-Reihe: aktive zuerst, dann Favoriten | Ernährung | Kategorien, getrennt durch einen Strich */
+    function chipsZeigen() {
+      const chip = (attr, wert, an, inhalt, klasse) => ({ an, html: `<button type="button" class="chip${klasse ? ' ' + klasse : ''}${an ? ' aktiv' : ''}" ${attr}="${esc(wert)}" aria-pressed="${an}">${inhalt}</button>` });
+      const gruppen = [
+        [chip('data-fav', '1', f.fav, svg('herz', f.fav ? 'voll' : '') + ' Favoriten', 'fav-chip')],
+        ERNAEHRUNG.map((x) => chip('data-e', x.id, f.e === x.id, x.name, 'e-' + x.id)),
+        kategorien.map((k) => chip('data-k', k, f.k === k, esc(k))),
+      ];
+      const teile = [gruppen.flat().filter((c) => c.an), ...gruppen.map((g) => g.filter((c) => !c.an))].filter((g) => g.length);
+      $('filter-chips').innerHTML = teile.map((g) => g.map((c) => c.html).join('')).join('<span class="chip-trenner" aria-hidden="true"></span>');
+      $('filter-chips').scrollLeft = 0;
+    }
     function aktualisieren() {
-      const p = new URLSearchParams();
-      if (f.s) p.set('s', f.s);
-      if (f.k) p.set('k', f.k);
-      if (f.e) p.set('e', f.e);
-      if (f.z) p.set('z', f.z);
-      if (f.m.length) p.set('m', f.m.join(','));
-      if (f.fav) p.set('fav', '1');
-      if (f.o !== 'name') p.set('o', f.o);
-      if (f.d !== sortierung(f.o)[3]) p.set('d', f.d);
-      adresseSetzen('#/' + (p.toString() ? '?' + p.toString() : ''));
-      const liste = filtern(f);
-      $('karten').innerHTML = liste.map((r) => karte(r, f.o)).join('') || (f.fav && !favoriten.length
+      adresseSetzen(listenAdresse(f));
+      const treffer = filtern(f);
+      $('karten').innerHTML = treffer.map((r) => karte(r, f.o)).join('') || (f.fav && !favoriten.length
         ? `<p class="leer">Noch keine Favoriten. Im Rezept auf ${svg('herz')} tippen, um es hier zu sammeln.</p>`
         : '<p class="leer">Keine Rezepte gefunden. Filter lockern?</p>');
-      const aktiv = f.m.length + (f.z ? 1 : 0);
+      const aktiv = blattFilterZahl(f);
       $('filter-zahl').textContent = aktiv || '';
-      $('treffer').textContent = (aktiv || f.s || f.k || f.e || f.fav) ? liste.length + ' von ' + rezepte.length + ' Rezepten' : rezepte.length + ' Rezepte';
-      const s = sortierung(f.o);
-      const knopf = $('richtung');
-      knopf.hidden = !s[4] || !s[5];
-      knopf.innerHTML = `<span aria-hidden="true">${f.d === 'ab' ? '↓' : '↑'}</span> ${esc(f.d === 'ab' ? s[5] : s[4])}`;
-      knopf.setAttribute('aria-label', 'Reihenfolge: ' + (f.d === 'ab' ? s[5] : s[4]) + ' – umdrehen');
-      document.querySelectorAll('#kat-chips .chip').forEach((c) => c.classList.toggle('aktiv', c.dataset.k === f.k));
-      document.querySelectorAll('#ern-chips [data-e]').forEach((c) => c.classList.toggle('aktiv', c.dataset.e === f.e));
-      $('fav-chip').classList.toggle('aktiv', f.fav);
-      $('fav-chip').setAttribute('aria-pressed', String(f.fav));
-      document.querySelectorAll('#merkmal-chips .chip').forEach((c) => c.classList.toggle('aktiv', f.m.includes(c.dataset.m)));
+      $('filter-auf').classList.toggle('an', aktiv > 0);
+      $('filter-auf').setAttribute('aria-label', 'Sortieren und filtern' + (aktiv ? ' – ' + aktiv + ' aktiv' : ''));
+      const gefiltert = aktiv || f.s || f.k || f.e || f.fav;
+      $('treffer').textContent = gefiltert ? treffer.length + ' von ' + rezepte.length : rezepte.length + ' Rezepte';
+      $('sort-text').textContent = sortText(f);
+      $('listen-sort').setAttribute('aria-label', (gefiltert ? treffer.length + ' von ' + rezepte.length + ' Rezepten' : rezepte.length + ' Rezepte') + ', sortiert: ' + sortText(f) + ' – ändern');
+      // aktive Filter aus dem Blatt als entfernbare Mini-Chips
+      $('aktiv-chips').innerHTML = [
+        ...f.m.map((id) => `<button type="button" class="mini-chip" data-weg-m="${id}" aria-label="${esc(FILTER_MERKMALE.find((x) => x.id === id).name)} entfernen"><span>${esc(FILTER_MERKMALE.find((x) => x.id === id).name)} ${svg('schliessen')}</span></button>`),
+        f.z ? `<button type="button" class="mini-chip" data-weg-z aria-label="Zutaten-Filter entfernen"><span>Zutaten: ${esc(f.z)} ${svg('schliessen')}</span></button>` : '',
+      ].join('');
+      if (fb && blatt === fb) {
+        const ok = fb.el.querySelector('#fb-ok');
+        if (ok) ok.textContent = treffer.length === 1 ? '1 Rezept anzeigen' : treffer.length + ' Rezepte anzeigen';
+      }
     }
-    const tippen = (el, feld) => { let t; el.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { f[feld] = el.value; aktualisieren(); }, 150); }); };
-    tippen($('suche'), 's');
-    tippen($('zutaten'), 'z');
-    $('sortierung').addEventListener('change', (e) => { f.o = e.target.value; f.d = sortierung(f.o)[3]; aktualisieren(); });
-    $('richtung').addEventListener('click', () => { f.d = f.d === 'ab' ? 'auf' : 'ab'; aktualisieren(); });
-    $('kat-chips').addEventListener('click', (e) => { const c = e.target.closest('[data-k]'); if (c) { f.k = c.dataset.k; aktualisieren(); } });
-    $('ern-chips').addEventListener('click', (e) => { const c = e.target.closest('[data-e]'); if (c) { f.e = c.dataset.e; aktualisieren(); } });
-    $('fav-chip').addEventListener('click', () => { f.fav = !f.fav; aktualisieren(); });
-    $('wuerfel').addEventListener('click', () => wuerfelBlatt(() => filtern(f)));
-    $('merkmal-chips').addEventListener('click', (e) => {
-      const c = e.target.closest('[data-m]'); if (!c) return;
-      f.m = f.m.includes(c.dataset.m) ? f.m.filter((x) => x !== c.dataset.m) : [...f.m, c.dataset.m];
+    // Suchfeld und Zutaten: verzögert, damit beim Tippen nicht ständig neu gezeichnet wird
+    let takt;
+    const spaeter = (fn) => { clearTimeout(takt); takt = setTimeout(fn, 150); };
+    $('suche').addEventListener('input', (e) => spaeter(() => { f.s = e.target.value; aktualisieren(); }));
+    $('suche').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
+    $('filter-chips').addEventListener('click', (e) => {
+      const c = e.target.closest('button');
+      if (!c) return;
+      if (c.dataset.fav) f.fav = !f.fav;
+      else if (c.dataset.e != null) f.e = f.e === c.dataset.e ? '' : c.dataset.e;
+      else if (c.dataset.k != null) f.k = f.k === c.dataset.k ? '' : c.dataset.k;
+      chipsZeigen(); aktualisieren();
+    });
+    $('aktiv-chips').addEventListener('click', (e) => {
+      const c = e.target.closest('button');
+      if (!c) return;
+      if (c.dataset.wegM) f.m = f.m.filter((x) => x !== c.dataset.wegM);
+      else if (c.hasAttribute('data-weg-z')) f.z = '';
       aktualisieren();
     });
-    $('filter-auf').addEventListener('click', (e) => {
-      const feld = $('filter-feld'); feld.hidden = !feld.hidden;
-      e.currentTarget.setAttribute('aria-expanded', String(!feld.hidden));
-      e.currentTarget.classList.toggle('an', !feld.hidden);
-    });
-    $('filter-weg').addEventListener('click', () => {
-      f.z = ''; f.m = []; $('zutaten').value = ''; aktualisieren();
-    });
+    $('wuerfel').addEventListener('click', () => wuerfelBlatt(() => filtern(f)));
+    const blattOeffnen = () => { fb = filterBlatt(f, aktualisieren); aktualisieren(); };
+    $('filter-auf').addEventListener('click', blattOeffnen);
+    $('listen-sort').addEventListener('click', blattOeffnen);
+    chipsZeigen();
     aktualisieren();
+  }
+
+  /** Blatt „Sortieren & filtern“: wirkt sofort (Liste und Adresse), „Zurücksetzen“ nimmt Sortierung und Blatt-Filter zurück */
+  function filterBlatt(f, aktualisieren) {
+    const b = blattAuf('Sortieren & filtern', { klasse: 'filter-blatt' });
+    const chip = (attr, wert, an, text, f2) => `<button type="button" class="chip${an ? ' aktiv' : ''}" ${attr}="${esc(wert)}" data-f="${f2 || attr + wert}" aria-pressed="${an}">${text}</button>`;
+    const sortChips = (liste) => liste.map((x) => chip('data-o', x[0], f.o === x[0], esc(x[1]))).join('');
+    function zeigen() {
+      const s = sortierung(f.o);
+      b.zeigen(`
+        <div class="feld"><span>Sortieren nach</span><div class="chips">${sortChips(SORTIERUNGEN.filter((x) => !x[6] && x[0] !== 'zuhause'))}${sortChips([sortierung('zuhause')])}</div></div>
+        <div class="feld"><span>Nährwerte pro Portion</span><div class="chips">${sortChips(SORTIERUNGEN.filter((x) => x[6] === 'nw'))}</div></div>
+        <div class="feld"><span>Meine Rezepte</span><div class="chips">${sortChips(SORTIERUNGEN.filter((x) => x[6] === 'ich'))}</div></div>
+        ${s[4] && s[5] ? `<div class="feld"><span>Reihenfolge</span><div class="chips richtung-chips">
+          ${chip('data-d', 'auf', f.d === 'auf', '<span aria-hidden="true">↑</span> ' + esc(s[4]))}${chip('data-d', 'ab', f.d === 'ab', '<span aria-hidden="true">↓</span> ' + esc(s[5]))}
+        </div></div>` : ''}
+        <div class="feld"><span>Eigenschaften</span><div class="chips merkmal-chips">
+          ${FILTER_MERKMALE.map((x) => chip('data-m', x.id, f.m.includes(x.id), esc(x.name))).join('')}
+        </div></div>
+        <label class="feld"><span>Mit Zutaten</span>
+          <input id="zutaten" data-f="zutaten" type="search" placeholder="z. B. Spinat, Käse  ·  ohne: -Pilze" value="${esc(f.z)}" autocomplete="off" enterkeyhint="done">
+        </label>
+        <p class="klein fb-hilfe">Mehrere mit Komma trennen. „-Pilze“ oder „ohne Pilze“ schließt aus.</p>`,
+      `<button type="button" class="knopf leise" id="fb-weg" data-f="fb-weg">Zurücksetzen</button>
+       <button type="button" class="knopf haupt" id="fb-ok" data-blatt-zu>Anzeigen</button>`);
+    }
+    b.el.addEventListener('click', (e) => {
+      const t = (sel) => e.target.closest(sel);
+      if (t('[data-o]')) { f.o = t('[data-o]').dataset.o; f.d = sortierung(f.o)[3]; }
+      else if (t('[data-d]')) f.d = t('[data-d]').dataset.d;
+      else if (t('[data-m]')) { const m = t('[data-m]').dataset.m; f.m = f.m.includes(m) ? f.m.filter((x) => x !== m) : [...f.m, m]; }
+      else if (t('#fb-weg')) { f.o = 'name'; f.d = 'auf'; f.m = []; f.z = ''; }
+      else return;
+      zeigen(); aktualisieren();
+    });
+    let takt;
+    b.el.addEventListener('input', (e) => {
+      if (e.target.id !== 'zutaten') return;
+      clearTimeout(takt);
+      takt = setTimeout(() => { f.z = e.target.value; aktualisieren(); }, 200);
+    });
+    b.el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'zutaten') { e.preventDefault(); e.target.blur(); } });
+    zeigen();
+    return b;
+  }
+
+  // ---------------------------------------------------------------- Startseite „Heute“
+  // Begrüßung, heute geplant (mit „Jetzt kochen“), laufender Kochmodus, nächste Tage, Einkauf,
+  // wischbare Reihen (Favoriten, zuletzt / lange nicht gekocht, passt zum Vorrat, schnell), Suche und alle Rezepte.
+  const LANGE_NICHT_TAGE = 21;
+  const REIHE_MAX = 12;
+  /** Zuletzt benutzter, noch frischer Kochmodus → {r, st, n} oder null */
+  function laufendesKochen() {
+    const [id, st] = Object.entries(kochen).filter(([id, st]) => nachId[id] && kochFrisch(st))
+      .sort((a, b) => b[1].zeit - a[1].zeit)[0] || [];
+    if (!id) return null;
+    const n = schrittListe(nachId[id]).length;
+    return n ? { r: nachId[id], st, n } : null;
+  }
+  /** Nächste geplante (offene) Gerichte nach heute, höchstens n; danach solche ohne Tag */
+  function naechsteGeplant(n) {
+    const i = TAGE.indexOf(heuteTag()), l = [];
+    for (let d = 1; d < 7; d++) {
+      const tag = TAGE[(i + d) % 7];
+      planOffen().filter((e) => e.tag === tag).forEach((e) => l.push({ e, wann: d === 1 ? 'Morgen' : tag }));
+    }
+    planOffen().filter((e) => !e.tag).forEach((e) => l.push({ e, wann: 'Ohne Tag' }));
+    return l.slice(0, n);
+  }
+  /** Offene Posten auf der Einkaufsliste (wie „offen“ auf der Einkaufsseite) */
+  const einkaufOffen = () => einkaufsliste().filter((g) => !g.zuhause)
+    .reduce((n, g) => n + g.liste.filter((p) => !abgehakt[p.schluessel]).length, 0);
+
+  function heuteReihen() {
+    const gk = (r) => tageSeitGekocht(r.id);
+    return [
+      { id: 'favoriten', titel: 'Favoriten', alle: '#/rezepte?fav=1',
+        liste: favoriten.slice().reverse().map((id) => nachId[id]).filter(Boolean),
+        info: (r) => (sterneVon(r.id) ? '★ ' + sterneVon(r.id) : gesamtzeit(r.zeit) ? dauer(gesamtzeit(r.zeit)) : '') },
+      { id: 'zuletzt', titel: 'Zuletzt gekocht', alle: '#/rezepte?o=zuletzt',
+        liste: rezepte.filter((r) => gk(r) < LANGE_NICHT_TAGE).sort((a, b) => gk(a) - gk(b)),
+        info: (r) => 'gekocht ' + vorText(gk(r)) },
+      { id: 'laengst', titel: 'Lange nicht gekocht', alle: '#/rezepte?o=laengst',
+        liste: rezepte.filter((r) => gk(r) >= LANGE_NICHT_TAGE && gk(r) !== Infinity).sort((a, b) => gk(b) - gk(a)),
+        info: (r) => 'zuletzt ' + vorText(gk(r)) },
+      { id: 'vorrat', titel: 'Passt zu deinem Vorrat', alle: '#/rezepte?o=zuhause',
+        liste: zuhause.length ? rezepte.filter((r) => fehlend(r) <= 2).sort((a, b) => fehlend(a) - fehlend(b) || titelVergleich(a, b)) : [],
+        info: (r) => (fehlend(r) ? 'fehlt: ' + fehlend(r) : 'alles da') },
+      { id: 'schnell', titel: 'Schnell gemacht', alle: '#/rezepte?m=schnell&o=zeit',
+        liste: rezepte.filter((r) => merkmaleVon(r).some((m) => m.id === 'schnell')).sort((a, b) => gesamtzeit(a.zeit) - gesamtzeit(b.zeit)),
+        info: (r) => dauer(gesamtzeit(r.zeit)) },
+    ].filter((x) => x.liste.length);
+  }
+  const miniKarte = (r, info) => `
+    <li><a class="mini-karte" href="#/rezept/${esc(r.id)}">
+      <span class="mini-bild">${r.bild ? `<img src="${esc(r.bild)}" alt="" loading="lazy">` : svg('topf')}</span>
+      <strong>${esc(r.titel)}</strong>
+      ${info ? `<small>${esc(info)}</small>` : ''}
+    </a></li>`;
+
+  function seiteHeute() {
+    document.title = 'Rezepte';
+    const jetzt = new Date(), std = jetzt.getHours();
+    const gruss = std < 5 ? 'Hallo' : std < 11 ? 'Guten Morgen' : std < 18 ? 'Guten Tag' : 'Guten Abend';
+    const datum = jetzt.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+    const heute = heuteTag();
+    const geplant = plan.filter((e) => e.tag === heute && !e.gekocht);
+    const erledigt = plan.filter((e) => e.tag === heute && e.gekocht);
+    const naechste = naechsteGeplant(3);
+    const weiter = laufendesKochen();
+    const offen = einkaufOffen();
+    const reihen = heuteReihen();
+
+    const gericht = (e) => {
+      const r = nachId[e.id], z = gesamtzeit(r.zeit), p = begrenzen(portionen(e));
+      const st = kochStand(r.id), fortsetzen = kochFrisch(st) && st.s > 1;
+      return `
+        <article class="heute-gericht" data-uid="${e.uid}">
+          ${r.bild ? `<a class="hg-bild" href="#/rezept/${esc(r.id)}?p=${p}" tabindex="-1" aria-hidden="true"><img src="${esc(r.bild)}" alt=""></a>` : ''}
+          <div class="hg-text">
+            <span class="karte-kat">${esc(r.kategorie || '')}</span>
+            <h3><a href="#/rezept/${esc(r.id)}?p=${p}">${esc(r.titel)}</a></h3>
+            <p class="hg-meta">${z ? `<span>${svg('uhr')} ${dauer(z)}</span>` : ''}<span>${svg('personen')} ${portionenHTML(e)}</span></p>
+            <div class="hg-knoepfe">
+              <a class="knopf haupt hg-kochen" href="#/kochen/${esc(r.id)}?p=${p}&amp;s=${fortsetzen ? st.s : 1}">${svg('topf')} <span>${fortsetzen ? 'Weiterkochen' : 'Jetzt kochen'}</span></a>
+              <button type="button" class="knopf hg-gekocht" data-gekocht-uid="${e.uid}" title="Als gekocht abhaken">${svg('haken')} <span>Gekocht</span></button>
+            </div>
+          </div>
+        </article>`;
+    };
+
+    app.innerHTML = `
+      <section class="heute nur-bildschirm">
+        <header class="heute-kopf">
+          <p class="heute-gruss">${gruss}</p>
+          <h1>${esc(datum)}</h1>
+        </header>
+        ${ladefehler.length ? `<p class="hinweis fehler">Nicht geladen: ${ladefehler.map(esc).join(', ')} – Datei in /rezepte prüfen.</p>` : ''}
+
+        ${weiter ? `
+        <a class="heute-weiter heute-zeile" href="#/kochen/${esc(weiter.r.id)}?p=${weiter.st.p || weiter.r.personen || STANDARD_PERSONEN}&amp;s=${weiter.st.s}">
+          <span class="hz-icon">${svg('topf')}</span>
+          <span class="hz-text"><strong>Weiterkochen: ${esc(weiter.r.titel)}</strong><small>Schritt ${Math.min(weiter.st.s, weiter.n)}/${weiter.n}</small></span>
+          <span class="hz-pfeil">${svg('vor')}</span>
+        </a>` : ''}
+
+        <section class="heute-abschnitt heute-geplant" aria-labelledby="h-geplant">
+          <h2 id="h-geplant">Heute geplant</h2>
+          ${geplant.length ? geplant.map(gericht).join('') : `
+          <div class="heute-leer">
+            <p>${erledigt.length ? 'Für heute ist alles gekocht. Guten Appetit!' : 'Für heute ist noch nichts geplant.'}</p>
+            <div class="hl-knoepfe">
+              <button type="button" class="knopf haupt" id="heute-wuerfel">${svg('wuerfel')} <span>Was koche ich heute?</span></button>
+              <a class="knopf" href="#/plan">${svg('kalender')} <span>Woche planen</span></a>
+            </div>
+          </div>`}
+          ${erledigt.length ? `<p class="klein heute-erledigt">${svg('haken')} Heute gekocht: ${erledigt.map((e) => esc(nachId[e.id].titel)).join(', ')}</p>` : ''}
+        </section>
+
+        ${naechste.length ? `
+        <section class="heute-abschnitt heute-naechste" aria-labelledby="h-naechste">
+          <div class="reihe-kopf"><h2 id="h-naechste">Nächste Tage</h2><a class="reihe-alle" href="#/plan">Plan</a></div>
+          <ul class="naechste-liste">${naechste.map(({ e, wann }) => `
+            <li><a href="#/rezept/${esc(e.id)}?p=${begrenzen(portionen(e))}">
+              <span class="nl-wann">${esc(wann)}</span>
+              <span class="nl-titel">${esc(nachId[e.id].titel)}</span>
+              <span class="nl-pfeil">${svg('vor')}</span>
+            </a></li>`).join('')}</ul>
+        </section>` : ''}
+
+        ${offen ? `
+        <a class="heute-einkauf heute-zeile" href="#/einkauf">
+          <span class="hz-icon">${svg('korb')}</span>
+          <span class="hz-text"><strong>${offen === 1 ? '1 Sache' : offen + ' Sachen'} auf der Einkaufsliste</strong></span>
+          <span class="hz-pfeil">${svg('vor')}</span>
+        </a>` : ''}
+
+        ${reihen.map((x) => `
+        <section class="heute-abschnitt reihe reihe-${x.id}" aria-labelledby="h-${x.id}">
+          <div class="reihe-kopf"><h2 id="h-${x.id}">${esc(x.titel)}</h2><a class="reihe-alle" href="${esc(x.alle)}" aria-label="Alle: ${esc(x.titel)}">Alle</a></div>
+          <ul class="reihe-liste">${x.liste.slice(0, REIHE_MAX).map((r) => miniKarte(r, x.info(r))).join('')}</ul>
+        </section>`).join('')}
+        ${!favoriten.length && !Object.keys(gekocht).length ? `<p class="klein heute-tipp">Tipp: Mit ${svg('herz')} im Rezept merkst du dir Favoriten – sie erscheinen dann hier.</p>` : ''}
+
+        <section class="heute-abschnitt heute-suchen">
+          <button type="button" class="suchfeld heute-suche" id="heute-suche">${svg('suche')}<span>Suchen: Titel, Zutat, Tag …</span></button>
+          <a class="knopf heute-alle" href="#/rezepte">${svg('buch')} <span>Alle Rezepte (${rezepte.length})</span>${svg('vor')}</a>
+        </section>
+      </section>`;
+
+    const w = document.getElementById('heute-wuerfel');
+    if (w) w.addEventListener('click', () => wuerfelBlatt(() => rezepte));
+    app.querySelectorAll('[data-gekocht-uid]').forEach((k) => k.addEventListener('click', () => {
+      const e = plan.find((x) => x.uid === k.dataset.gekochtUid);
+      if (e) kochenAbschliessen(nachId[e.id], e);
+    }));
+    // Suche: Liste im selben Tipp öffnen und fokussieren (sonst öffnet iOS die Tastatur nicht)
+    document.getElementById('heute-suche').addEventListener('click', () => {
+      sofortOeffnen('#/rezepte');
+      const s = document.getElementById('suche');
+      if (s) s.focus();
+    });
   }
 
   /** Sortierter Wert auf der Karte hervorheben (o = Sortierung) */
@@ -711,7 +938,9 @@
         </div>
 
         ${naehrwertHTML(r, personen)}
+        ${interaktiv ? nwKurzHTML(r) : ''}
         ${merkmalHTML(r)}
+        ${interaktiv ? reiterHTML() : ''}
 
         <div class="r-inhalt">
           <div class="r-links">
@@ -721,6 +950,7 @@
             </section>
             ${(r.tipps && r.tipps.length) ? `<section class="r-tipps"><h2>Tipps</h2><ul>${r.tipps.map((t) => `<li>${fett(t)}</li>`).join('')}</ul></section>` : ''}
             ${notizHTML(r, interaktiv)}
+            ${interaktiv ? verlaufHTML(r) : ''}
           </div>
           <section class="r-schritte">
             <h2>Zubereitung</h2>
@@ -729,6 +959,34 @@
         </div>
 
       </article>`;
+  }
+
+  // Handy: Reiter unter dem Kopf (Zutaten | Zubereitung | Notizen); am PC und im Druck ist alles sichtbar.
+  // Welcher Reiter offen ist, steht in <article data-reiter="…"> (CSS blendet aus); Standard je Besuch: Zutaten.
+  const REITER = [['zutaten', 'Zutaten'], ['zubereitung', 'Zubereitung'], ['notizen', 'Notizen']];
+  const reiterStand = { id: null, reiter: 'zutaten' };
+  const reiterHTML = () => `
+    <span class="r-reiter-anker" aria-hidden="true"></span>
+    <nav class="r-reiter nur-bildschirm" role="tablist" aria-label="Rezeptteile">
+      ${REITER.map(([id, name]) => `<button type="button" role="tab" class="r-reiter-knopf" data-reiter-knopf="${id}" aria-selected="false">${name}</button>`).join('')}
+    </nav>`;
+  /** Nährwerte in einer Zeile für den Kopf am Handy (Details im Reiter „Zutaten“) */
+  function nwKurzHTML(r) {
+    const p = nwp(r);
+    return `<p class="r-nw-kurz nur-bildschirm"><strong>${nwZahl(p.kcal, 'kcal')}</strong><span>${nwZahl(p.eiweiss, 'g')} Eiweiß</span><span>${nwZahl(p.kh, 'g')} KH</span><span>${nwZahl(p.fett, 'g')} Fett</span><small>pro Portion</small></p>`;
+  }
+  /** „Zuletzt gekocht“ und „Gekocht“-Knopf im Reiter „Notizen“ (am PC stehen sie im Kopf) */
+  function verlaufHTML(r) {
+    const zuletzt = gekochtHilfe.zuletzt(r.id), oft = gekochtHilfe.daten(r.id).length;
+    return `
+      <section class="r-verlauf nur-bildschirm">
+        <h2>Gekocht</h2>
+        <p>${zuletzt ? `Zuletzt ${vorText(tageSeit(zuletzt))} (${datumText(zuletzt)}) · ${oft}× gekocht` : 'Noch nie gekocht.'}</p>
+        <div class="rv-knoepfe">
+          <button type="button" class="knopf" data-gekocht-knopf title="Als gekocht merken, Verbrauchtes aus „Zuhause“ nehmen">${svg('haken')} Heute gekocht</button>
+          ${zuletzt ? '<button type="button" class="knopf leise" data-gekocht-verlauf>Verlauf ansehen</button>' : ''}
+        </div>
+      </section>`;
   }
 
   // Favorit, Sterne, Notizen (nur Bildschirm; Notizen werden mitgedruckt, wenn vorhanden)
@@ -785,26 +1043,72 @@
   /** gewaehlt = Personenzahl in der Adresse/am Stepper gewählt (sonst Standard des Rezepts) */
   function seiteRezept(r, personen, gewaehlt) {
     document.title = r.titel + ' – Rezepte';
+    const zurueckText = /^#\/(rezepte|\?)/.test(letzteUebersicht) ? 'Alle Rezepte' : 'Heute';
     app.innerHTML = `
       <div class="werkzeuge r-werkzeuge nur-bildschirm">
-        <a class="knopf leise zurueck" href="${esc(letzteUebersicht)}" data-zurueck aria-label="Alle Rezepte">${svg('zurueck')} <span>Alle Rezepte</span></a>
+        <a class="knopf leise zurueck" href="${esc(letzteUebersicht)}" data-zurueck aria-label="Zurück: ${zurueckText}">${svg('zurueck')} <span>${zurueckText}</span></a>
         <span class="abstand"></span>
-        <button class="knopf haupt" id="zur-liste">${svg('korb')} <span>Auf Einkaufsliste</span></button>
+        <button class="knopf haupt" id="zur-liste" data-zur-liste>${svg('korb')} <span>Auf Einkaufsliste</span></button>
         <button class="knopf" id="zum-plan" aria-label="Zum Wochenplan" title="Zum Wochenplan">${svg('kalender')} <span>Wochenplan</span></button>
         <button class="knopf icon-knopf" onclick="window.print()" aria-label="Drucken" title="Drucken">${svg('drucker')}</button>
       </div>
-      ${rezeptHTML(r, personen, true)}`;
+      ${rezeptHTML(r, personen, true)}
+      ${aktionHTML(r, personen)}`;
+
+    const artikel = app.querySelector('.rezept');
+    const notizFeld = document.getElementById('notiz');
+    function reiterWaehlen(neu, fokus) {
+      if (!REITER.some((x) => x[0] === neu)) neu = 'zutaten';
+      const anker = artikel.querySelector('.r-reiter-anker');
+      const vorher = artikel.dataset.reiter;
+      reiterStand.reiter = neu;
+      artikel.dataset.reiter = neu;
+      artikel.querySelectorAll('[data-reiter-knopf]').forEach((k) => {
+        const an = k.dataset.reiterKnopf === neu;
+        k.classList.toggle('aktiv', an);
+        k.setAttribute('aria-selected', String(an));
+        k.tabIndex = an ? 0 : -1;
+        if (an && fokus) k.focus({ preventScroll: true });
+      });
+      if (neu === 'notizen' && notizFeld) { notizFeld.style.height = 'auto'; notizFeld.style.height = notizFeld.scrollHeight + 2 + 'px'; }
+      // schon unter die Reiter gescrollt: neuen Reiter von oben zeigen (Leiste bleibt kleben)
+      if (vorher && vorher !== neu && anker) {
+        const y = anker.getBoundingClientRect().top + window.scrollY;
+        if (window.scrollY > y) window.scrollTo(0, y);
+      }
+    }
+    reiterWaehlen(reiterStand.reiter);
+    const reiterLeiste = artikel.querySelector('.r-reiter');
+    reiterLeiste.addEventListener('click', (e) => { const k = e.target.closest('[data-reiter-knopf]'); if (k) reiterWaehlen(k.dataset.reiterKnopf); });
+    reiterLeiste.addEventListener('keydown', (e) => {
+      const i = REITER.findIndex((x) => x[0] === reiterStand.reiter);
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (d) { e.preventDefault(); reiterWaehlen(REITER[(i + d + REITER.length) % REITER.length][0], true); }
+    });
+    // Wischen zwischen den Reitern (nur Handy; waagerecht deutlich mehr als senkrecht)
+    let start = null;
+    const inhalt = artikel.querySelector('.r-inhalt');
+    inhalt.addEventListener('touchstart', (e) => {
+      start = e.touches.length === 1 && !e.target.closest('textarea, input') ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+    }, { passive: true });
+    inhalt.addEventListener('touchend', (e) => {
+      if (!start || getComputedStyle(reiterLeiste).display === 'none') { start = null; return; }
+      const t = e.changedTouches[0], dx = t.clientX - start.x, dy = t.clientY - start.y;
+      start = null;
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+      const i = REITER.findIndex((x) => x[0] === reiterStand.reiter) + (dx < 0 ? 1 : -1);
+      if (i >= 0 && i < REITER.length) reiterWaehlen(REITER[i][0]);
+    }, { passive: true });
 
     app.querySelectorAll('.stepper button').forEach((b) => b.addEventListener('click', () => {
       notizenJetzt();
       adresseSetzen('#/rezept/' + r.id + '?p=' + begrenzen(b.dataset.p));
       seiteRezept(r, begrenzen(b.dataset.p), true);
       Timer.markieren();
+      abstaendeMessen();
     }));
-    const gk = document.getElementById('gekocht');
-    if (gk) gk.addEventListener('click', () => kochenAbschliessen(r));
-    const verlauf = document.getElementById('gekocht-verlauf');
-    if (verlauf) verlauf.addEventListener('click', () => gekochtBlatt(r));
+    app.querySelectorAll('[data-gekocht-knopf]').forEach((k) => k.addEventListener('click', () => kochenAbschliessen(r)));
+    app.querySelectorAll('[data-gekocht-verlauf]').forEach((k) => k.addEventListener('click', () => gekochtBlatt(r)));
     document.getElementById('fav').addEventListener('click', (e) => {
       const an = favoritUmschalten(r.id), k = e.currentTarget;
       k.classList.toggle('an', an); k.setAttribute('aria-pressed', String(an));
@@ -826,10 +1130,9 @@
       });
       document.getElementById('sterne-text').textContent = STERN_TEXT[n];
     });
-    const feld = document.getElementById('notiz');
-    notizFeldBinden(feld, document.getElementById('notiz-status'), r.id, (text) => {
-      feld.closest('.r-notizen').classList.toggle('ohne-notiz', !text);
-      feld.parentElement.querySelector('.r-notiz-text').textContent = feld.value;
+    notizFeldBinden(notizFeld, document.getElementById('notiz-status'), r.id, (text) => {
+      notizFeld.closest('.r-notizen').classList.toggle('ohne-notiz', !text);
+      notizFeld.parentElement.querySelector('.r-notiz-text').textContent = notizFeld.value;
     });
     verlassen = notizenJetzt;
     document.getElementById('zum-plan').addEventListener('click', (e) => {
@@ -840,12 +1143,12 @@
       e.currentTarget.innerHTML = svg('haken') + ' <span>Im Plan</span>';
       melden(r.titel + ' für ' + portionenHTML(neu, true).replace(/<[^>]+>/g, '') + ' eingeplant');
     });
-    document.getElementById('zur-liste').addEventListener('click', (e) => {
+    app.querySelectorAll('[data-zur-liste]').forEach((k) => k.addEventListener('click', () => {
       liste.push({ uid: uid(), id: r.id, personen });
       sichern(); zaehlerAktualisieren();
-      e.currentTarget.innerHTML = svg('haken') + ' <span>Auf der Liste</span>';
+      app.querySelectorAll('[data-zur-liste]').forEach((x) => { x.innerHTML = svg('haken') + ' <span>Auf der Liste</span>'; });
       melden('Zutaten für ' + personen + ' P. auf der Einkaufsliste', '#/einkauf', 'Ansehen');
-    });
+    }));
   }
 
   // ---------------------------------------------------------------- Kochbuch (alles drucken)
@@ -1246,20 +1549,33 @@
   };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') wach.anfordern(); });
 
-  function kochKnopfHTML(r, personen) {
+  /** Ziel für „Jetzt kochen“ / „Weiterkochen“: {href, weiter, s, n} (n = 0: Rezept ohne Schritte) */
+  function kochZiel(r, personen) {
     const st = kochStand(r.id);
     const weiter = kochFrisch(st) && st.s > 1;
-    const n = schrittListe(r).length;
-    if (!n) return '';
+    return { href: `#/kochen/${esc(r.id)}?p=${personen}&amp;s=${weiter ? st.s : 1}`, weiter, s: st.s, n: schrittListe(r).length };
+  }
+  function kochKnopfHTML(r, personen) {
+    const k = kochZiel(r, personen);
+    if (!k.n) return '';
     const zuletzt = gekochtHilfe.zuletzt(r.id), oft = gekochtHilfe.daten(r.id).length;
     return `
       <div class="koch-zeile nur-bildschirm">
-        <a class="knopf haupt koch-knopf" href="#/kochen/${esc(r.id)}?p=${personen}&amp;s=${weiter ? st.s : 1}">${svg('topf')} <span>${weiter ? 'Weiterkochen' : 'Jetzt kochen'}</span></a>
-        <span class="klein">${weiter ? `bei Schritt ${st.s} von ${n}` : `Schritt für Schritt · ${n} Schritte · Bildschirm bleibt an`}</span>
+        <a class="knopf haupt koch-knopf" href="${k.href}">${svg('topf')} <span>${k.weiter ? 'Weiterkochen' : 'Jetzt kochen'}</span></a>
+        <span class="klein">${k.weiter ? `bei Schritt ${k.s} von ${k.n}` : `Schritt für Schritt · ${k.n} Schritte · Bildschirm bleibt an`}</span>
         <span class="koch-gekocht">
-          ${zuletzt ? `<button type="button" class="link-knopf klein gekocht-verlauf" id="gekocht-verlauf" title="Koch-Verlauf ansehen">Zuletzt gekocht: ${vorText(tageSeit(zuletzt))} · ${oft}× gekocht</button>` : ''}
-          <button type="button" class="knopf leise" id="gekocht" title="Als gekocht merken, Verbrauchtes aus „Zuhause“ nehmen">${svg('haken')} Gekocht</button>
+          ${zuletzt ? `<button type="button" class="link-knopf klein gekocht-verlauf" data-gekocht-verlauf title="Koch-Verlauf ansehen">Zuletzt gekocht: ${vorText(tageSeit(zuletzt))} · ${oft}× gekocht</button>` : ''}
+          <button type="button" class="knopf leise" data-gekocht-knopf title="Als gekocht merken, Verbrauchtes aus „Zuhause“ nehmen">${svg('haken')} Gekocht</button>
         </span>
+      </div>`;
+  }
+  /** Fester Knopf unten am Handy: „Jetzt kochen“ + „Auf Einkaufsliste“ (über Tab- und Timer-Leiste) */
+  function aktionHTML(r, personen) {
+    const k = kochZiel(r, personen);
+    return `
+      <div class="r-aktion nur-bildschirm">
+        ${k.n ? `<a class="knopf haupt koch-knopf ra-kochen" href="${k.href}">${svg('topf')} <span>${k.weiter ? 'Weiterkochen' : 'Jetzt kochen'}</span>${k.weiter ? `<small>Schritt ${k.s}/${k.n}</small>` : ''}</a>` : ''}
+        <button type="button" class="knopf ra-liste" data-zur-liste aria-label="Zutaten auf die Einkaufsliste">${svg('korb')} <span>Einkaufsliste</span></button>
       </div>`;
   }
 
@@ -1518,10 +1834,78 @@
   /** Chips „Wer isst mit“ (nur mit Profilen) */
   const werChipsHTML = (gewaehlt) => profile.map((p) => `<button type="button" class="chip wer-chip${gewaehlt.includes(p.uid) ? ' aktiv' : ''}" data-wer="${p.uid}" data-f="wer${p.uid}" aria-pressed="${gewaehlt.includes(p.uid)}">${esc(p.name || 'ohne Namen')} <span class="klein">${portionText(p.faktor)}</span></button>`).join('');
 
+  // Kalenderstreifen: Mo–So der laufenden Woche (der Plan selbst kennt nur Wochentage + „Ohne Tag“).
+  // Antippen eines Tages zeigt nur dessen Einträge; nochmal antippen oder „Ganze Woche“ zeigt alle.
+  let planAuswahl = '';                    // '' = ganze Woche, sonst Tag aus TAGE oder 'ohne'
+  /** Datum je Wochentag der laufenden Woche (Mo zuerst) */
+  const wocheDaten = () => {
+    const d = new Date(), wt = (d.getDay() + 6) % 7;
+    return TAGE.map((t, i) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - wt + i));
+  };
+  const tagSchluessel = (tag) => tag || 'ohne';
+  const tagName = (s) => (s === 'ohne' ? 'Ohne Tag' : s);
+
+  function kalenderHTML() {
+    const daten = wocheDaten(), heute = heuteTag();
+    const bildchen = (e) => {
+      const r = nachId[e.id];
+      return `<span class="kal-bild${e.gekocht ? ' gekocht' : ''}">${r.bild ? `<img src="${esc(r.bild)}" alt="" loading="lazy">` : esc(r.titel.slice(0, 1))}</span>`;
+    };
+    const ohne = plan.filter((e) => !e.tag);
+    const von = daten[0].toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+    const bis = daten[6].toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+    return `
+      <div class="kal nur-bildschirm">
+        <div class="kal-streifen" role="group" aria-label="Diese Woche">
+          ${TAGE.map((t, i) => {
+            const es = plan.filter((e) => e.tag === t), offen = es.filter((e) => !e.gekocht).length;
+            return `<button type="button" class="kal-tag${t === heute ? ' heute' : ''}${planAuswahl === t ? ' aktiv' : ''}${es.length ? ' belegt' : ''}" data-kal="${t}" aria-pressed="${planAuswahl === t}"
+              aria-label="${t}${t === heute ? ' (heute)' : ''}: ${es.length ? es.length + (es.length === 1 ? ' Gericht' : ' Gerichte') + (offen < es.length ? ', ' + (es.length - offen) + ' gekocht' : '') : 'nichts geplant'}">
+              <span class="kal-name">${t.slice(0, 2)}</span>
+              <span class="kal-datum">${daten[i].getDate()}</span>
+              <span class="kal-bilder">${es.slice(0, 2).map(bildchen).join('')}${es.length > 2 ? `<span class="kal-mehr">+${es.length - 2}</span>` : ''}</span>
+            </button>`;
+          }).join('')}
+        </div>
+        <div class="kal-unter">
+          <span class="klein kal-woche">${planAuswahl ? esc(tagName(planAuswahl)) : 'Woche ' + esc(von) + ' – ' + esc(bis)}</span>
+          ${ohne.length ? `<button type="button" class="chip${planAuswahl === 'ohne' ? ' aktiv' : ''}" data-kal="ohne" aria-pressed="${planAuswahl === 'ohne'}">Ohne Tag · ${ohne.length}</button>` : ''}
+          ${planAuswahl ? '<button type="button" class="chip" data-kal="">Ganze Woche</button>' : ''}
+        </div>
+      </div>`;
+  }
+
+  /** Blatt: Eintrag einem anderen Tag zuordnen */
+  function verschiebenBlatt(e) {
+    const r = nachId[e.id], daten = wocheDaten(), heute = heuteTag();
+    const b = blattAuf('Verschieben', { klasse: 'tag-blatt' });
+    b.zeigen(`
+      <p class="klein">${esc(r.titel)} – an welchem Tag?</p>
+      <div class="tag-wahl">${[...TAGE, ''].map((t, i) => {
+        const n = plan.filter((x) => x !== e && (x.tag || '') === t && !x.gekocht).length;
+        const unter = [t ? daten[i].toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }) : 'noch offen', t === heute ? 'heute' : '', n ? n + ' geplant' : ''].filter(Boolean).join(' · ');
+        const an = (e.tag || '') === t;
+        return `<button type="button" class="knopf tag-knopf${an ? ' an' : ''}" data-tag-wahl="${t}" aria-pressed="${an}"><strong>${t || 'Ohne Tag'}</strong><small>${esc(unter)}</small></button>`;
+      }).join('')}</div>`,
+    '<button type="button" class="knopf leise" data-blatt-zu>Abbrechen</button>');
+    b.el.addEventListener('click', (ev) => {
+      const k = ev.target.closest('[data-tag-wahl]');
+      if (!k) return;
+      const neu = k.dataset.tagWahl;
+      b.schliessen();
+      if ((e.tag || '') === neu) return;
+      e.tag = neu;
+      sichern(); zeichnen();
+      melden(r.titel + (neu ? ' → ' + neu : ' → ohne Tag'));
+    });
+  }
+
   function seitePlan() {
     document.title = 'Wochenplan – Rezepte';
+    if (planAuswahl === 'ohne' && !plan.some((e) => !e.tag)) planAuswahl = '';
     const gruppen = [...TAGE, ''].map((tag) => ({ tag, eintraege: plan.filter((e) => (e.tag || '') === tag) }))
       .filter((g) => g.eintraege.length);
+    const ausgewaehlt = planAuswahl && gruppen.find((g) => tagSchluessel(g.tag) === planAuswahl);
 
     const zeile = (e) => {
       const r = nachId[e.id];
@@ -1530,13 +1914,11 @@
         <li class="plan-eintrag${e.gekocht ? ' gekocht' : ''}" data-uid="${e.uid}">
           <div class="pe-kopf">
             <button type="button" class="pe-haken nur-bildschirm" data-gekocht aria-pressed="${!!e.gekocht}" aria-label="${e.gekocht ? 'Doch nicht gekocht' : 'Als gekocht abhaken'}" title="${e.gekocht ? 'Doch nicht gekocht' : 'Gekocht'}"><span class="box">${svg('haken')}</span></button>
+            ${r.bild ? `<img class="pe-bild nur-bildschirm" src="${esc(r.bild)}" alt="" loading="lazy">` : ''}
             <a href="#/rezept/${esc(r.id)}?p=${begrenzen(portionen(e))}"><span class="pe-titel">${esc(r.titel)}</span>${e.gekocht ? `<small>gekocht am ${datumText(e.gekocht)}</small>` : ''}</a>
           </div>
           <div class="pe-steuer">
-            <select data-feld="tag" aria-label="Tag">
-              <option value="">– kein Tag –</option>
-              ${TAGE.map((t) => `<option ${t === e.tag ? 'selected' : ''}>${t}</option>`).join('')}
-            </select>
+            <button type="button" class="knopf leise pe-verschieben nur-bildschirm" data-verschieben aria-label="Verschieben – jetzt: ${e.tag || 'ohne Tag'}" title="Anderem Tag zuordnen">${svg('verschieben')} <span>${e.tag ? 'Verschieben' : 'Tag wählen'}</span></button>
             ${w.length ? `<span class="pe-portionen">${portionenHTML(e)}</span>` : `
             <span class="stepper">
               <button type="button" data-schritt="-1" aria-label="Weniger" ${e.personen <= 1 ? 'disabled' : ''}>${svg('minus')}</button>
@@ -1549,6 +1931,7 @@
           ${profile.length ? `<div class="chips pe-wer nur-bildschirm" aria-label="Wer isst mit">${werChipsHTML(e.wer || [])}</div>` : ''}
         </li>`;
     };
+    const neuFuer = planAuswahl && planAuswahl !== 'ohne' ? planAuswahl : '';
 
     app.innerHTML = `
       <div class="werkzeuge">
@@ -1558,24 +1941,29 @@
         <button class="knopf nur-bildschirm" onclick="window.print()">${svg('drucker')} Drucken</button>
         <a class="knopf haupt nur-bildschirm" href="#/einkauf">${svg('korb')} Einkaufsliste</a>` : ''}
       </div>
+      ${kalenderHTML()}
       <div class="nur-bildschirm plan-neu">
         <select id="plan-rezept" aria-label="Rezept wählen">
-          <option value="">Rezept hinzufügen …</option>
+          <option value="">${neuFuer ? 'Rezept für ' + neuFuer + ' hinzufügen …' : 'Rezept hinzufügen …'}</option>
           ${rezepte.map((r) => `<option value="${esc(r.id)}">${esc(r.titel)}</option>`).join('')}
         </select>
         <button type="button" class="knopf${plan.length ? '' : ' haupt'}" id="plan-vorschlag">${svg('funke')} Woche vorschlagen</button>
       </div>
+      ${planAuswahl && !ausgewaehlt ? `<p class="leer plan-tag-leer nur-bildschirm">${planAuswahl === heuteTag() ? 'Für heute' : 'Für ' + esc(tagName(planAuswahl))} ist noch nichts geplant – oben ein Rezept auswählen oder <button type="button" class="link-knopf" data-kal="">ganze Woche zeigen</button>.</p>` : ''}
       ${gruppen.length ? gruppen.map((g) => `
-        <section class="plan-tag">
+        <section class="plan-tag${planAuswahl && tagSchluessel(g.tag) !== planAuswahl ? ' ausgeblendet' : ''}" data-tag="${tagSchluessel(g.tag)}">
           <h2>${g.tag || 'Ohne Tag'}${g.tag === heuteTag() ? ' <span class="klein nur-bildschirm">· heute</span>' : ''}</h2>
           <ul>${g.eintraege.map(zeile).join('')}</ul>
         </section>`).join('') : '<p class="leer">Noch nichts geplant. Rezept oben auswählen, „Woche vorschlagen“ antippen oder in einem Rezept auf „Zum Wochenplan“ tippen.</p>'}
       ${profile.length || !plan.length ? '' : '<p class="klein nur-bildschirm">Tipp: Unter <a href="#/mehr">Mehr → Haushalt</a> Personen mit Portionsgröße anlegen (z. B. Kind ½) – dann hier wählen, wer mitisst.</p>'}`;
 
     const finde = (el) => plan.find((e) => e.uid === el.closest('[data-uid]').dataset.uid);
-    app.querySelectorAll('[data-feld="tag"]').forEach((s) => s.addEventListener('change', () => {
-      finde(s).tag = s.value; sichern(); zeichnen();
+    app.querySelectorAll('[data-kal]').forEach((k) => k.addEventListener('click', () => {
+      const t = k.dataset.kal;
+      planAuswahl = planAuswahl === t ? '' : t;
+      zeichnen();
     }));
+    app.querySelectorAll('[data-verschieben]').forEach((b) => b.addEventListener('click', () => verschiebenBlatt(finde(b))));
     app.querySelectorAll('[data-schritt]').forEach((b) => b.addEventListener('click', () => {
       const e = finde(b); e.personen = begrenzen(e.personen + Number(b.dataset.schritt)); sichern(); zeichnen();
     }));
@@ -1597,7 +1985,7 @@
     }));
     document.getElementById('plan-rezept').addEventListener('change', (ev) => {
       const r = nachId[ev.target.value];
-      if (r) { plan.push(planEintrag(r.id)); sichern(); zeichnen(); }
+      if (r) { plan.push(planEintrag(r.id, 0, neuFuer)); sichern(); zeichnen(); }
     });
     document.getElementById('plan-vorschlag').addEventListener('click', vorschlagBlatt);
     const leeren = document.getElementById('plan-leeren');
@@ -2130,7 +2518,7 @@
         ${zuhause.length ? `<button class="knopf leise nur-bildschirm" id="zh-leeren">${svg('muell')} Leeren</button>` : ''}
       </div>
       <p class="hinweis">Was du da hast, landet auf der Einkaufsliste unter „Schon zuhause“ statt auf dem Zettel.
-        In der Rezeptübersicht kannst du nach <a href="#/?o=zuhause">„Am meisten zuhause“</a> sortieren.</p>
+        In der Rezeptübersicht kannst du nach <a href="#/rezepte?o=zuhause">„Am meisten zuhause“</a> sortieren.</p>
       <form class="ek-neu nur-bildschirm" id="zh-neu">
         <input id="zh-text" list="zh-vorschlag" placeholder="z. B. Basmatireis" autocomplete="off">
         <datalist id="zh-vorschlag">${alleZutaten.map((n) => `<option value="${esc(n)}">`).join('')}</datalist>
@@ -2313,7 +2701,10 @@
   window.RezeptDruck = { vorbereiten: druckVorbereiten, ende: druckEnde };
 
   // ---------------------------------------------------------------- Start
-  window.addEventListener('hashchange', zeichnen);
+  // Zurück/Vor nach sofortOeffnen (pushState): je nach Browser kommt popstate, hashchange oder beides
+  const neuZeichnen = () => { if (location.hash !== angezeigt) zeichnen(); };
+  window.addEventListener('hashchange', neuZeichnen);
+  window.addEventListener('popstate', neuZeichnen);
   window.addEventListener('storage', (e) => {
     if (e.key === 'rezepte.timer') return;   // erledigt assets/timer.js
     if (e.key === 'rezepte.darstellung' || !e.key) darstellungAnwenden();
@@ -2329,6 +2720,7 @@
     document.documentElement.style.setProperty('--tabs-h', h('.tabs') + 'px');
     const t = h('#timer-leiste.sichtbar');
     document.documentElement.style.setProperty('--timer-h', (t ? t + 8 : 0) + 'px');   // + Abstand der schwebenden Leiste
+    document.documentElement.style.setProperty('--aktion-h', h('#app .r-aktion') + 'px');   // fester „Jetzt kochen“-Knopf (Rezept, Handy)
   }
   window.addEventListener('resize', abstaendeMessen);
   window.addEventListener('timerleiste', abstaendeMessen);
