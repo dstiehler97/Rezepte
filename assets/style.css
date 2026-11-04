@@ -35,7 +35,8 @@ main { max-width: 1040px; margin: 0 auto; padding: 1.25rem 16px 4rem; }
 .leiste {
   position: sticky; top: 0; z-index: 10;
   display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-  padding: .6rem 16px;
+  /* gleiche Breite wie der Inhalt (max. 1040px) */
+  padding: .6rem max(16px, calc((100% - 1040px) / 2 + 16px));
   background: var(--flaeche);
   border-bottom: 1px solid var(--linie);
 }
