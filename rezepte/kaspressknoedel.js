@@ -1,0 +1,46 @@
+Rezept({
+  id: 'kaspressknoedel',
+  titel: 'Kaspressknödel',
+  beschreibung: 'Tiroler Käseknödel – flach gedrückt, knusprig gebraten und in kräftiger Brühe serviert.',
+  kategorie: 'Hauptgericht',
+  tags: ['Österreichisch', 'Knödel', 'Käse'],
+  personen: 4,
+  zeit: { vorbereitung: 20, ruhen: 15, kochen: 15 },
+  schwierigkeit: 'mittel',
+  bild: 'bilder/kaspressknoedel.jpg',
+
+  zutaten: [
+    { abschnitt: 'Für die Knödel' },
+    { menge: 250, einheit: 'g', name: 'Knödelbrot', hinweis: 'oder altbackene Brötchen, klein gewürfelt' },
+    { menge: 200, einheit: 'g', name: 'Bergkäse', hinweis: 'würzig, gerieben' },
+    { menge: 1, name: 'Zwiebel', mehrzahl: 'Zwiebeln' },
+    { menge: 1, einheit: 'EL', name: 'Butter' },
+    { menge: 3, name: 'Eier' },
+    { menge: 150, einheit: 'ml', name: 'Milch' },
+    { menge: 0.5, einheit: 'Bund', name: 'Petersilie' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+    { name: 'Muskatnuss', hinweis: 'frisch gerieben' },
+    { menge: 6, einheit: 'EL', name: 'Pflanzenöl', hinweis: 'zum Braten' },
+    { abschnitt: 'Zum Servieren' },
+    { menge: 1200, einheit: 'ml', name: 'Rinderbrühe', hinweis: 'oder Gemüsebrühe' },
+    { menge: 0.5, einheit: 'Bund', name: 'Schnittlauch' },
+  ],
+
+  schritte: [
+    { abschnitt: 'Knödelmasse' },
+    'Zwiebel fein würfeln und in der Butter glasig dünsten. Petersilie fein hacken, Käse reiben.',
+    'Knödelbrot, Käse, Zwiebel und Petersilie in einer großen Schüssel mischen.',
+    'Eier mit der Milch verquirlen, kräftig mit Salz, Pfeffer und Muskat würzen und über das Brot gießen. Alles gut vermengen und **15 Minuten** ziehen lassen.',
+    'Mit nassen Händen 8 Knödel formen und auf ca. **2 cm** flach drücken. Ist die Masse zu weich, etwas Knödelbrot oder Semmelbrösel untermischen.',
+    { abschnitt: 'Braten' },
+    'Öl in einer großen Pfanne erhitzen. Die Knödel bei mittlerer Hitze je Seite **3–4 Minuten** goldbraun braten und kurz auf Küchenpapier abtropfen lassen.',
+    { abschnitt: 'Servieren' },
+    'Brühe aufkochen. Je 2 Knödel in einen tiefen Teller legen, mit heißer Brühe übergießen und mit Schnittlauch bestreuen.',
+  ],
+
+  tipps: [
+    'Ohne Suppe passen die Knödel auch zu Sauerkraut oder grünem Salat.',
+    'Mit Gemüsebrühe wird das Gericht vegetarisch.',
+  ],
+});

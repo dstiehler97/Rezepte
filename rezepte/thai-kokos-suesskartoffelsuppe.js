@@ -1,0 +1,44 @@
+Rezept({
+  id: 'thai-kokos-suesskartoffelsuppe',
+  titel: 'Thai-Kokos-Süßkartoffelsuppe',
+  beschreibung: 'Cremige Suppe mit Kokosmilch, Paprika und Limette – getoppt mit Erdnüssen und Chilisauce.',
+  kategorie: 'Suppe',
+  tags: ['Vegan', 'Thai', 'Schnell'],
+  personen: 4,
+  zeit: { vorbereitung: 15, kochen: 15 },
+  schwierigkeit: 'einfach',
+  bild: 'bilder/thai-kokos-suesskartoffelsuppe.jpg',
+
+  zutaten: [
+    { abschnitt: 'Für die Suppe' },
+    { menge: 600, einheit: 'g', name: 'Süßkartoffeln', hinweis: 'ca. 300 g pro Stück' },
+    { menge: 2, name: 'rote Paprika', mehrzahl: 'rote Paprika' },
+    { menge: 2, name: 'Frühlingszwiebel', mehrzahl: 'Frühlingszwiebeln' },
+    { menge: 2, einheit: 'EL', name: 'Olivenöl' },
+    { menge: 800, einheit: 'ml', name: 'Gemüsebrühe' },
+    { menge: 600, einheit: 'ml', name: 'Kokosmilch' },
+    { menge: 2, name: 'Limette', mehrzahl: 'Limetten' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+    { abschnitt: 'Zum Servieren' },
+    { menge: 40, einheit: 'g', name: 'Erdnüsse', hinweis: 'geröstet & ungesalzen' },
+    { menge: 4, einheit: 'TL', name: 'Thai-Chilisauce', hinweis: 'z. B. Sriracha' },
+  ],
+
+  schritte: [
+    { abschnitt: 'Vorbereiten' },
+    'Paprika waschen, entkernen und in kleine Würfel schneiden. Süßkartoffeln schälen und würfeln.',
+    'Frühlingszwiebeln waschen und in feine Ringe schneiden. Dabei **weißen und grünen Teil trennen** – das Grün kommt erst zum Schluss auf die Suppe.',
+    'Limetten halbieren und den Saft auspressen. Erdnüsse grob hacken.',
+    { abschnitt: 'Kochen' },
+    'Öl in einem Topf erhitzen. Paprika mit dem weißen Teil der Frühlingszwiebeln **3 Minuten** anbraten.',
+    'Süßkartoffeln und Brühe zugeben und **10–15 Minuten** köcheln lassen, bis die Süßkartoffeln weich sind.',
+    'Kokosmilch zugeben und alles im Mixer (oder mit dem Stabmixer) fein pürieren. Mit Salz, Pfeffer und Limettensaft abschmecken.',
+    { abschnitt: 'Servieren' },
+    'Suppe mit gehackten Erdnüssen, Chilisauce und dem Grün der Frühlingszwiebeln servieren. Nach Wunsch mit Limettenspalten garnieren.',
+  ],
+
+  tipps: [
+    'Eine Limette als Spalten zum Servieren aufheben, wenn man es gern frischer mag.',
+  ],
+});
