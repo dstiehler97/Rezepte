@@ -317,6 +317,45 @@
   }
 
   /**
+   * Suchform: tolerant gegen Schreibweisen.
+   * ä/ae → a, ö/oe → o, ü/ue → u, ß/ss → s, doppelte Buchstaben einfach, Bindestriche wie Leerzeichen.
+   * „Süßkartoffel“, „Süsskartoffel“, „Suesskartoffel“ und „Süskartofel“ ergeben dasselbe.
+   */
+  function suchform(text) {
+    return normal(text).replace(/-/g, ' ')
+      .replace(/ä|ae/g, 'a').replace(/ö|oe/g, 'o').replace(/ü|ue/g, 'u').replace(/ß/g, 's')
+      .replace(/([a-z])\1+/g, '$1').replace(/\s+/g, ' ').trim();
+  }
+
+  // Oberbegriffe für die Suche: „nudeln“ findet auch Spaghetti, Linguine usw.
+  const OBERBEGRIFFE = {
+    nudeln: ['spaghetti', 'linguine', 'pasta', 'penne', 'fusilli', 'farfalle', 'tagliatelle', 'orecchiette', 'rigatoni', 'makkaroni', 'gnocchi', 'lasagne'],
+    pasta: ['spaghetti', 'linguine', 'nudeln', 'penne', 'fusilli', 'farfalle', 'tagliatelle', 'orecchiette', 'rigatoni', 'makkaroni', 'lasagne'],
+    reis: ['risotto', 'basmati', 'jasmin', 'sushireis'],
+    kase: ['parmesan', 'mozzarela', 'feta', 'burata', 'gouda', 'bergkase', 'schafkase'],
+    fleisch: ['hack', 'rind', 'hahnchen', 'steak', 'speck', 'schinken'],
+    huhn: ['hahnchen'], hahnchen: ['huhn', 'hahnchenbrust'],
+    pilze: ['champignon', 'pfiferling', 'austernpilz'],
+  };
+  const ENDUNGEN = ['en', 'n', 'e', 's', 'er'];
+
+  /**
+   * Passt ein Suchwort zu einem Text? Beide werden in die Suchform gebracht.
+   * Wortformen (Zwiebeln/Zwiebel, Tomaten/Tomate) und Oberbegriffe zählen mit.
+   */
+  function passtSuche(text, wort) {
+    const t = suchform(text);
+    const w = suchform(wort);
+    if (!w) return true;
+    if (t.includes(w)) return true;
+    const formen = [w];
+    for (const e of ENDUNGEN) if (w.length > e.length + 3 && w.endsWith(e)) formen.push(w.slice(0, -e.length));
+    if (formen.some((f) => t.includes(f))) return true;
+    const ober = formen.map((f) => OBERBEGRIFFE[f]).find(Boolean);
+    return !!(ober && ober.some((o) => t.includes(o)));
+  }
+
+  /**
    * Sucht den passenden Schlüssel einer Tabelle zu einem Zutatennamen:
    * exakt, als mehrteiliger Begriff, oder als Wortende (Olivenöl -> öl, Zwiebeln -> zwiebel).
    * Der längste Treffer gewinnt.
@@ -354,5 +393,5 @@
     };
   }
 
-  g.Zutaten = { KATEGORIEN, LEXIKON, info, normal, suchen, art, ernaehrung, ERNAEHRUNG };
+  g.Zutaten = { suchform, passtSuche, KATEGORIEN, LEXIKON, info, normal, suchen, art, ernaehrung, ERNAEHRUNG };
 })(globalThis);
