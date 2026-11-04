@@ -19,6 +19,7 @@ window.REZEPT_DATEIEN = [
   "semmelknoedel",
   "spaghetti-bolognese",
   "suesskartoffelragout-mit-bulgur-cashewkernen",
+  "tartelettes-mit-feta-creme-geroesteten-cherrytomaten",
   "thai-kokos-suesskartoffelsuppe",
   "tofu-scramble-mit-gemuese",
   "wuerziger-couscous-one-pot"
