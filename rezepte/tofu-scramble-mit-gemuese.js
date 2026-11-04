@@ -1,7 +1,7 @@
 Rezept({
   id: 'tofu-scramble-mit-gemuese',
   titel: 'Tofu-Scramble mit Gemüse',
-  beschreibung: 'Veganes Rührei aus zerbröseltem Tofu mit Champignons, Spinat und Kurkuma, dazu eine schnelle Salsa aus frischen und getrockneten Tomaten.',
+  beschreibung: 'Veganes Tofu-Rührei mit Champignons und Spinat, dazu eine schnelle Tomatensalsa.',
   kategorie: 'Frühstück',
   tags: ['Vegan', 'Tofu', 'Brunch', 'Pilze'],
   personen: 4,
@@ -47,7 +47,6 @@ Rezept({
   ],
 
   tipps: [
-    'Tofu vor dem Zerbröseln gut ausdrücken (z. B. in einem Küchentuch) – so wird er beim Braten schneller goldbraun.',
     'Eine Prise Kala Namak (Schwarzsalz) zum Schluss sorgt für einen eiähnlichen Geschmack.',
   ],
 });

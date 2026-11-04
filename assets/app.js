@@ -299,8 +299,7 @@
       document.querySelectorAll('#ern-chips .chip').forEach((c) => c.classList.toggle('aktiv', c.dataset.e === f.e));
       document.querySelectorAll('#merkmal-chips .chip').forEach((c) => c.classList.toggle('aktiv', f.m.includes(c.dataset.m)));
     }
-    let t;
-    const tippen = (el, feld) => el.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { f[feld] = el.value; aktualisieren(); }, 150); });
+    const tippen = (el, feld) => { let t; el.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { f[feld] = el.value; aktualisieren(); }, 150); }); };
     tippen($('suche'), 's');
     tippen($('zutaten'), 'z');
     $('sortierung').addEventListener('change', (e) => { f.o = e.target.value; f.d = sortierung(f.o)[3]; aktualisieren(); });

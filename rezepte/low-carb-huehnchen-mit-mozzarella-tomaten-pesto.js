@@ -1,0 +1,46 @@
+Rezept({
+  id: 'low-carb-huehnchen-mit-mozzarella-tomaten-pesto',
+  titel: 'Low-Carb-Hühnchen mit Mozzarella, Tomaten & Pesto',
+  beschreibung: 'Gewürzte Hähnchenbrust aus der Pfanne, mit Mozzarella überbacken und mit Pesto und Cherrytomaten belegt – dazu ein frischer Salat.',
+  kategorie: 'Hauptgericht',
+  tags: ['Italienisch', 'Hähnchen'],
+  personen: 4,
+  zeit: { vorbereitung: 10, kochen: 20 },
+  schwierigkeit: 'einfach',
+  bild: 'bilder/low-carb-huehnchen-mit-mozzarella-tomaten-pesto.jpg',
+
+  zutaten: [
+    { abschnitt: 'Für das Hühnchen' },
+    { menge: 800, einheit: 'g', name: 'Hähnchenbrust' },
+    { menge: 1, einheit: 'TL', name: 'Knoblauchpulver' },
+    { menge: 2, einheit: 'TL', name: 'Kräuter der Provence', hinweis: 'getrocknet' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+    { menge: 4, einheit: 'EL', name: 'Olivenöl' },
+    { abschnitt: 'Für den Belag' },
+    { menge: 2, name: 'Mozzarella', hinweis: 'à 125 g' },
+    { menge: 3, einheit: 'EL', name: 'Pesto verde' },
+    { menge: 80, einheit: 'g', name: 'Cherrytomate', mehrzahl: 'Cherrytomaten' },
+    { abschnitt: 'Zum Servieren' },
+    { menge: 10, einheit: 'g', name: 'Basilikum', hinweis: 'frisch' },
+    { menge: 20, einheit: 'g', name: 'Parmesan' },
+    { menge: 80, einheit: 'g', name: 'Salat-Mix' },
+  ],
+
+  schritte: [
+    { abschnitt: 'Vorbereiten' },
+    'Mozzarella in Scheiben schneiden. Cherrytomaten waschen und in Scheiben schneiden. Parmesan reiben.',
+    'Hähnchenbrust mit Knoblauchpulver, Kräutern der Provence, Salz und Pfeffer würzen.',
+    { abschnitt: 'Braten' },
+    'Olivenöl in einer Pfanne erhitzen und das Hühnchen ca. **6 Minuten pro Seite** braten, bis es gar ist.',
+    'Währenddessen Basilikum waschen, trocken schütteln und die Blätter in feine Streifen schneiden.',
+    'Das gare Hühnchen mit Mozzarella belegen, Deckel aufsetzen und weiterbraten, bis der Käse geschmolzen ist. Alternativ das Hühnchen in eine Backform (ca. 20 × 30 cm) legen und den Käse **unter dem Grill** schmelzen lassen.',
+    'Hühnchen mit Pesto bestreichen und mit den Tomaten belegen.',
+    { abschnitt: 'Servieren' },
+    'Salat waschen und abtropfen lassen. Hühnchen mit Basilikum und Parmesan garnieren und mit dem Salat servieren.',
+  ],
+
+  tipps: [
+    'Dicke Hähnchenbrüste vorher waagerecht halbieren oder flach klopfen – so garen sie gleichmäßiger und schneller.',
+  ],
+});

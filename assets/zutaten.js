@@ -62,6 +62,9 @@
     'austernsauce':  { k: GW, icon: 'oel' },
     'gewürzmischung': { k: GW, icon: 'gewuerz', vorrat: true },
     'italienische kräuter': { k: GW, icon: 'kraeuter', vorrat: true },
+    'kräuter der provence': { k: GW, icon: 'kraeuter', vorrat: true },
+    'knoblauchpulver': { k: GW, icon: 'gewuerz', vorrat: true },
+    'pesto':         { k: KO, icon: 'kraeuter' },
     'sriracha':      { k: GW, icon: 'chili' },
     'honig':         { k: GW, icon: 'gewuerz' },
     'wasser':        { icon: 'wasser', nie: true },
@@ -135,6 +138,7 @@
     'spinat':        { k: OG, icon: 'kraeuter' },
     'grünkohl':      { k: OG, icon: 'kraeuter' },
     'salat':         { k: OG, icon: 'kraeuter' },
+    'salat-mix':     { k: OG, icon: 'kraeuter' },
     'gurke':         { k: OG },
     'grüne bohnen':  { k: OG },
     'brechbohnen':   { k: OG },
@@ -227,10 +231,13 @@
     'chorizo': 'fleisch', 'würstchen': 'fleisch', 'schmalz': 'fleisch', 'gelatine': 'fleisch',
     'rinderbrühe': 'fleisch', 'hühnerbrühe': 'fleisch', 'fleischbrühe': 'fleisch', 'geflügelbrühe': 'fleisch',
     'kalbsfond': 'fleisch', 'rinderfond': 'fleisch', 'bratenfond': 'fleisch', 'knochenbrühe': 'fleisch',
+    'hähnchenschenkel': 'fleisch', 'hähnchenkeule': 'fleisch', 'hähnchenfilet': 'fleisch', 'putenfilet': 'fleisch',
+    'schweinefilet': 'fleisch', 'rinderfilet': 'fleisch', 'steak': 'fleisch', 'gulasch': 'fleisch',
     // Fisch & Meeresfrüchte
     'fisch': 'fisch', 'lachs': 'fisch', 'thunfisch': 'fisch', 'kabeljau': 'fisch', 'forelle': 'fisch',
     'garnele': 'fisch', 'shrimps': 'fisch', 'krabben': 'fisch', 'muscheln': 'fisch', 'tintenfisch': 'fisch',
     'sardellen': 'fisch', 'anchovis': 'fisch', 'fischsauce': 'fisch', 'fischfond': 'fisch',
+    'lachsfilet': 'fisch', 'fischfilet': 'fisch', 'scampi': 'fisch',
     'austernsauce': 'fisch', 'worcestershiresauce': 'fisch', 'bonito': 'fisch', 'dashi': 'fisch',
     // tierisch, aber vegetarisch
     'eigelb': 'tierisch', 'eiweiß': 'tierisch', 'butter': 'tierisch',
@@ -238,11 +245,13 @@
     'sahne': 'tierisch', 'schmand': 'tierisch', 'crème fraîche': 'tierisch', 'joghurt': 'tierisch',
     'quark': 'tierisch', 'käse': 'tierisch', 'frischkäse': 'tierisch', 'parmesan': 'tierisch',
     'mozzarella': 'tierisch', 'gouda': 'tierisch', 'feta': 'tierisch', 'ricotta': 'tierisch',
-    'mascarpone': 'tierisch', 'honig': 'tierisch', 'mayonnaise': 'tierisch',
+    'mascarpone': 'tierisch', 'pecorino': 'tierisch', 'grana padano': 'tierisch', 'burrata': 'tierisch',
+    'halloumi': 'tierisch', 'pesto': 'tierisch', 'honig': 'tierisch', 'mayonnaise': 'tierisch',
     // pflanzlich trotz ähnlichem Namen
     'kokosmilch': 'vegan', 'hafermilch': 'vegan', 'sojamilch': 'vegan', 'mandelmilch': 'vegan',
     'kokossahne': 'vegan', 'hafersahne': 'vegan', 'sojasahne': 'vegan', 'sojajoghurt': 'vegan',
     'erdnussbutter': 'vegan', 'kakaobutter': 'vegan', 'fruchtfleisch': 'vegan', 'kokosfleisch': 'vegan',
+    'tofusteak': 'vegan', 'blumenkohlsteak': 'vegan',
   };
 
   /** fleisch | fisch | tierisch | vegan – Angabe "ernaehrung" an der Zutat hat Vorrang */

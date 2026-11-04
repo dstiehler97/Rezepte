@@ -6,6 +6,7 @@ window.REZEPT_DATEIEN = [
   "gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips",
   "kaspressknoedel",
   "koettbullar",
+  "low-carb-huehnchen-mit-mozzarella-tomaten-pesto",
   "one-pot-hackfleisch-porree-nudeln",
   "pfannkuchen",
   "pfifferlinge-mit-spinatknoedeln-in-salbeibutter",
@@ -13,5 +14,6 @@ window.REZEPT_DATEIEN = [
   "semmelknoedel",
   "spaghetti-bolognese",
   "suesskartoffelragout-mit-bulgur-cashewkernen",
-  "thai-kokos-suesskartoffelsuppe"
+  "thai-kokos-suesskartoffelsuppe",
+  "tofu-scramble-mit-gemuese"
 ];
