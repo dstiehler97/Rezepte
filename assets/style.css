@@ -324,6 +324,7 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
   .r-inhalt { grid-template-columns: 1fr; gap: 1.5rem; }
   .r-naehrwerte { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem 1rem; margin-top: -.25rem; }
   .nw-titel { grid-column: 1 / -1; flex-direction: row; gap: .6rem; align-items: baseline; }
+  .nw-name { white-space: normal; font-size: .62rem; letter-spacing: .02em; overflow-wrap: anywhere; }
   .zutat { grid-template-columns: 1.4rem 5.2rem minmax(0, 1fr); padding: .45rem 0; }
   .schritt { gap: .75rem; }
 
