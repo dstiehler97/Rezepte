@@ -7,6 +7,7 @@ Rezept({
   personen: 4,
   zeit: { vorbereitung: 10, ruhen: 15, kochen: 20 },
   schwierigkeit: 'einfach',
+  bild: 'bilder/pfannkuchen.jpg',
 
   zutaten: [
     { menge: 250, einheit: 'g', name: 'Mehl' },

@@ -7,6 +7,7 @@ Rezept({
   personen: 4,
   zeit: { vorbereitung: 20, kochen: 90 },
   schwierigkeit: 'einfach',
+  bild: 'bilder/spaghetti-bolognese.jpg',
 
   zutaten: [
     { abschnitt: 'Für die Sauce' },
