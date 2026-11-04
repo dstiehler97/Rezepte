@@ -4,7 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Rezepte</title>
-  <meta name="theme-color" content="#a8432a">
+  <!-- Statusleiste/Browserleiste = Seitenhintergrund (hell/dunkel); das Script unten setzt bei fester Wahl beide -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f4f1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#151311">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <!-- "default": dunkle Statusleiste auf hellem Grund, Inhalt beginnt darunter (helles Papier-Design) -->
@@ -12,7 +14,32 @@
   <meta name="apple-mobile-web-app-title" content="Rezepte">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/app.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/app-180.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/app-180.png">
+  <!-- iOS-Startbilder (erzeugt mit node tools/symbole.js); dunkel zuerst, hell als Rückfall -->
+  <link rel="apple-touch-startup-image" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" href="icons/start/start-640x1136-dunkel.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/start/start-640x1136.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" href="icons/start/start-750x1334-dunkel.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/start/start-750x1334.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="icons/start/start-1242x2208-dunkel.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/start/start-1242x2208.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="icons/start/start-1125x2436-dunkel.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/start/start-1125x2436.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" href="icons/start/start-828x1792-dunkel.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/start/start-828x1792.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="icons/start/start-1242x2688-dunkel.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/start/start-1242x2688.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="icons/start/start-1170x2532-dunkel.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/start/start-1170x2532.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="icons/start/start-1179x2556-dunkel.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/start/start-1179x2556.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="icons/start/start-1284x2778-dunkel.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/start/start-1284x2778.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="icons/start/start-1290x2796-dunkel.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/start/start-1290x2796.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="icons/start/start-1206x2622-dunkel.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/start/start-1206x2622.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" href="icons/start/start-1320x2868-dunkel.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/start/start-1320x2868.png">
   <meta name="color-scheme" content="light dark">
   <script>
     /* Farbschema vor dem ersten Zeichnen setzen (kein Aufblitzen). Einstellung: Mehr → Darstellung,
@@ -25,8 +52,9 @@
         var dunkel = w === 'dunkel' || (w !== 'hell' && !!(mq && mq.matches));
         var h = document.documentElement;
         h.setAttribute('data-theme', dunkel ? 'dark' : 'light');
-        var m = document.querySelector('meta[name="theme-color"]');
-        if (m) m.setAttribute('content', dunkel ? '#1c1916' : '#a8432a');
+        var farbe = dunkel ? '#151311' : '#f6f4f1';   /* = --papier (assets/style.css) */
+        var ms = document.querySelectorAll('meta[name="theme-color"]');
+        for (var i = 0; i < ms.length; i++) ms[i].setAttribute('content', farbe);
         var s = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
         if (s) s.setAttribute('content', dunkel ? 'black' : 'default');
       }
@@ -47,6 +75,12 @@
       <a href="#/zuhause" data-bereich="zuhause">Zuhause</a>
       <a href="#/mehr" data-bereich="mehr" class="nav-mehr" title="Mehr: Kochbuch drucken, Einstellungen" aria-label="Mehr: Kochbuch drucken, Einstellungen"><span data-icon="zahnrad"></span></a>
     </nav>
+  </header>
+
+  <!-- Handy: schmale Kopfleiste mit kleinem Titel, erscheint beim Scrollen (assets/app.js: kopfleisteBinden) -->
+  <header class="kopfleiste nur-bildschirm aus" id="kopfleiste">
+    <a class="kl-zurueck" href="#/" data-zurueck hidden><span data-icon="zurueck"></span><span class="kl-text"></span></a>
+    <strong class="kl-titel" aria-hidden="true"></strong>
   </header>
 
   <main id="app"><p class="leer">Lade Rezepte …</p></main>
