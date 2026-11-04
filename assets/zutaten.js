@@ -9,7 +9,8 @@
  *   nie   = nie auf die Einkaufsliste (Wasser)
  *   trocken = Menge immer als Trockengewicht in g (wie auf der Packung)
  * Gefunden wird über den Namen: exakt, oder als Wortende (Meersalz -> salz).
- * In einem Rezept kann man alles überschreiben (einkauf, icon, vorrat, ganz).
+ * In einem Rezept kann man alles überschreiben (einkauf, icon, vorrat, ganz, ernaehrung).
+ * Ernährungsform (vegan/vegetarisch/fisch/fleisch) kommt aus der Tabelle TIERISCH weiter unten.
  */
 (function (g) {
   'use strict';
@@ -60,6 +61,7 @@
     'chilisauce':    { k: GW, icon: 'chili' },
     'austernsauce':  { k: GW, icon: 'oel' },
     'gewürzmischung': { k: GW, icon: 'gewuerz', vorrat: true },
+    'italienische kräuter': { k: GW, icon: 'kraeuter', vorrat: true },
     'sriracha':      { k: GW, icon: 'chili' },
     'honig':         { k: GW, icon: 'gewuerz' },
     'wasser':        { icon: 'wasser', nie: true },
@@ -97,6 +99,8 @@
     'gouda':         { k: KU, icon: 'kaese' },
     'feta':          { k: KU, icon: 'kaese' },
     'hefe':          { k: KU, icon: 'mehl' },
+    'gnocchi':       { k: KU, icon: 'nudeln' },
+    'pfannenkäse':   { k: KU, icon: 'kaese' },
 
     // Obst & Gemüse
     'zwiebel':       { k: OG, icon: 'zwiebel' },
@@ -188,6 +192,7 @@
     'tomatenmark':       { k: KO, icon: 'tomate' },
     'stückige tomaten':  { k: KO, icon: 'tomate' },
     'passierte tomaten': { k: KO, icon: 'tomate' },
+    'geschälte tomaten': { k: KO, icon: 'tomate' },
     'kokosmilch':        { k: KO, icon: 'milch' },
     'preiselbeeren':     { k: KO },
     'kichererbsen':      { k: KO },
@@ -204,6 +209,72 @@
     'weißwein':      { k: GE },
   };
 
+
+  /*
+   * Ernährungsform je Zutat: fleisch | fisch (auch Meeresfrüchte) | tierisch (Ei, Milch, Honig – noch vegetarisch).
+   * Nicht aufgeführte Zutaten gelten als vegan. 'vegan' hebt Wortende-Treffer auf (Kokosmilch ≠ Milch).
+   */
+  const TIERISCH = {
+    // Fleisch
+    'fleisch': 'fleisch', 'hackfleisch': 'fleisch', 'rind': 'fleisch', 'schwein': 'fleisch', 'kalb': 'fleisch',
+    'lamm': 'fleisch', 'hähnchen': 'fleisch', 'hähnchenbrust': 'fleisch', 'huhn': 'fleisch', 'hühnchen': 'fleisch',
+    'pute': 'fleisch', 'putenbrust': 'fleisch', 'ente': 'fleisch', 'geflügel': 'fleisch', 'speck': 'fleisch',
+    'schinken': 'fleisch', 'bacon': 'fleisch', 'pancetta': 'fleisch', 'wurst': 'fleisch', 'salami': 'fleisch',
+    'chorizo': 'fleisch', 'würstchen': 'fleisch', 'schmalz': 'fleisch', 'gelatine': 'fleisch',
+    'rinderbrühe': 'fleisch', 'hühnerbrühe': 'fleisch', 'fleischbrühe': 'fleisch', 'geflügelbrühe': 'fleisch',
+    'kalbsfond': 'fleisch', 'rinderfond': 'fleisch', 'bratenfond': 'fleisch', 'knochenbrühe': 'fleisch',
+    // Fisch & Meeresfrüchte
+    'fisch': 'fisch', 'lachs': 'fisch', 'thunfisch': 'fisch', 'kabeljau': 'fisch', 'forelle': 'fisch',
+    'garnele': 'fisch', 'shrimps': 'fisch', 'krabben': 'fisch', 'muscheln': 'fisch', 'tintenfisch': 'fisch',
+    'sardellen': 'fisch', 'anchovis': 'fisch', 'fischsauce': 'fisch', 'fischfond': 'fisch',
+    'austernsauce': 'fisch', 'worcestershiresauce': 'fisch', 'bonito': 'fisch', 'dashi': 'fisch',
+    // tierisch, aber vegetarisch
+    'eigelb': 'tierisch', 'eiweiß': 'tierisch', 'butter': 'tierisch',
+    'butterschmalz': 'tierisch', 'ghee': 'tierisch', 'milch': 'tierisch', 'buttermilch': 'tierisch',
+    'sahne': 'tierisch', 'schmand': 'tierisch', 'crème fraîche': 'tierisch', 'joghurt': 'tierisch',
+    'quark': 'tierisch', 'käse': 'tierisch', 'frischkäse': 'tierisch', 'parmesan': 'tierisch',
+    'mozzarella': 'tierisch', 'gouda': 'tierisch', 'feta': 'tierisch', 'ricotta': 'tierisch',
+    'mascarpone': 'tierisch', 'honig': 'tierisch', 'mayonnaise': 'tierisch',
+    // pflanzlich trotz ähnlichem Namen
+    'kokosmilch': 'vegan', 'hafermilch': 'vegan', 'sojamilch': 'vegan', 'mandelmilch': 'vegan',
+    'kokossahne': 'vegan', 'hafersahne': 'vegan', 'sojasahne': 'vegan', 'sojajoghurt': 'vegan',
+    'erdnussbutter': 'vegan', 'kakaobutter': 'vegan', 'fruchtfleisch': 'vegan', 'kokosfleisch': 'vegan',
+  };
+
+  /** fleisch | fisch | tierisch | vegan – Angabe "ernaehrung" an der Zutat hat Vorrang */
+  function art(zutat) {
+    if (zutat.ernaehrung) return zutat.ernaehrung;
+    const n = normal(zutat.name);
+    if (/\b(vegan|pflanzlich)/.test(n)) return 'vegan';
+    if (/\bvegetarisch/.test(n)) return 'tierisch';
+    if (/(^| )(ei|eiern?|\S+eiern?)( |$)/.test(n)) return 'tierisch'; // Ei nur als ganzes Wort (nicht Salbei, Reis)
+    const k = suchen(zutat.name, TIERISCH);
+    return k ? TIERISCH[k] : 'vegan';
+  }
+
+  /*
+   * Ernährungsform eines Rezepts: vegan < vegetarisch < fisch < fleisch.
+   * Optionale Zutaten zählen nicht. rezept.ernaehrung überschreibt das Ergebnis.
+   * Liefert { id, auto, fisch, fleisch, gruende: [Zutatennamen] }.
+   */
+  const ERNAEHRUNG = ['vegan', 'vegetarisch', 'fisch', 'fleisch'];
+  function ernaehrung(rezept) {
+    const gruende = { fleisch: [], fisch: [], tierisch: [] };
+    for (const z of rezept.zutaten || []) {
+      if (z.abschnitt || z.optional) continue;
+      const a = art(z);
+      if (gruende[a] && !gruende[a].includes(z.name)) gruende[a].push(z.name);
+    }
+    const auto = gruende.fleisch.length ? 'fleisch' : gruende.fisch.length ? 'fisch' : gruende.tierisch.length ? 'vegetarisch' : 'vegan';
+    const id = ERNAEHRUNG.includes(rezept.ernaehrung) ? rezept.ernaehrung : auto;
+    const grund = id === 'fleisch' ? gruende.fleisch : id === 'fisch' ? gruende.fisch : id === 'vegetarisch' ? gruende.tierisch : [];
+    return {
+      id, auto,
+      fleisch: id === 'fleisch',
+      fisch: id === 'fisch' || (id === 'fleisch' && gruende.fisch.length > 0),
+      gruende: id === auto ? grund : [],
+    };
+  }
 
   function normal(text) {
     return String(text || '').toLowerCase().replace(/[(),.;:]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -247,5 +318,5 @@
     };
   }
 
-  g.Zutaten = { KATEGORIEN, LEXIKON, info, normal, suchen };
+  g.Zutaten = { KATEGORIEN, LEXIKON, info, normal, suchen, art, ernaehrung, ERNAEHRUNG };
 })(globalThis);

@@ -36,6 +36,7 @@
     'chilisauce': N(95, 1.9, 19, 15, 0.9, 2.2, { dichte: 1.1 }),
     'austernsauce': N(110, 2.5, 22, 15, 0.3, 0.3, { dichte: 1.2 }),
     'gewürzmischung': N(300, 12, 35, 5, 10, 30, { dichte: 0.5 }),
+    'italienische kräuter': N(280, 10, 40, 4, 6, 35, { dichte: 0.3 }),
     'sriracha': N(95, 1.9, 19, 15, 0.9, 2.2, { dichte: 1.1 }),
     'honig': N(305, 0.3, 80, 75, 0, 0, { dichte: 1.4 }),
     'wasser': N(0, 0, 0, 0, 0, 0),
@@ -74,6 +75,8 @@
     'gouda': N(355, 25, 0, 0, 28, 0, { scheibe: 20 }),
     'feta': N(262, 17, 0.7, 0.7, 21, 0, { packung: 200, stueck: 200 }),
     'hefe': N(100, 12, 9, 0, 1, 7, { wuerfel: 42, paeckchen: 7 }),
+    'gnocchi': N(155, 4, 32, 1, 0.6, 2, { packung: 400 }),         // Frischware, Kühlregal
+    'pfannenkäse': N(300, 17, 12, 1, 21, 1, { stueck: 25 }),      // panierter Ofenkäse
 
     // Obst & Gemüse
     'zwiebel': N(40, 1.2, 8, 4.7, 0.1, 1.8, { stueck: 80 }),
@@ -158,6 +161,7 @@
     'tomatenmark': N(82, 4.3, 15, 12, 0.5, 4, { dichte: 1.1, dose: 70 }),
     'stückige tomaten': N(21, 1.1, 3.5, 3, 0.2, 1, { dose: 400, packung: 400 }),
     'passierte tomaten': N(30, 1.4, 5, 4, 0.2, 1, { packung: 500, glas: 500 }),
+    'geschälte tomaten': N(20, 1, 3, 3, 0.2, 1, { dose: 400 }),
     'kokosmilch': N(195, 1.8, 3, 2, 19, 0.5, { dose: 400 }),
     'preiselbeeren': N(180, 0.3, 43, 40, 0.3, 2, { glas: 400, dichte: 1.2 }),
     'kichererbsen': N(120, 7, 16, 1, 2.6, 5, { dose: 240 }),     // abgetropft
