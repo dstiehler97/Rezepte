@@ -217,6 +217,7 @@
     'passierte tomaten': { k: KO, icon: 'tomate' },
     'geschälte tomaten': { k: KO, icon: 'tomate' },
     'getrocknete tomaten': { k: KO, icon: 'tomate' },
+    'geröstete paprika': { k: KO },
     'kokosmilch':        { k: KO, icon: 'milch' },
     'pflanzlicher drink': { k: KU, icon: 'milch' },
     'preiselbeeren':     { k: KO },

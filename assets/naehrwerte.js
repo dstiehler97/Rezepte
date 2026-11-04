@@ -185,6 +185,7 @@
     'passierte tomaten': N(30, 1.4, 5, 4, 0.2, 1, { packung: 500, glas: 500 }),
     'geschälte tomaten': N(20, 1, 3, 3, 0.2, 1, { dose: 400 }),
     'getrocknete tomaten': N(210, 5, 23, 15, 12, 6, { glas: 280 }), // in Öl, abgetropft
+    'geröstete paprika': N(30, 1, 5, 4, 0.3, 1.5, { glas: 290 }), // aus dem Glas, abgetropft
     'kokosmilch': N(195, 1.8, 3, 2, 19, 0.5, { dose: 400 }),
     'pflanzlicher drink': N(45, 0.5, 7, 4, 1.5, 0.8),   // z. B. Haferdrink
     'preiselbeeren': N(180, 0.3, 43, 40, 0.3, 2, { glas: 400, dichte: 1.2 }),

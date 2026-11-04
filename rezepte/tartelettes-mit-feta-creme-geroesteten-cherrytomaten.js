@@ -10,9 +10,8 @@ Rezept({
   bild: 'bilder/tartelettes-mit-feta-creme-geroesteten-cherrytomaten.jpg',
 
   zutaten: [
-    { abschnitt: 'Für die Tartelettes' },
-    { menge: 275, einheit: 'g', name: 'Blätterteig', hinweis: '1 Rolle aus dem Kühlregal' },
-    { abschnitt: 'Für die Ofentomaten' },
+    { abschnitt: 'Für Teig und Ofentomaten' },
+    { menge: 275, einheit: 'g', name: 'Blätterteig', hinweis: 'Kühlregal' },
     { menge: 300, einheit: 'g', name: 'Cherrytomate', mehrzahl: 'Cherrytomaten' },
     { menge: 2, einheit: 'Zehe', name: 'Knoblauch' },
     { menge: 2, einheit: 'EL', name: 'Aceto Balsamico' },
@@ -23,7 +22,7 @@ Rezept({
     { name: 'Salz' },
     { name: 'Pfeffer' },
     { abschnitt: 'Für die Feta-Creme' },
-    { menge: 1, name: 'Zitrone', mehrzahl: 'Zitronen', hinweis: 'unbehandelt; Saft und Abrieb' },
+    { menge: 1, name: 'Zitrone', mehrzahl: 'Zitronen', hinweis: 'unbehandelt' },
     { menge: 10, einheit: 'g', name: 'Basilikum' },
     { menge: 10, einheit: 'g', name: 'Petersilie' },
     { menge: 200, einheit: 'g', name: 'Feta' },
@@ -35,24 +34,22 @@ Rezept({
 
   schritte: [
     { abschnitt: 'Tartelettes' },
-    'Backofen auf **200 °C Ober-/Unterhitze** (180 °C Umluft) vorheizen.',
-    'Blätterteig ausrollen und in gleich große Quadrate von ca. 13 × 13 cm schneiden.',
-    'Teigquadrate auf ein mit Backpapier belegtes Blech legen und mit einem Messer einen **1 cm** breiten Rand einritzen, den Teig dabei **nicht durchschneiden**. **12–15 Minuten** knusprig backen.',
+    'Backofen auf **200 °C Ober-/Unterhitze** (180 °C Umluft) vorheizen. Blätterteig ausrollen und in Quadrate von ca. 13 × 13 cm schneiden.',
+    'Teigquadrate auf ein mit Backpapier belegtes Blech legen und einen **1 cm** breiten Rand einritzen, **ohne durchzuschneiden**. **12–15 Minuten** knusprig backen.',
     { abschnitt: 'Ofentomaten' },
-    'Cherrytomaten waschen und abtropfen lassen. Knoblauch schälen und in feine Scheiben schneiden.',
-    'Balsamico, Honig, Olivenöl, Rosmarin und Thymian in einer Schüssel verrühren und mit Salz und Pfeffer würzen.',
+    'Cherrytomaten waschen. Knoblauch schälen und in feine Scheiben schneiden. Balsamico, Honig, Olivenöl, Rosmarin und Thymian verrühren und mit Salz und Pfeffer würzen.',
     'Tomaten und Knoblauch mit der Marinade in eine Auflaufform geben und **15 Minuten** zum Blätterteig in den Ofen stellen.',
     { abschnitt: 'Feta-Creme (parallel)' },
     'Zitrone heiß waschen, Schale abreiben und den Saft auspressen. Basilikum und Petersilie waschen und trocken schütteln.',
     'Kräuter mit Feta, Zitronensaft und -abrieb im Mixer pürieren. In eine Schüssel geben, griechischen Joghurt unterheben und mit Salz und Pfeffer abschmecken.',
     'Pinienkerne in einer Pfanne **ohne Öl** goldbraun rösten.',
     { abschnitt: 'Fertigstellen' },
-    'Tartelettes aus dem Ofen nehmen und mittig mit einem Löffel eine Mulde eindrücken. Feta-Creme gleichmäßig darauf verteilen.',
-    'Ofentomaten und Pinienkerne daraufgeben und servieren. Nach Belieben mit mehr Basilikum garnieren.',
+    'Tartelettes aus dem Ofen nehmen, mittig mit einem Löffel eine Mulde eindrücken und die Feta-Creme gleichmäßig darauf verteilen.',
+    'Ofentomaten und Pinienkerne daraufgeben. Nach Belieben mit mehr Basilikum garnieren.',
   ],
 
   tipps: [
-    'Eine Rolle Blätterteig ergibt 6 Tartelettes – als Hauptgericht mit einem grünen Salat servieren oder die doppelte Menge backen.',
+    'Ergibt 6 Tartelettes; als Hauptgericht mit einem grünen Salat servieren.',
     'Dazu passt ein trockener Riesling-Sekt.',
   ],
 });
