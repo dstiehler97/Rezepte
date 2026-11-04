@@ -9,6 +9,7 @@ window.REZEPT_DATEIEN = [
   "koettbullar",
   "low-carb-huehnchen-mit-mozzarella-tomaten-pesto",
   "one-pot-hackfleisch-porree-nudeln",
+  "pasta-mit-rotwein-sauce-steak-streifen",
   "pfannkuchen",
   "pfifferlinge-mit-spinatknoedeln-in-salbeibutter",
   "sanshoku-don-vegetarische-drei-farben-reisschale",

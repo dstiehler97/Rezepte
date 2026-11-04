@@ -551,6 +551,314 @@
     });
   }
 
+  // ---------------------------------------------------------------- Mehr (Einstellungen & Seltenes)
+  /*
+   * Abschnitte und Einträge der Seite #/mehr. Erweiterungen melden sich hier an, statt die Seite umzubauen:
+   *
+   *   mehrEintrag('darstellung', {
+   *     id: 'dunkel',                      // eindeutig; die Zeile bekommt id="mehr-dunkel"
+   *     titel: 'Dunkler Modus',
+   *     text: 'Folgt sonst dem System',    // optional, kleine Zeile darunter (Text oder Funktion → Text)
+   *     icon: 'zahnrad',                   // optional, Name aus assets/icons.js
+   *     // a) Link-Zeile mit Pfeil …
+   *     href: '#/…',
+   *     // b) … oder eigenes Bedienelement rechts (Schalter, Auswahl, Knöpfe):
+   *     html: () => '<select>…</select>',  // wird bei jedem Öffnen der Seite neu erzeugt
+   *     binden: (zeile) => { … },          // danach aufgerufen; zeile = <li> des Eintrags
+   *   });
+   *
+   * Reihenfolge = Reihenfolge der Anmeldung; gleiche id ersetzt den Eintrag. Leere Abschnitte bleiben unsichtbar.
+   * Neuer Abschnitt: mehrAbschnitt('einkauf', 'Einkaufen') – steht vor „Daten“ (immer zuletzt).
+   * Von außen (eigene Datei, nach app.js geladen): RezeptApp.mehrEintrag(…).
+   */
+  const MEHR = [
+    { id: 'drucken', titel: 'Drucken', eintraege: [] },
+    { id: 'kochen', titel: 'Kochen', eintraege: [] },
+    { id: 'darstellung', titel: 'Darstellung', eintraege: [] },
+    { id: 'daten', titel: 'Daten', eintraege: [] },
+  ];
+  function mehrAbschnitt(id, titel) {
+    if (!MEHR.some((a) => a.id === id)) MEHR.splice(MEHR.findIndex((a) => a.id === 'daten'), 0, { id, titel, eintraege: [] });
+  }
+  function mehrEintrag(abschnitt, eintrag) {
+    const a = MEHR.find((x) => x.id === abschnitt);
+    if (!a) throw new Error('Unbekannter Abschnitt in „Mehr“: ' + abschnitt);
+    const i = a.eintraege.findIndex((e) => e.id === eintrag.id);
+    if (i >= 0) a.eintraege[i] = eintrag; else a.eintraege.push(eintrag);
+    if (document.body.dataset.seite === 'mehr') zeichnen();
+  }
+
+  mehrEintrag('drucken', {
+    id: 'kochbuch', titel: 'Kochbuch drucken', icon: 'drucker', href: '#/kochbuch',
+    text: () => `Alle ${rezepte.length} Rezepte, jedes auf einer eigenen Seite`,
+  });
+  mehrEintrag('kochen', {
+    id: 'timer-ton', titel: 'Timer-Ton testen', icon: 'glocke', text: 'Am iPhone: Stummschalter aus, Lautstärke hoch',
+    html: () => `<button type="button" class="knopf">${svg('start')} Abspielen</button>`,
+    binden: (zeile) => zeile.querySelector('button').addEventListener('click', () => Timer.testen()),
+  });
+
+  function seiteMehr() {
+    document.title = 'Mehr – Rezepte';
+    const text = (e) => (typeof e.text === 'function' ? e.text() : e.text);
+    const zeile = (e) => {
+      const inhalt = `${e.icon ? `<span class="mehr-icon">${svg(e.icon)}</span>` : ''}
+        <span class="mehr-text"><strong>${esc(e.titel)}</strong>${text(e) ? `<small>${esc(text(e))}</small>` : ''}</span>`;
+      return `<li id="mehr-${esc(e.id)}">${e.href
+        ? `<a class="mehr-zeile" href="${esc(e.href)}">${inhalt}<span class="mehr-pfeil">${svg('vor')}</span></a>`
+        : `<div class="mehr-zeile">${inhalt}<span class="mehr-steuer">${e.html ? e.html() : ''}</span></div>`}</li>`;
+    };
+    const stand = new Date(APP_STAND + 'T12:00').toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+    app.innerHTML = `
+      <div class="werkzeuge"><h1>Mehr</h1></div>
+      ${MEHR.filter((a) => a.eintraege.length).map((a) => `
+        <section class="mehr-abschnitt" data-abschnitt="${a.id}">
+          <h2>${esc(a.titel)}</h2>
+          <ul class="mehr-liste">${a.eintraege.map(zeile).join('')}</ul>
+        </section>`).join('')}
+      <p class="mehr-info klein">${rezepte.length} Rezepte · Version vom ${stand}<br>
+        Wochenplan, Einkaufsliste und Zuhause werden nur auf diesem Gerät gespeichert.</p>`;
+    MEHR.forEach((a) => a.eintraege.forEach((e) => { if (e.binden) e.binden(document.getElementById('mehr-' + e.id)); }));
+  }
+
+  // ---------------------------------------------------------------- Kochmodus
+  // #/kochen/<id>?p=<Personen>&s=<Schritt ab 1>: ein Schritt pro Bildschirm, blättern per Wischen, Knöpfen, Pfeiltasten.
+  // Fortschritt je Rezept in speicher 'kochen': {id: {s, p, haken: {zutatIndex: true}, zeit}}
+  let kochen = speicher.lesen('kochen', {});
+  const KOCH_MERKEN = 10;                 // so viele Rezepte behalten ihren Fortschritt
+  const KOCH_FRISCH_MS = 24 * 3600e3;     // älterer Fortschritt gilt als erledigt
+
+  const kochStand = (id) => kochen[id] || { s: 1, p: 0, haken: {}, zeit: 0 };
+  const kochFrisch = (st) => st.zeit && Date.now() - st.zeit < KOCH_FRISCH_MS;
+  function kochenSichern(id, stand) {
+    kochen[id] = Object.assign(stand, { zeit: Date.now() });
+    Object.keys(kochen).sort((a, b) => kochen[b].zeit - kochen[a].zeit).slice(KOCH_MERKEN).forEach((k) => delete kochen[k]);
+    speicher.schreiben('kochen', kochen);
+  }
+
+  /** Schritte ohne Abschnitts-Einträge: [{text, abschnitt, nr}] */
+  function schrittListe(r) {
+    let abschnitt = '';
+    const liste = [];
+    for (const s of r.schritte || []) {
+      if (typeof s === 'object' && s.abschnitt) abschnitt = s.abschnitt;
+      else liste.push({ text: String(s), abschnitt, nr: liste.length + 1 });
+    }
+    return liste;
+  }
+  /** Attribute für Timer-Chips eines Schritts: Name in der Timer-Leiste und Ziel beim Antippen */
+  const timerZiel = (r, nr, personen) =>
+    `data-timer-name="${esc(r.titel + ' · Schritt ' + nr)}" data-timer-link="#/kochen/${esc(r.id)}?p=${personen}&amp;s=${nr}"`;
+
+  // Zutaten ↔ Schritt per Namensabgleich: Wortformen (Zwiebeln/Zwiebel), Zusammensetzungen (Zwiebelwürfel,
+  // Salzwasser → Salz) und Oberbegriffe (Öl → Pflanzenöl, Brühe → Rinderbrühe). Kommt eine Zutat mehrfach vor
+  // (Butter zum Braten, Butter für die Sauce), bekommt die k-te Erwähnung das k-te Vorkommen.
+  const OBERBEGRIFF_NICHT = ['sauce', 'soße', 'masse', 'teig', 'wasser', 'mischung', 'flüssigkeit'];
+  const woerter = (t) => Zutaten.normal(String(t).replace(/\*\*/g, '')).replace(/[^a-zäöüß0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+  const kopfwort = (name) => { const w = woerter(name); return w[w.length - 1] || ''; };   // „Rote Linsen“ → linsen
+  const gleich = (w, kopf) => { const b = formen(kopf); return formen(w).some((x) => x.length > 1 && b.includes(x)); };
+  function zusammengesetzt(w, kopf) {
+    if (kopf.length >= 4 && [kopf, kopf.replace(/n$/, '')].some((f) => f.length >= 4 && w.startsWith(f))) return true;
+    return (w.length >= 4 || w === 'öl') && !OBERBEGRIFF_NICHT.includes(w) && kopf.length > w.length && kopf.endsWith(w);
+  }
+  function schrittZutaten(r, schritte) {
+    const zut = (r.zutaten || []).map((z, i) => ({ z, i, k: Zutaten.normal(z.name) })).filter((x) => !x.z.abschnitt);
+    const koepfe = zut.map((x) => [x.z.name, x.z.mehrzahl].filter(Boolean).map(kopfwort));
+    const gruppe = {};
+    zut.forEach((x) => { (gruppe[x.k] = gruppe[x.k] || []).push(x.i); });
+    const gezaehlt = {};
+    return schritte.map((s) => {
+      const treffer = new Set();
+      for (const w of woerter(s.text)) {
+        const exakt = zut.filter((x, j) => koepfe[j].some((k) => gleich(w, k)));
+        // Zusammensetzungen nur, wenn das Wort nicht selbst eine Zutat ist (Tomatenmark ≠ Tomaten)
+        (exakt.length ? exakt : zut.filter((x, j) => koepfe[j].some((k) => zusammengesetzt(w, k)))).forEach((x) => treffer.add(x.k));
+      }
+      return [...treffer].map((k) => {
+        const n = gezaehlt[k] || 0;
+        gezaehlt[k] = n + 1;
+        return gruppe[k][Math.min(n, gruppe[k].length - 1)];
+      }).sort((a, b) => a - b);
+    });
+  }
+
+  // Bildschirm anlassen (Screen Wake Lock API); ohne Unterstützung still ignorieren
+  const wach = {
+    an: false, sperre: null,
+    async anfordern() {
+      if (!this.an || this.sperre || document.visibilityState !== 'visible' || !navigator.wakeLock) return;
+      try {
+        this.sperre = await navigator.wakeLock.request('screen');
+        this.sperre.addEventListener('release', () => { this.sperre = null; });
+        if (!this.an) this.freigeben();   // inzwischen verlassen
+      } catch (e) { this.sperre = null; }
+    },
+    starten() { this.an = true; this.anfordern(); },
+    freigeben() { if (this.sperre) { this.sperre.release().catch(() => {}); this.sperre = null; } },
+    beenden() { this.an = false; this.freigeben(); },
+  };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') wach.anfordern(); });
+
+  function kochKnopfHTML(r, personen) {
+    const st = kochStand(r.id);
+    const weiter = kochFrisch(st) && st.s > 1;
+    const n = schrittListe(r).length;
+    if (!n) return '';
+    return `
+      <div class="koch-zeile nur-bildschirm">
+        <a class="knopf haupt koch-knopf" href="#/kochen/${esc(r.id)}?p=${personen}&amp;s=${weiter ? st.s : 1}">${svg('topf')} <span>${weiter ? 'Weiterkochen' : 'Jetzt kochen'}</span></a>
+        <span class="klein">${weiter ? `bei Schritt ${st.s} von ${n}` : `Schritt für Schritt · ${n} Schritte · Bildschirm bleibt an`}</span>
+      </div>`;
+  }
+
+  function seiteKochen(r, q) {
+    const schritte = schrittListe(r);
+    const alt = kochStand(r.id);
+    const frisch = kochFrisch(alt);
+    const stand = {
+      p: begrenzen(q.get('p') || (frisch && alt.p) || r.personen || STANDARD_PERSONEN),
+      s: Math.min(schritte.length, Math.max(1, Math.round(Number(q.get('s'))) || (frisch && alt.s) || 1)),
+      haken: frisch ? alt.haken || {} : {},
+    };
+    const zuSchritt = schrittZutaten(r, schritte);
+    const zutatenAlle = (r.zutaten || []).map((z, i) => ({ z, i }));
+    const anzahlZutaten = zutatenAlle.filter((x) => !x.z.abschnitt).length;
+    const zurueck = () => '#/rezept/' + r.id + '?p=' + stand.p;
+    document.title = 'Kochen: ' + r.titel + ' – Rezepte';
+
+    app.innerHTML = `
+      <section class="kochmodus" aria-label="Kochmodus">
+        <header class="km-kopf">
+          <a class="knopf leise icon-knopf km-zu" id="km-zu" href="${zurueck()}" data-zurueck aria-label="Kochmodus beenden">${svg('schliessen')}</a>
+          <strong class="km-titel">${esc(r.titel)}</strong>
+          <button type="button" class="knopf km-zut-knopf" id="km-zut-auf" aria-expanded="false" aria-controls="km-zutaten">${svg('liste')} <span>Zutaten</span> <span class="km-zut-zahl" id="km-zut-zahl"></span></button>
+        </header>
+        <div class="km-fortschritt" aria-hidden="true"><span id="km-balken"></span></div>
+        <div class="km-buehne" id="km-buehne" aria-live="polite"></div>
+        <nav class="km-fuss" aria-label="Schritte">
+          <button type="button" class="knopf km-zurueck" id="km-zurueck">${svg('zurueck')} Zurück</button>
+          <button type="button" class="knopf haupt km-weiter" id="km-weiter"></button>
+        </nav>
+        <div class="km-zutaten" id="km-zutaten" hidden></div>
+      </section>`;
+
+    const $ = (id) => document.getElementById(id);
+    const faktor = () => stand.p / (r.personen || STANDARD_PERSONEN);
+    const zutatKnopf = (i, klasse) => {
+      const z = r.zutaten[i], t = zutatText(z, faktor());
+      return `<button type="button" class="${klasse}${stand.haken[i] ? ' an' : ''}" data-z="${i}" aria-pressed="${!!stand.haken[i]}">
+          <span class="box">${svg('haken')}</span>
+          <span class="km-z-menge">${esc(t.menge)}</span>
+          <span class="km-z-name">${esc(t.name)}${z.optional ? ' <em>(optional)</em>' : ''}${z.hinweis ? `<small>${esc(z.hinweis)}</small>` : ''}</span>
+        </button>`;
+    };
+
+    function zeigen(richtung) {
+      const sch = schritte[stand.s - 1];
+      const zut = zuSchritt[stand.s - 1];
+      $('km-buehne').innerHTML = `
+        <div class="km-schritt${richtung ? ' km-' + richtung : ''}" ${timerZiel(r, sch.nr, stand.p)}>
+          <div class="km-ort"><span class="km-abschnitt">${esc(sch.abschnitt)}</span><span class="km-zaehler">${sch.nr} / ${schritte.length}</span></div>
+          <p class="km-text">${Timer.chips(fett(sch.text))}</p>
+          ${zut.length ? `<div class="km-dafuer"><h3>Dafür</h3><ul>${zut.map((i) => `<li>${zutatKnopf(i, 'km-z')}</li>`).join('')}</ul></div>` : ''}
+        </div>`;
+      $('km-balken').style.width = (stand.s / schritte.length * 100) + '%';
+      $('km-zurueck').disabled = stand.s <= 1;
+      const letzter = stand.s >= schritte.length;
+      $('km-weiter').innerHTML = letzter ? svg('haken') + ' Fertig' : 'Weiter ' + svg('vor');
+      $('km-weiter').classList.toggle('fertig', letzter);
+      zahlZeigen();
+      adresseSetzen('#/kochen/' + r.id + '?p=' + stand.p + '&s=' + stand.s);
+      kochenSichern(r.id, stand);
+      Timer.markieren();
+    }
+    function zahlZeigen() {
+      const n = Object.keys(stand.haken).filter((i) => r.zutaten[i] && !r.zutaten[i].abschnitt).length;
+      $('km-zut-zahl').textContent = n + '/' + anzahlZutaten;
+    }
+    function blaettern(d) {
+      const neu = stand.s + d;
+      if (neu < 1 || neu > schritte.length) return;
+      stand.s = neu;
+      zeigen(d > 0 ? 'vor' : 'rueck');
+    }
+    function fertig() {
+      delete kochen[r.id];
+      speicher.schreiben('kochen', kochen);
+      melden('Guten Appetit!');
+      location.hash = zurueck();
+    }
+
+    // Gesamt-Zutatenliste zum Abhaken („schon im Topf“), mit Personenzahl
+    function listeZeigen() {
+      $('km-zutaten').innerHTML = `
+        <div class="km-zl-kopf">
+          <h2>Zutaten</h2>
+          <span class="stepper">
+            <button type="button" data-kp="-1" aria-label="Weniger" ${stand.p <= 1 ? 'disabled' : ''}>${svg('minus')}</button>
+            <strong>${stand.p}</strong>
+            <button type="button" data-kp="1" aria-label="Mehr">${svg('plus')}</button>
+          </span>
+          <span class="klein">${stand.p === 1 ? 'Person' : 'Personen'}</span>
+          <span class="abstand"></span>
+          <button type="button" class="knopf leise icon-knopf" data-zl-zu aria-label="Zutatenliste schließen">${svg('schliessen')}</button>
+        </div>
+        <p class="klein">Antippen, was schon im Topf ist. <button type="button" class="link-knopf" data-zl-reset>Haken zurücksetzen</button></p>
+        <ul class="km-zl">${zutatenAlle.map((x) => x.z.abschnitt
+          ? `<li class="abschnitt">${esc(x.z.abschnitt)}</li>`
+          : `<li>${zutatKnopf(x.i, 'km-zl-z')}</li>`).join('')}</ul>`;
+    }
+    function listeAuf(auf) {
+      if (auf) listeZeigen();
+      $('km-zutaten').hidden = !auf;
+      $('km-zut-auf').setAttribute('aria-expanded', String(auf));
+      $('km-zut-auf').classList.toggle('an', auf);
+    }
+
+    $('km-zurueck').addEventListener('click', () => blaettern(-1));
+    $('km-weiter').addEventListener('click', () => (stand.s >= schritte.length ? fertig() : blaettern(1)));
+    $('km-zut-auf').addEventListener('click', () => listeAuf($('km-zutaten').hidden));
+    app.querySelector('.kochmodus').addEventListener('click', (e) => {
+      const z = e.target.closest('[data-z]');
+      if (z) {
+        const i = z.dataset.z;
+        if (stand.haken[i]) delete stand.haken[i]; else stand.haken[i] = true;
+        app.querySelectorAll(`[data-z="${i}"]`).forEach((b) => { b.classList.toggle('an', !!stand.haken[i]); b.setAttribute('aria-pressed', String(!!stand.haken[i])); });
+        kochenSichern(r.id, stand); zahlZeigen();
+      } else if (e.target.closest('[data-zl-zu]')) listeAuf(false);
+      else if (e.target.closest('[data-zl-reset]')) { stand.haken = {}; kochenSichern(r.id, stand); listeZeigen(); zeigen(); }
+      else if (e.target.closest('[data-kp]')) {
+        stand.p = begrenzen(stand.p + Number(e.target.closest('[data-kp]').dataset.kp));
+        $('km-zu').setAttribute('href', zurueck());
+        listeZeigen(); zeigen();
+      }
+    });
+
+    // Wischen: waagerecht deutlich mehr als senkrecht
+    let start = null;
+    const buehne = $('km-buehne');
+    buehne.addEventListener('touchstart', (e) => {
+      start = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+    }, { passive: true });
+    buehne.addEventListener('touchend', (e) => {
+      if (!start) return;
+      const t = e.changedTouches[0], dx = t.clientX - start.x, dy = t.clientY - start.y;
+      start = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) blaettern(dx < 0 ? 1 : -1);
+    }, { passive: true });
+
+    const tasten = (e) => {
+      if (e.target.closest('input, select, textarea') || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); blaettern(1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); blaettern(-1); }
+      else if (e.key === 'Escape') { if (!$('km-zutaten').hidden) listeAuf(false); else location.hash = zurueck(); }
+    };
+    document.addEventListener('keydown', tasten);
+    wach.starten();
+    verlassen = () => { document.removeEventListener('keydown', tasten); wach.beenden(); };
+    zeigen();
+  }
+
   // ---------------------------------------------------------------- Wochenplan
   function seitePlan() {
     document.title = 'Wochenplan – Rezepte';
@@ -904,11 +1212,28 @@
 
   // ---------------------------------------------------------------- Start
   window.addEventListener('hashchange', zeichnen);
-  window.addEventListener('storage', () => {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'rezepte.timer') return;   // erledigt assets/timer.js
     plan = speicher.lesen('plan', []); abgehakt = speicher.lesen('abgehakt', {}); extras = speicher.lesen('extras', []); liste = speicher.lesen('liste', []); zuhause = speicher.lesen('zuhause', []);
+    kochen = speicher.lesen('kochen', {});
     zeichnen();
   });
   document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = svg(el.dataset.icon); });
+
+  // Feste Leisten unten (Tabs, Timer) ausmessen -> CSS-Variablen für Abstände und den Kochmodus
+  function abstaendeMessen() {
+    const h = (sel) => { const el = document.querySelector(sel); return el ? el.getBoundingClientRect().height : 0; };
+    document.documentElement.style.setProperty('--tabs-h', h('.tabs') + 'px');
+    document.documentElement.style.setProperty('--timer-h', h('#timer-leiste.sichtbar') + 'px');
+  }
+  window.addEventListener('resize', abstaendeMessen);
+  window.addEventListener('timerleiste', abstaendeMessen);
+  abstaendeMessen();
+
+  // App-Gefühl: kein Zoomen per Geste (iOS ignoriert user-scalable=no teilweise)
+  ['gesturestart', 'gesturechange'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
+
+  window.RezeptApp = { mehrEintrag, mehrAbschnitt, speicher, melden, zeichnen };
   // Browser bitten, die Daten dauerhaft zu behalten (nicht bei Speicherknappheit löschen)
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* egal */ }
   laden().then(zeichnen);

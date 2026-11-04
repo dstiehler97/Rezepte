@@ -135,6 +135,7 @@
     'rinderhackfleisch': N(215, 20, 0, 0, 15, 0),
     'hähnchenbrust': N(105, 23, 0, 0, 1.2, 0, { stueck: 180 }),
     'hähnchen': N(170, 19, 0, 0, 10, 0),
+    'rindersteak': N(135, 22, 0, 0, 5, 0, { stueck: 200 }),   // Rumpsteak/Hüfte
     'speck': N(380, 14, 0, 0, 36, 0, { scheibe: 10 }),
     'bacon': N(380, 14, 0, 0, 36, 0, { scheibe: 10 }),
     'pancetta': N(380, 14, 0, 0, 36, 0, { scheibe: 10 }),

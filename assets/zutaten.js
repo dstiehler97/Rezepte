@@ -165,6 +165,7 @@
     'hackfleisch':   { k: FF, icon: 'fleisch' },
     'hähnchenbrust': { k: FF, icon: 'fleisch' },
     'hähnchen':      { k: FF, icon: 'fleisch' },
+    'rindersteak':   { k: FF, icon: 'fleisch' },
     'speck':         { k: FF, icon: 'fleisch' },
     'schinken':      { k: FF, icon: 'fleisch' },
     'bacon':         { k: FF, icon: 'fleisch' },

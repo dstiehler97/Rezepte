@@ -172,14 +172,18 @@
           <button type="button" class="knopf haupt" data-ok>OK</button>
         </div>`;
     }
-    // laufende Timer an den Chips markieren
+    markieren();
+    window.dispatchEvent(new Event('timerleiste'));
+  }
+
+  /** Chips mit laufendem Timer hervorheben (nach jedem Neuzeichnen der Seite aufrufen) */
+  function markieren() {
     document.querySelectorAll('.timer-chip.laeuft').forEach((c) => c.classList.remove('laeuft'));
     for (const t of timer.filter((x) => !x.fertig)) {
       document.querySelectorAll(`[data-timer-name="${CSS.escape(t.name)}"] .timer-chip`).forEach((c) => {
-        if (Number(c.dataset.sek) * 1000 <= t.dauer) c.classList.add('laeuft');
+        if (Number(c.dataset.sek) * 1000 === t.dauer) c.classList.add('laeuft');
       });
     }
-    window.dispatchEvent(new Event('timerleiste'));
   }
 
   /** Restzeiten aktualisieren, Ablauf erkennen; läuft nur, solange es Timer gibt */
@@ -205,5 +209,5 @@
   function init() { aufbauen(); zeichnen(); ticken(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 
-  g.Timer = { chips, starten, testen, zeichnen, liste: () => timer.slice() };
+  g.Timer = { chips, starten, testen, markieren, liste: () => timer.slice() };
 })(globalThis);

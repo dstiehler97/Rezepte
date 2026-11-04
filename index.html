@@ -2,11 +2,12 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Rezepte</title>
   <meta name="theme-color" content="#a8432a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
+  <!-- "default": dunkle Statusleiste auf hellem Grund, Inhalt beginnt darunter (helles Papier-Design) -->
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Rezepte">
   <link rel="manifest" href="manifest.json">
@@ -18,21 +19,22 @@
   <header class="leiste nur-bildschirm">
     <a class="marke" href="#/">Rezepte</a>
     <nav class="nav">
-      <a href="#/">Rezepte</a>
-      <a href="#/plan">Wochenplan <span class="zahl" data-zahl="plan"></span></a>
-      <a href="#/einkauf">Einkaufsliste <span class="zahl" data-zahl="einkauf"></span></a>
-      <a href="#/zuhause">Zuhause</a>
-      <a href="#/kochbuch">Kochbuch</a>
+      <a href="#/" data-bereich="rezepte">Rezepte</a>
+      <a href="#/plan" data-bereich="plan">Wochenplan <span class="zahl" data-zahl="plan"></span></a>
+      <a href="#/einkauf" data-bereich="einkauf">Einkaufsliste <span class="zahl" data-zahl="einkauf"></span></a>
+      <a href="#/zuhause" data-bereich="zuhause">Zuhause</a>
+      <a href="#/mehr" data-bereich="mehr" class="nav-mehr" title="Mehr: Kochbuch drucken, Einstellungen" aria-label="Mehr: Kochbuch drucken, Einstellungen"><span data-icon="zahnrad"></span></a>
     </nav>
   </header>
 
   <main id="app"><p class="leer">Lade Rezepte …</p></main>
 
   <nav class="tabs nur-bildschirm" aria-label="Navigation">
-    <a href="#/"><span class="tab-icon" data-icon="buch"></span>Rezepte</a>
-    <a href="#/plan"><span class="tab-icon" data-icon="kalender"></span>Plan<span class="zahl" data-zahl="plan"></span></a>
-    <a href="#/einkauf"><span class="tab-icon" data-icon="korb"></span>Einkauf<span class="zahl" data-zahl="einkauf"></span></a>
-    <a href="#/zuhause"><span class="tab-icon" data-icon="haus"></span>Zuhause<span class="zahl" data-zahl="zuhause"></span></a>
+    <a href="#/" data-bereich="rezepte"><span class="tab-icon" data-icon="buch"></span>Rezepte</a>
+    <a href="#/plan" data-bereich="plan"><span class="tab-icon" data-icon="kalender"></span>Plan<span class="zahl" data-zahl="plan"></span></a>
+    <a href="#/einkauf" data-bereich="einkauf"><span class="tab-icon" data-icon="korb"></span>Einkauf<span class="zahl" data-zahl="einkauf"></span></a>
+    <a href="#/zuhause" data-bereich="zuhause"><span class="tab-icon" data-icon="haus"></span>Zuhause<span class="zahl" data-zahl="zuhause"></span></a>
+    <a href="#/mehr" data-bereich="mehr"><span class="tab-icon" data-icon="zahnrad"></span>Mehr</a>
   </nav>
   <div id="meldung" role="status" aria-live="polite"></div>
 
@@ -40,6 +42,7 @@
   <script src="assets/zutaten.js"></script>
   <script src="assets/icons.js"></script>
   <script src="assets/naehrwerte.js"></script>
+  <script src="assets/timer.js"></script>
   <script src="rezepte/liste.js"></script>
   <script src="assets/app.js"></script>
 </body>
