@@ -3,7 +3,7 @@ Rezept({
   titel: 'Kaspressknödel',
   beschreibung: 'Tiroler Käseknödel – flach gedrückt, knusprig gebraten und in kräftiger Brühe serviert.',
   kategorie: 'Hauptgericht',
-  tags: ['Österreichisch', 'Knödel', 'Käse'],
+  tags: ['Österreichisch', 'Vegetarisch', 'Knödel', 'Käse'],
   personen: 4,
   zeit: { vorbereitung: 20, ruhen: 15, kochen: 15 },
   schwierigkeit: 'mittel',
@@ -23,7 +23,7 @@ Rezept({
     { name: 'Muskatnuss', hinweis: 'frisch gerieben' },
     { menge: 6, einheit: 'EL', name: 'Pflanzenöl', hinweis: 'zum Braten' },
     { abschnitt: 'Zum Servieren' },
-    { menge: 1200, einheit: 'ml', name: 'Rinderbrühe', hinweis: 'oder Gemüsebrühe' },
+    { menge: 1200, einheit: 'ml', name: 'Gemüsebrühe', hinweis: 'kräftig; klassisch mit Rinderbrühe' },
     { menge: 0.5, einheit: 'Bund', name: 'Schnittlauch' },
   ],
 
@@ -41,6 +41,6 @@ Rezept({
 
   tipps: [
     'Ohne Suppe passen die Knödel auch zu Sauerkraut oder grünem Salat.',
-    'Mit Gemüsebrühe wird das Gericht vegetarisch.',
+    'Klassisch werden die Knödel in Rinderbrühe serviert – dann sind sie nicht mehr vegetarisch.',
   ],
 });
