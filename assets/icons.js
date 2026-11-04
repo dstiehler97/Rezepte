@@ -8,6 +8,17 @@
 
   const DOT = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r || 0.75}" fill="currentColor" stroke="none"/>`;
 
+  /** Zahnrad mit n Zähnen (Außen-/Innenradius), als geschlossener Pfad */
+  function ZAHNRAD(n, aussen, innen) {
+    const p = [];
+    const pkt = (r, grad) => { const w = grad * Math.PI / 180; return (12 + r * Math.cos(w)).toFixed(2) + ' ' + (12 + r * Math.sin(w)).toFixed(2); };
+    for (let i = 0; i < n; i++) {
+      const a = i * 360 / n;
+      p.push(pkt(innen, a - 15), pkt(aussen, a - 9), pkt(aussen, a + 9), pkt(innen, a + 15));
+    }
+    return '<path d="M' + p.join('L') + 'z"/>';
+  }
+
   const ICONS = {
     // ---------- Zutaten ----------
     salz:
@@ -138,6 +149,17 @@
     teilen: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.6M8.2 13.2l7.6 4.6"/>',
     muell: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4h6v3"/>',
     haken: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+    zahnrad: ZAHNRAD(8, 9.5, 7) + '<circle cx="12" cy="12" r="3"/>',
+    topf:
+      '<path d="M4 10h16v7.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/>' +
+      '<path d="M2 10h20M10 7h4"/><path d="M9 4.5c.5-.7.5-1.3 0-2M12 4.5c.5-.7.5-1.3 0-2M15 4.5c.5-.7.5-1.3 0-2"/>',
+    stoppuhr: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M10 2.5h4M18.5 6l1.5-1.5"/>',
+    pause: '<path d="M9 5v14M15 5v14"/>',
+    start: '<path d="M7 4.5v15l12-7.5z"/>',
+    schliessen: '<path d="M6 6l12 12M18 6L6 18"/>',
+    vor: '<path d="M9 5l7 7-7 7"/>',
+    liste: '<path d="M9 6h11M9 12h11M9 18h11"/>' + DOT(4.5, 6, 1) + DOT(4.5, 12, 1) + DOT(4.5, 18, 1),
+    glocke: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
   };
 
   function svg(name, klasse) {
