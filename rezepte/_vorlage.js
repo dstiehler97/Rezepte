@@ -16,7 +16,13 @@
  *   fix       true = wird beim Umrechnen nicht verändert (z. B. 1 Lorbeerblatt)
  *   einkauf   Kategorie überschreiben, z. B. "Tiefkühl"
  *   icon      Icon überschreiben (Name aus assets/icons.js) oder null für keins
+ *   gramm     Gewicht der angegebenen Menge, falls die Nährwertberechnung es nicht kennt
+ *   naehrwerte false = nicht in die Nährwerte einrechnen
  * Abschnitte: { abschnitt: 'Für den Teig' }
+ *
+ * Nudeln, Reis & Getreide IMMER als Trockengewicht in g (wie auf der Packung).
+ * Nährwerte werden automatisch aus assets/naehrwerte.js berechnet (pro Portion + gesamt).
+ * Zutaten ohne Menge (Salz nach Geschmack) und optionale Zutaten zählen nicht mit.
  *
  * In Schritten keine Mengen schreiben ("die Hälfte der Milch" statt "250 ml Milch"),
  * damit beim Umrechnen nichts falsch wird. **fett** ist erlaubt.

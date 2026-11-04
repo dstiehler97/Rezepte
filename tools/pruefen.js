@@ -5,6 +5,8 @@
  *  2. schreibt rezepte/liste.js neu (damit neue Dateien automatisch erscheinen)
  *  3. exportiert alle Icons als einzelne SVG-Dateien nach /icons
  *  4. testet die Rundungsregeln
+ *  Außerdem: Nährwerte je Rezept, Warnung bei fehlenden Nährwertdaten,
+ *  Fehler wenn Nudeln/Reis nicht als Trockengewicht in g angegeben sind.
  */
 'use strict';
 const fs = require('fs');
@@ -15,10 +17,10 @@ const WURZEL = path.join(__dirname, '..');
 const kontext = { console };
 kontext.globalThis = kontext;
 vm.createContext(kontext);
-for (const f of ['einheiten.js', 'zutaten.js', 'icons.js']) {
+for (const f of ['einheiten.js', 'zutaten.js', 'icons.js', 'naehrwerte.js']) {
   vm.runInContext(fs.readFileSync(path.join(WURZEL, 'assets', f), 'utf8'), kontext, { filename: f });
 }
-const { Einheiten, Zutaten, Icons } = kontext;
+const { Einheiten, Zutaten, Icons, Naehrwerte } = kontext;
 
 let fehler = 0;
 const melde = (datei, text) => { fehler++; console.log('  ✗ ' + datei + ': ' + text); };
@@ -51,7 +53,12 @@ for (const datei of dateien) {
     try { Einheiten.skalieren(z, 1); } catch (e) { melde(datei, e.message); }
     if (z.menge != null && typeof z.menge !== 'number') melde(datei, `menge bei ${z.name} muss eine Zahl sein`);
     if (Zutaten.info(z).kategorie === 'Sonstiges' && !z.einkauf) ohneKategorie.add(z.name);
+    if (Zutaten.info(z).trocken && z.menge != null && !['g', 'kg'].includes(z.einheit)) melde(datei, `${z.name}: Nudeln/Reis/Getreide immer als Trockengewicht in g angeben`);
   }
+  const nw = Naehrwerte.berechnen(r);
+  const p = nw.portion;
+  console.log(`  ${r.titel}: ${Math.round(p.kcal)} kcal · E ${Math.round(p.eiweiss)} g · KH ${Math.round(p.kh)} g · F ${Math.round(p.fett)} g pro Portion`);
+  if (nw.fehlend.length) console.log(`  ! ${datei}: keine Nährwerte für ${nw.fehlend.join(', ')} – in assets/naehrwerte.js ergänzen oder gramm/naehrwerte angeben`);
   for (const s of r.schritte || []) {
     if (typeof s === 'string' && /\d+\s?(g|ml|EL|TL|kg|l)\b/.test(s)) console.log(`  ! ${datei}: Menge im Schritt ("${s.slice(0, 50)}…") – wird nicht umgerechnet`);
   }

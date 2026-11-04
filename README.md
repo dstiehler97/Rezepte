@@ -9,6 +9,8 @@ Läuft ohne Installation: `index.html` im Browser öffnen, oder über GitHub Pag
   - Gewicht/Volumen auf runde Werte (`375 g`, `65 ml`, ab 1000 → `1,25 kg`)
   - Löffel nur in ¼/½-Schritten, kleine EL werden zu TL, winzige Mengen zu „1 Prise“
   - Stück in ½-Schritten, Eier nur ganz, Zehen/Scheiben/Blätter ganz
+- **Nudeln, Reis & Getreide** immer als Trockengewicht in g (wie auf der Packung) – wird geprüft und im Rezept als „Trockengewicht“ markiert.
+- **Nährwerte** (Kalorien, Eiweiß, Kohlenhydrate, Zucker, Fett, Ballaststoffe) werden aus den Zutaten berechnet: pro Portion und gesamt für die gewählte Personenzahl. Werte pro 100 g stehen in `assets/naehrwerte.js`.
 - **Einheitlicher Druck**: jedes Rezept gleich aufgebaut (Kopf, Personen/Zeit/Schwierigkeit, Zutaten links, Schritte rechts), schwarz-weiß-tauglich, gedruckt wird mit der gewählten Personenzahl.
 - **Kochbuch**: alle Rezepte auf einmal drucken, jedes auf eigener Seite.
 - **Wochenplan**: Rezepte mit Personenzahl auf Tage verteilen (wird im Browser gespeichert).
@@ -23,6 +25,11 @@ Läuft ohne Installation: `index.html` im Browser öffnen, oder über GitHub Pag
 
 Mengen nicht in die Arbeitsschritte schreiben („die Hälfte der Milch“ statt „250 ml Milch“), sonst stimmen sie nach dem Umrechnen nicht.
 
+## GitHub Pages
+
+Einmalig im Repo auf GitHub: **Settings → Pages → Build and deployment → Source: „Deploy from a branch“, Branch: `main`, Ordner `/ (root)`** → Save.
+Nach ca. einer Minute ist die Seite unter `https://dstiehler97.github.io/rezepte/` erreichbar.
+
 ## Aufbau
 
 | Datei | Inhalt |
@@ -30,6 +37,7 @@ Mengen nicht in die Arbeitsschritte schreiben („die Hälfte der Milch“ statt
 | `index.html` | App |
 | `assets/einheiten.js` | Einheiten, Umrechnung, Rundungsregeln |
 | `assets/zutaten.js` | Zutaten-Lexikon: Einkaufs-Kategorie, Icon, Vorrat |
+| `assets/naehrwerte.js` | Nährwerte pro 100 g + Stückgewichte |
 | `assets/icons.js` | alle SVG-Icons |
 | `assets/style.css` | Bildschirm- und Druck-Layout |
 | `rezepte/*.js` | ein Rezept pro Datei |

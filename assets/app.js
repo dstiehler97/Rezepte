@@ -168,6 +168,7 @@
         <span class="karte-meta">
           ${z ? `<span>${svg('uhr')} ${dauer(z)}</span>` : ''}
           <span>${svg('muetze')} ${esc(r.schwierigkeit || '')}</span>
+          <span>${nwZahl(Naehrwerte.berechnen(r).portion.kcal, 'kcal')}</span>
         </span>
       </a>`;
   }
@@ -184,7 +185,7 @@
       return `<li class="zutat${z.optional ? ' optional' : ''}">
           <span class="z-icon">${t.info.icon ? svg(t.info.icon) : ''}</span>
           <span class="z-menge">${esc(t.menge)}</span>
-          <span class="z-name">${esc(t.name)}${z.optional ? ' <em>(optional)</em>' : ''}${z.hinweis ? `<small>${esc(z.hinweis)}</small>` : ''}${!t.menge && z.menge == null ? '<small>nach Geschmack</small>' : ''}</span>
+          <span class="z-name">${esc(t.name)}${z.optional ? ' <em>(optional)</em>' : ''}${z.hinweis || t.info.trocken ? `<small>${esc([t.info.trocken ? 'Trockengewicht' : '', z.hinweis].filter(Boolean).join(', '))}</small>` : ''}${!t.menge && z.menge == null ? '<small>nach Geschmack</small>' : ''}</span>
         </li>`;
     }).join('');
 
@@ -222,6 +223,7 @@
             <span>${personen === 1 ? 'Person' : 'Personen'}</span>
           </div>
           ${zg ? `<div class="meta-feld">${svg('uhr')}<span><strong>${dauer(zg)}</strong>${zeitDetail ? `<small>${esc(zeitDetail)}</small>` : ''}</span></div>` : ''}
+          <div class="meta-feld"><span class="kcal-marke">kcal</span><span><strong>${nwZahl(Naehrwerte.berechnen(r).portion.kcal, 'kcal').replace(' kcal', '')}</strong><small>pro Portion</small></span></div>
           <div class="meta-feld">
             <span class="muetzen" title="${esc(r.schwierigkeit || '')}">${[1, 2, 3].map((i) => svg('muetze', i <= stufe ? 'an' : 'aus')).join('')}</span>
             <span>${esc(r.schwierigkeit || '')}</span>
@@ -239,9 +241,35 @@
           </section>
         </div>
 
+        ${naehrwertHTML(r, personen)}
         ${(r.tipps && r.tipps.length) ? `<section class="r-tipps"><h2>Tipps</h2><ul>${r.tipps.map((t) => `<li>${fett(t)}</li>`).join('')}</ul></section>` : ''}
         ${r.quelle ? `<p class="r-quelle">Quelle: ${esc(r.quelle)}</p>` : ''}
       </article>`;
+  }
+
+  const NW_ZEILEN = [
+    ['kcal', 'Kalorien', 'kcal'], ['eiweiss', 'Eiweiß', 'g'], ['kh', 'Kohlenhydrate', 'g'],
+    ['zucker', 'davon Zucker', 'g'], ['fett', 'Fett', 'g'], ['ballast', 'Ballaststoffe', 'g'],
+  ];
+  function nwZahl(wert, einheit) {
+    if (einheit === 'kcal') return (wert < 100 ? Math.round(wert / 5) * 5 : Math.round(wert / 10) * 10).toLocaleString('de-DE') + ' kcal';
+    if (wert > 0 && wert < 1) return '< 1 g';
+    return Math.round(wert).toLocaleString('de-DE') + ' g';
+  }
+  function naehrwertHTML(r, personen) {
+    const nw = Naehrwerte.berechnen(r);
+    return `
+      <section class="r-naehrwerte">
+        <h2>Nährwerte</h2>
+        <div class="nw-tabelle"><table>
+          <thead><tr><th></th>${NW_ZEILEN.map(([, name]) => `<th>${name}</th>`).join('')}</tr></thead>
+          <tbody>
+            <tr><th>pro Portion</th>${NW_ZEILEN.map(([k, , e]) => `<td>${nwZahl(nw.portion[k], e)}</td>`).join('')}</tr>
+            <tr class="gesamt"><th>gesamt (${personen} ${personen === 1 ? 'Portion' : 'Portionen'})</th>${NW_ZEILEN.map(([k, , e]) => `<td>${nwZahl(nw.portion[k] * personen, e)}</td>`).join('')}</tr>
+          </tbody>
+        </table></div>
+        <p class="nw-hinweis">Berechnete Richtwerte${(r.zutaten || []).some((z) => z.optional) ? ', ohne optionale Zutaten' : ''}.${nw.fehlend.length ? ` Ohne: ${esc(nw.fehlend.join(', '))}.` : ''}</p>
+      </section>`;
   }
 
   function seiteRezept(r, personen) {

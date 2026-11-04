@@ -7,6 +7,7 @@
  *   vorrat = landet unter "Vorrat prüfen" statt auf der normalen Liste
  *   ganz  = nur ganze Stück (z. B. Eier)
  *   nie   = nie auf die Einkaufsliste (Wasser)
+ *   trocken = Menge immer als Trockengewicht in g (wie auf der Packung)
  * Gefunden wird über den Namen: exakt, oder als Wortende (Meersalz -> salz).
  * In einem Rezept kann man alles überschreiben (einkauf, icon, vorrat, ganz).
  */
@@ -140,15 +141,23 @@
     'garnele':       { k: FF, icon: 'fisch' },
 
     // Trockenware
-    'spaghetti':     { k: NR, icon: 'nudeln' },
-    'nudeln':        { k: NR, icon: 'nudeln' },
-    'penne':         { k: NR, icon: 'nudeln' },
-    'tagliatelle':   { k: NR, icon: 'nudeln' },
-    'reis':          { k: NR, icon: 'reis' },
-    'risottoreis':   { k: NR, icon: 'reis' },
-    'couscous':      { k: NR, icon: 'reis' },
-    'linsen':        { k: NR, icon: 'reis' },
+    'spaghetti':     { k: NR, icon: 'nudeln', trocken: true },
+    'nudeln':        { k: NR, icon: 'nudeln', trocken: true },
+    'penne':         { k: NR, icon: 'nudeln', trocken: true },
+    'tagliatelle':   { k: NR, icon: 'nudeln', trocken: true },
+    'reis':          { k: NR, icon: 'reis', trocken: true },
+    'risottoreis':   { k: NR, icon: 'reis', trocken: true },
+    'couscous':      { k: NR, icon: 'reis', trocken: true },
+    'linsen':        { k: NR, icon: 'reis', trocken: true },
     'haferflocken':  { k: NR, icon: 'mehl' },
+    'bulgur':        { k: NR, icon: 'reis', trocken: true },
+    'quinoa':        { k: NR, icon: 'reis', trocken: true },
+    'fusilli':       { k: NR, icon: 'nudeln', trocken: true },
+    'farfalle':      { k: NR, icon: 'nudeln', trocken: true },
+    'lasagneplatten': { k: NR, icon: 'nudeln', trocken: true },
+    'reisnudeln':    { k: NR, icon: 'nudeln', trocken: true },
+    'basmatireis':   { k: NR, icon: 'reis', trocken: true },
+    'jasminreis':    { k: NR, icon: 'reis', trocken: true },
 
     // Konserven
     'tomatenmark':       { k: KO, icon: 'tomate' },
@@ -168,24 +177,34 @@
     'weißwein':      { k: GE },
   };
 
-  const SCHLUESSEL = Object.keys(LEXIKON).sort((a, b) => b.length - a.length);
 
   function normal(text) {
     return String(text || '').toLowerCase().replace(/[(),.;:]/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
-  function finden(name) {
+  /**
+   * Sucht den passenden Schlüssel einer Tabelle zu einem Zutatennamen:
+   * exakt, als mehrteiliger Begriff, oder als Wortende (Olivenöl -> öl, Zwiebeln -> zwiebel).
+   * Der längste Treffer gewinnt.
+   */
+  const sortiert = new Map();
+  function suchen(name, tabelle) {
     const n = normal(name);
-    if (LEXIKON[n]) return LEXIKON[n];
+    if (tabelle[n]) return n;
+    if (!sortiert.has(tabelle)) sortiert.set(tabelle, Object.keys(tabelle).sort((a, b) => b.length - a.length));
     const woerter = n.split(' ');
-    for (const s of SCHLUESSEL) {
-      if (s.includes(' ')) { if (n.includes(s)) return LEXIKON[s]; continue; }
+    for (const s of sortiert.get(tabelle)) {
+      if (s.includes(' ')) { if (n.includes(s)) return s; continue; }
       for (const w of woerter) {
         const formen = [w, w.replace(/n$/, ''), w.replace(/en$/, ''), w.replace(/s$/, '')];
-        if (formen.some((f) => f === s || (f.length > s.length + 2 && f.endsWith(s)))) return LEXIKON[s];
+        if (formen.some((f) => f === s || (f.length > s.length + 2 && f.endsWith(s)))) return s;
       }
     }
-    return {};
+    return null;
+  }
+  function finden(name) {
+    const k = suchen(name, LEXIKON);
+    return k ? LEXIKON[k] : {};
   }
 
   /** Alle Infos zu einer Zutat; Angaben im Rezept haben Vorrang. */
@@ -197,8 +216,9 @@
       vorrat: zutat.vorrat !== undefined ? zutat.vorrat : !!l.vorrat,
       ganz: zutat.ganz !== undefined ? zutat.ganz : !!l.ganz,
       nie: zutat.nie !== undefined ? zutat.nie : !!l.nie,
+      trocken: !!l.trocken,
     };
   }
 
-  g.Zutaten = { KATEGORIEN, LEXIKON, info, normal };
+  g.Zutaten = { KATEGORIEN, LEXIKON, info, normal, suchen };
 })(globalThis);

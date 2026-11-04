@@ -153,6 +153,17 @@ label.inline input { width: 4.5rem; }
 .r-tipps { margin-top: 1.75rem; padding: 1rem 1.25rem; background: var(--papier); border-radius: 8px; break-inside: avoid; }
 .r-tipps h2 { border: 0; padding: 0; margin-bottom: .4rem; }
 .r-tipps ul { margin: 0; padding-left: 1.2rem; }
+.r-naehrwerte { margin-top: 1.75rem; break-inside: avoid; }
+.r-naehrwerte h2 { font-size: 1.15rem; margin-bottom: .5rem; padding-bottom: .35rem; border-bottom: 2px solid var(--akzent); display: inline-block; }
+.nw-tabelle { overflow-x: auto; }
+.r-naehrwerte table { width: 100%; border-collapse: collapse; font-size: .9rem; font-variant-numeric: tabular-nums; }
+.r-naehrwerte th, .r-naehrwerte td { padding: .35rem .5rem; border-bottom: 1px dotted var(--linie); text-align: right; font-weight: 400; white-space: nowrap; }
+.r-naehrwerte th:first-child { text-align: left; padding-left: 0; }
+.r-naehrwerte thead th { font-size: .75rem; color: var(--leise); text-transform: uppercase; letter-spacing: .04em; }
+.r-naehrwerte tbody tr:first-child td { font-weight: 600; }
+.r-naehrwerte tr.gesamt { color: var(--leise); }
+.nw-hinweis { margin: .4rem 0 0; font-size: .78rem; color: var(--leise); }
+.kcal-marke { font-size: .65rem; font-weight: 700; color: var(--akzent); border: 1.5px solid currentColor; border-radius: 4px; padding: 0 .2rem; line-height: 1.4; }
 .r-quelle { margin: 1rem 0 0; font-size: .85rem; color: var(--leise); }
 
 /* ============================================================ Wochenplan */
@@ -234,17 +245,26 @@ label.inline input { width: 4.5rem; }
   .r-kopf h1 { font-size: 24pt; margin: 1mm 0 2mm; }
   .r-beschreibung { font-size: 11pt; color: #333; }
   .r-bild { width: 55mm; }
-  .r-meta { margin: 5mm 0 6mm; padding: 2.5mm 0; border-color: #000; gap: 2mm 10mm; }
+  .r-meta { margin: 4mm 0 5mm; padding: 2.5mm 0; border-color: #000; gap: 2mm 8mm; flex-wrap: nowrap; }
   .meta-feld > .icon { color: #000; }
   .muetzen .an { color: #000; }
   .muetzen .aus { color: #ccc; }
   .r-inhalt { grid-template-columns: 62mm minmax(0, 1fr); gap: 9mm; }
   .r-inhalt h2, .r-tipps h2 { font-size: 12pt; border-bottom: 1.5pt solid #000; }
-  .zutat { grid-template-columns: 5mm 20mm minmax(0, 1fr); gap: 2mm; padding: 1.2mm 0; break-inside: avoid; }
+  .zutat { grid-template-columns: 5mm 20mm minmax(0, 1fr); gap: 2mm; padding: .9mm 0; break-inside: avoid; }
   .zutat .icon { color: #444; }
-  .schritt { gap: 3mm; margin-bottom: 3.5mm; }
+  .schritt { gap: 3mm; margin-bottom: 2.5mm; }
+  .schritt-abschnitt { margin: 3.5mm 0 2mm; font-size: 10.5pt; }
+  .r-inhalt h2 { margin-bottom: 2.5mm; }
   .schritt .nr { width: 6mm; height: 6mm; border: 1pt solid #000; font-size: 9pt; background: none; color: #000; }
-  .r-tipps { background: none; border: 1pt solid #bbb; padding: 3mm 4mm; margin-top: 6mm; }
+  .r-naehrwerte { margin-top: 5mm; }
+  .r-naehrwerte h2 { font-size: 12pt; border-bottom: 1.5pt solid #000; }
+  .r-naehrwerte table { font-size: 9pt; }
+  .r-naehrwerte thead th { font-size: 7pt; }
+  .r-naehrwerte th, .r-naehrwerte td { padding: .8mm 1.5mm; }
+  .nw-hinweis { font-size: 7.5pt; }
+  .kcal-marke { color: #000; }
+  .r-tipps { background: none; border: 1pt solid #bbb; padding: 2.5mm 4mm; margin-top: 4mm; }
 
   /* Einkaufsliste kompakt */
   .ek-fuer { margin: 0 0 4mm; color: #333; }
