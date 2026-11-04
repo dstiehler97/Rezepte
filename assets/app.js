@@ -223,12 +223,13 @@
             <span>${personen === 1 ? 'Person' : 'Personen'}</span>
           </div>
           ${zg ? `<div class="meta-feld">${svg('uhr')}<span><strong>${dauer(zg)}</strong>${zeitDetail ? `<small>${esc(zeitDetail)}</small>` : ''}</span></div>` : ''}
-          <div class="meta-feld"><span class="kcal-marke">kcal</span><span><strong>${nwZahl(Naehrwerte.berechnen(r).portion.kcal, 'kcal').replace(' kcal', '')}</strong><small>pro Portion</small></span></div>
           <div class="meta-feld">
             <span class="muetzen" title="${esc(r.schwierigkeit || '')}">${[1, 2, 3].map((i) => svg('muetze', i <= stufe ? 'an' : 'aus')).join('')}</span>
             <span>${esc(r.schwierigkeit || '')}</span>
           </div>
         </div>
+
+        ${naehrwertHTML(r, personen)}
 
         <div class="r-inhalt">
           <div class="r-links">
@@ -244,7 +245,6 @@
           </section>
         </div>
 
-        ${naehrwertHTML(r, personen)}
       </article>`;
   }
 
@@ -259,17 +259,17 @@
   }
   function naehrwertHTML(r, personen) {
     const nw = Naehrwerte.berechnen(r);
+    const hinweis = 'Berechnete Richtwerte' + ((r.zutaten || []).some((z) => z.optional) ? ', ohne optionale Zutaten' : '') +
+      (nw.fehlend.length ? '. Ohne: ' + nw.fehlend.join(', ') : '');
     return `
-      <section class="r-naehrwerte">
-        <h2>Nährwerte</h2>
-        <div class="nw-tabelle"><table>
-          <thead><tr><th></th>${NW_ZEILEN.map(([, name]) => `<th>${name}</th>`).join('')}</tr></thead>
-          <tbody>
-            <tr><th>pro Portion</th>${NW_ZEILEN.map(([k, , e]) => `<td>${nwZahl(nw.portion[k], e)}</td>`).join('')}</tr>
-            <tr class="gesamt"><th>gesamt (${personen} ${personen === 1 ? 'Portion' : 'Portionen'})</th>${NW_ZEILEN.map(([k, , e]) => `<td>${nwZahl(nw.portion[k] * personen, e)}</td>`).join('')}</tr>
-          </tbody>
-        </table></div>
-        <p class="nw-hinweis">Berechnete Richtwerte${(r.zutaten || []).some((z) => z.optional) ? ', ohne optionale Zutaten' : ''}.${nw.fehlend.length ? ` Ohne: ${esc(nw.fehlend.join(', '))}.` : ''}</p>
+      <section class="r-naehrwerte" aria-label="Nährwerte" title="${esc(hinweis)}">
+        <div class="nw-titel"><strong>Nährwerte</strong><span>pro Portion</span><span class="nw-ges">gesamt ${personen} P.</span></div>
+        ${NW_ZEILEN.map(([k, name, e]) => `
+          <div class="nw-wert${k === 'kcal' ? ' kcal' : ''}">
+            <span class="nw-name">${name}</span>
+            <strong>${nwZahl(nw.portion[k], e)}</strong>
+            <span class="nw-ges">${nwZahl(nw.portion[k] * personen, e)}</span>
+          </div>`).join('')}
       </section>`;
   }
 
