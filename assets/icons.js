@@ -160,6 +160,10 @@
     vor: '<path d="M9 5l7 7-7 7"/>',
     liste: '<path d="M9 6h11M9 12h11M9 18h11"/>' + DOT(4.5, 6, 1) + DOT(4.5, 12, 1) + DOT(4.5, 18, 1),
     glocke: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+    wuerfel: '<rect x="4" y="4" width="16" height="16" rx="3"/>' + DOT(8.5, 8.5, 1.2) + DOT(15.5, 8.5, 1.2) + DOT(12, 12, 1.2) + DOT(8.5, 15.5, 1.2) + DOT(15.5, 15.5, 1.2),
+    funke: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
+    hoch: '<path d="M5 15l7-7 7 7"/>',
+    runter: '<path d="M5 9l7 7 7-7"/>',
   };
 
   function svg(name, klasse) {

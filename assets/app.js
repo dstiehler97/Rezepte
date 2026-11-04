@@ -23,19 +23,77 @@
       try { localStorage.setItem('rezepte.' + k, JSON.stringify(v)); } catch (e) { /* privat-modus */ }
     },
   };
-  let plan = speicher.lesen('plan', []);           // [{uid, id, personen, tag}]
+  // Wochenplan: wer = Profil-uids (optional, sonst zählt personen), gekocht = ISO-Datum (Eintrag bleibt, ausgegraut)
+  let plan = speicher.lesen('plan', []);           // [{uid, id, personen, tag, wer?: [uid], gekocht?: 'JJJJ-MM-TT'}]
   let abgehakt = speicher.lesen('abgehakt', {});   // {schluessel: true}
   let extras = speicher.lesen('extras', []);       // [{uid, text}]
   let liste = speicher.lesen('liste', []);         // Rezepte direkt auf der Einkaufsliste [{uid, id, personen}]
   let zuhause = speicher.lesen('zuhause', []);     // Was man da hat [{uid, name}]
+  let profile = speicher.lesen('profile', []);     // Haushalt [{uid, name, faktor, standard}] – leer = nur Personenzahl
+  let ladenfolge = speicher.lesen('ladenfolge', null);   // eigene Reihenfolge der Kategorien [Name] oder null
   const sichern = () => {
     speicher.schreiben('zuhause', zuhause);
     speicher.schreiben('liste', liste);
     speicher.schreiben('plan', plan);
     speicher.schreiben('abgehakt', abgehakt);
     speicher.schreiben('extras', extras);
+    speicher.schreiben('profile', profile);
+    speicher.schreiben('ladenfolge', ladenfolge);
   };
   const uid = () => Math.random().toString(36).slice(2, 9);
+
+  /*
+   * „Gekocht“-Verlauf: speicher 'gekocht' = { rezeptId: ['2026-11-04', …] } (lokale Kalendertage, älteste zuerst,
+   * je Rezept höchstens GEKOCHT_MAX). Geschrieben beim „Fertig“ im Kochmodus und „Gekocht“ auf der Rezeptseite.
+   * Zum Weiterverwenden (Favoriten, Statistik): RezeptApp.gekocht.{merken, vergessen, daten, zuletzt, alle}.
+   */
+  const GEKOCHT_MAX = 100;
+  let gekocht = speicher.lesen('gekocht', {});
+  const heuteISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+  const gekochtHilfe = {
+    /** Rezept als gekocht eintragen (Standard: heute) */
+    merken(id, datum) {
+      const l = (gekocht[id] = gekocht[id] || []);
+      l.push(datum || heuteISO()); l.sort();
+      if (l.length > GEKOCHT_MAX) l.splice(0, l.length - GEKOCHT_MAX);
+      speicher.schreiben('gekocht', gekocht);
+    },
+    /** Einen Eintrag wieder entfernen (z. B. versehentlich abgehakt) */
+    vergessen(id, datum) {
+      const l = gekocht[id] || [];
+      const i = l.lastIndexOf(datum);
+      if (i >= 0) l.splice(i, 1);
+      if (!l.length) delete gekocht[id];
+      speicher.schreiben('gekocht', gekocht);
+    },
+    /** Alle Tage, an denen das Rezept gekocht wurde (Kopie, aufsteigend) */
+    daten: (id) => (gekocht[id] || []).slice(),
+    /** Letzter Tag ('JJJJ-MM-TT') oder null */
+    zuletzt: (id) => { const l = gekocht[id]; return l && l.length ? l[l.length - 1] : null; },
+    /** Ganzer Verlauf (Kopie) */
+    alle: () => JSON.parse(JSON.stringify(gekocht)),
+  };
+  /** Tage seit dem letzten Kochen (Infinity = nie) */
+  const tageSeitGekocht = (id) => {
+    const z = gekochtHilfe.zuletzt(id);
+    return z ? Math.round((new Date(heuteISO() + 'T12:00') - new Date(z + 'T12:00')) / 864e5) : Infinity;
+  };
+  const datumText = (iso) => new Date(iso + 'T12:00').toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+
+  // ---------------------------------------------------------------- Haushalt (Portionen pro Person)
+  /** Effektive Portionen eines Plan-/Listen-Eintrags: Summe der Profil-Faktoren, sonst Personenzahl */
+  const werVon = (e) => (e.wer || []).map((u) => profile.find((p) => p.uid === u)).filter(Boolean);
+  const portionen = (e) => { const w = werVon(e); return w.length ? w.reduce((n, p) => n + p.faktor, 0) : e.personen; };
+  const portionText = (n) => Einheiten.zahlText(Math.round(n * 4) / 4);
+  const standardWer = () => profile.filter((p) => p.standard).map((p) => p.uid);
+  /** Neuer Plan-Eintrag; ohne ausdrückliche Personenzahl isst der Standard-Haushalt mit */
+  function planEintrag(id, personen, tag) {
+    const r = nachId[id];
+    const wer = personen ? [] : standardWer();
+    const e = { uid: uid(), id, personen: begrenzen(personen || r.personen || STANDARD_PERSONEN), tag: tag || '' };
+    if (wer.length) { e.wer = wer; e.personen = begrenzen(portionen(e)); }
+    return e;
+  }
 
   // ---------------------------------------------------------------- Helfer
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
@@ -96,10 +154,27 @@
     }))).then(() => {
       rezepte.sort((a, b) => a.titel.localeCompare(b.titel, 'de'));
       nachId = Object.fromEntries(rezepte.map((r) => [r.id, r]));
-      plan = plan.filter((e) => nachId[e.id]);
-      liste = liste.filter((e) => nachId[e.id]);
+      datenPruefen();
     });
   }
+
+  /** Gespeicherte Daten bereinigen (alte Stände, gelöschte Rezepte/Profile) */
+  function datenPruefen() {
+    if (!Array.isArray(profile)) profile = [];
+    profile = profile.filter((p) => p && p.uid).map((p) => Object.assign(p, { name: String(p.name || ''), faktor: faktorBegrenzen(p.faktor) }));
+    const ok = (e) => e && nachId[e.id];
+    plan = (Array.isArray(plan) ? plan : []).filter(ok).map((e) => {
+      e.uid = e.uid || uid(); e.personen = begrenzen(e.personen); e.tag = TAGE.includes(e.tag) ? e.tag : '';
+      if (e.wer) e.wer = e.wer.filter((u) => profile.some((p) => p.uid === u));
+      if (e.wer && !e.wer.length) delete e.wer;
+      if (e.wer) e.personen = begrenzen(portionen(e));   // Rückfall, falls Profile später fehlen
+      return e;
+    });
+    liste = (Array.isArray(liste) ? liste : []).filter(ok).map((e) => Object.assign(e, { uid: e.uid || uid(), personen: begrenzen(e.personen) }));
+    if (ladenfolge && !Array.isArray(ladenfolge)) ladenfolge = null;
+    if (!gekocht || typeof gekocht !== 'object' || Array.isArray(gekocht)) gekocht = {};
+  }
+  const faktorBegrenzen = (f) => Math.min(4, Math.max(0.25, Math.round((Number(f) || 1) * 4) / 4));
 
   // ---------------------------------------------------------------- Router
   function route() {
@@ -163,13 +238,14 @@
   function zeichnen() {
     const { teile, q } = route();
     if (verlassen) { verlassen(); verlassen = null; }
+    blattZu();
     navAktualisieren();
     zaehlerAktualisieren();
     document.body.dataset.seite = teile[0] || 'start';
 
     if (teile[0] === 'rezept' && nachId[teile[1]]) {
       const r = nachId[teile[1]];
-      seiteRezept(r, begrenzen(q.get('p') || r.personen || STANDARD_PERSONEN));
+      seiteRezept(r, begrenzen(q.get('p') || r.personen || STANDARD_PERSONEN), q.has('p'));
     } else if (teile[0] === 'kochen' && nachId[teile[1]]) seiteKochen(nachId[teile[1]], q);
     else if (teile[0] === 'plan') seitePlan();
     else if (teile[0] === 'einkauf') seiteEinkauf();
@@ -181,12 +257,15 @@
     window.scrollTo(0, obenStarten ? 0 : scrollStand[gezeichnet] || 0);
     obenStarten = false;
     Timer.markieren();
+    if (nachDemZeichnen) { const f = nachDemZeichnen; nachDemZeichnen = null; f(); }
   }
+  let nachDemZeichnen = null;   // einmalig nach dem nächsten Zeichnen (z. B. Dialog nach Seitenwechsel)
 
-  /** Alle Rezepte, deren Zutaten auf die Einkaufsliste kommen: Wochenplan + direkt hinzugefügte */
-  const fuerEinkauf = () => [...plan, ...liste];
+  /** Alle Rezepte, deren Zutaten auf die Einkaufsliste kommen: Wochenplan (ohne schon gekochte) + direkt hinzugefügte */
+  const planOffen = () => plan.filter((e) => !e.gekocht);
+  const fuerEinkauf = () => [...planOffen(), ...liste];
   function zaehlerAktualisieren() {
-    document.querySelectorAll('[data-zahl="plan"]').forEach((el) => { el.textContent = plan.length || ''; });
+    document.querySelectorAll('[data-zahl="plan"]').forEach((el) => { el.textContent = planOffen().length || ''; });
     document.querySelectorAll('[data-zahl="einkauf"]').forEach((el) => { el.textContent = fuerEinkauf().length + extras.length || ''; });
     document.querySelectorAll('[data-zahl="zuhause"]').forEach((el) => { el.textContent = zuhause.length || ''; });
   }
@@ -507,7 +586,8 @@
       </section>`;
   }
 
-  function seiteRezept(r, personen) {
+  /** gewaehlt = Personenzahl in der Adresse/am Stepper gewählt (sonst Standard des Rezepts) */
+  function seiteRezept(r, personen, gewaehlt) {
     document.title = r.titel + ' – Rezepte';
     app.innerHTML = `
       <div class="werkzeuge r-werkzeuge nur-bildschirm">
@@ -521,14 +601,18 @@
 
     app.querySelectorAll('.stepper button').forEach((b) => b.addEventListener('click', () => {
       adresseSetzen('#/rezept/' + r.id + '?p=' + begrenzen(b.dataset.p));
-      seiteRezept(r, begrenzen(b.dataset.p));
+      seiteRezept(r, begrenzen(b.dataset.p), true);
       Timer.markieren();
     }));
+    const gk = document.getElementById('gekocht');
+    if (gk) gk.addEventListener('click', () => kochenAbschliessen(r));
     document.getElementById('zum-plan').addEventListener('click', (e) => {
-      plan.push({ uid: uid(), id: r.id, personen, tag: '' });
+      // Personenzahl selbst gewählt → so übernehmen, sonst isst der Standard-Haushalt mit (falls angelegt)
+      const neu = planEintrag(r.id, gewaehlt ? personen : 0);
+      plan.push(neu);
       sichern(); zaehlerAktualisieren();
       e.currentTarget.innerHTML = svg('haken') + ' <span>Im Plan</span>';
-      melden(r.titel + ' für ' + personen + ' P. eingeplant');
+      melden(r.titel + ' für ' + portionenHTML(neu, true).replace(/<[^>]+>/g, '') + ' eingeplant');
     });
     document.getElementById('zur-liste').addEventListener('click', (e) => {
       liste.push({ uid: uid(), id: r.id, personen });
@@ -601,6 +685,19 @@
     id: 'timer-ton', titel: 'Timer-Ton testen', icon: 'glocke', text: 'Am iPhone: Stummschalter aus, Lautstärke hoch',
     html: () => `<button type="button" class="knopf">${svg('start')} Abspielen</button>`,
     binden: (zeile) => zeile.querySelector('button').addEventListener('click', () => Timer.testen()),
+  });
+  mehrAbschnitt('einkauf', 'Einkaufen');
+  mehrEintrag('einkauf', {
+    id: 'ladenfolge', titel: 'Reihenfolge im Laden', icon: 'korb',
+    text: () => (ladenfolge ? 'Eigene: ' : 'Standard: ') + kategorienFolge().slice(0, 3).join(' → ') + ' …',
+    html: () => `<button type="button" class="knopf">Ändern</button>`,
+    binden: (zeile) => zeile.querySelector('button').addEventListener('click', ladenfolgeBlatt),
+  });
+  mehrAbschnitt('haushalt', 'Haushalt');
+  mehrEintrag('haushalt', {
+    id: 'profile', titel: 'Personen & Portionen', icon: 'personen', text: () => haushaltText(),
+    html: () => `<button type="button" class="knopf">${profile.length ? 'Ändern' : 'Anlegen'}</button>`,
+    binden: (zeile) => zeile.querySelector('button').addEventListener('click', haushaltBlatt),
   });
 
   function seiteMehr() {
@@ -717,10 +814,15 @@
     const weiter = kochFrisch(st) && st.s > 1;
     const n = schrittListe(r).length;
     if (!n) return '';
+    const zuletzt = gekochtHilfe.zuletzt(r.id);
     return `
       <div class="koch-zeile nur-bildschirm">
         <a class="knopf haupt koch-knopf" href="#/kochen/${esc(r.id)}?p=${personen}&amp;s=${weiter ? st.s : 1}">${svg('topf')} <span>${weiter ? 'Weiterkochen' : 'Jetzt kochen'}</span></a>
         <span class="klein">${weiter ? `bei Schritt ${st.s} von ${n}` : `Schritt für Schritt · ${n} Schritte · Bildschirm bleibt an`}</span>
+        <span class="koch-gekocht">
+          ${zuletzt ? `<span class="klein">Zuletzt gekocht: ${datumText(zuletzt)}</span>` : ''}
+          <button type="button" class="knopf leise" id="gekocht" title="Als gekocht merken, Verbrauchtes aus „Zuhause“ nehmen">${svg('haken')} Gekocht</button>
+        </span>
       </div>`;
   }
 
@@ -799,7 +901,7 @@
     function fertig() {
       delete kochen[r.id];
       speicher.schreiben('kochen', kochen);
-      melden('Guten Appetit!');
+      nachDemZeichnen = () => kochenAbschliessen(r, null, 'Guten Appetit!');
       location.hash = zurueck();
     }
 
@@ -873,7 +975,70 @@
     zeigen();
   }
 
+  // ---------------------------------------------------------------- Gekocht → Verbrauch aus „Zuhause“
+  const gleicherName = (a, b) => { a = Zutaten.normal(a); b = Zutaten.normal(b); return a.startsWith(b) || b.startsWith(a); };
+  /** Plan-Eintrag, der beim Kochen abgehakt wird: offener Eintrag des Rezepts, bevorzugt von heute */
+  function planFuerGekocht(id) {
+    const offen = plan.filter((e) => e.id === id && !e.gekocht);
+    return offen.find((e) => e.tag === heuteTag()) || offen.find((e) => !e.tag) || offen[0] || null;
+  }
+  /** Rezept als gekocht merken, im Plan abhaken (eintrag = bestimmter Plan-Eintrag) und nach Verbrauchtem fragen */
+  function kochenAbschliessen(r, eintrag, gruss) {
+    gekochtHilfe.merken(r.id);
+    const e = eintrag || planFuerGekocht(r.id);
+    if (e) e.gekocht = heuteISO();
+    sichern();
+    zeichnen();
+    const text = (gruss ? gruss + ' ' : '') + 'Als gekocht gemerkt' + (e ? ', im Wochenplan abgehakt' : '');
+    // Zuhause-Einträge, die zu Zutaten des Rezepts passen (jeder nur einmal); Grundvorrat nicht vorab angehakt
+    const treffer = [];
+    for (const z of nurZutaten(r)) {
+      const x = !Zutaten.info(z).nie && istZuhause(z.name);
+      if (!x || treffer.some((t) => t.x === x)) continue;
+      const vorrat = Zutaten.info(z).vorrat || Zutaten.info({ name: x.name }).vorrat;
+      treffer.push({ x, z, vorrat });
+    }
+    if (!treffer.length) { melden(text); return; }
+    const b = blattAuf('Verbrauchte Zutaten aus Zuhause entfernen?');
+    b.zeigen(`
+      <p class="klein">${esc(text)}. Angehakte Zutaten werden aus deiner Zuhause-Liste genommen –
+        Grundvorrat wie Salz, Öl und Gewürze ist nicht angehakt.</p>
+      <ul class="vb-liste">${treffer.map((t, i) => `
+        <li><label class="haken-zeile"><input type="checkbox" data-i="${i}" ${t.vorrat ? '' : 'checked'}><span class="box">${svg('haken')}</span>
+          <span>${esc(t.x.name)}${!gleicherName(t.x.name, t.z.name) ? `<small>für ${esc(t.z.name)}</small>` : ''}</span>
+          ${t.vorrat ? '<span class="merkmal">Vorrat</span>' : ''}</label></li>`).join('')}</ul>`,
+    `<button type="button" class="knopf leise" data-blatt-zu>Nichts entfernen</button>
+     <button type="button" class="knopf haupt" id="vb-ok">${svg('muell')} <span>Entfernen</span></button>`);
+    const knopf = b.el.querySelector('#vb-ok');
+    const zaehlen = () => {
+      const n = b.el.querySelectorAll('.vb-liste input:checked').length;
+      knopf.querySelector('span').textContent = n ? n + ' entfernen' : 'Entfernen';
+      knopf.disabled = !n;
+    };
+    b.el.addEventListener('change', zaehlen);
+    knopf.addEventListener('click', () => {
+      const weg = new Set([...b.el.querySelectorAll('.vb-liste input:checked')].map((c) => treffer[Number(c.dataset.i)].x));
+      zuhause = zuhause.filter((x) => !weg.has(x));
+      sichern();
+      b.schliessen();
+      zeichnen();
+      melden(weg.size + (weg.size === 1 ? ' Zutat' : ' Zutaten') + ' aus „Zuhause“ entfernt');
+    });
+    zaehlen();
+  }
+
   // ---------------------------------------------------------------- Wochenplan
+  const heuteTag = () => TAGE[(new Date().getDay() + 6) % 7];
+  /** „3½ Portionen (Anna, Ben)“ bzw. „4 Personen“ */
+  function portionenHTML(e, kurz) {
+    const w = werVon(e);
+    if (!w.length) return `${e.personen} ${kurz ? 'P.' : e.personen === 1 ? 'Person' : 'Personen'}`;
+    const n = portionen(e);
+    return `${portionText(n)} ${kurz ? 'P.' : n === 1 ? 'Portion' : 'Portionen'}${kurz ? '' : ` <span class="klein">(${w.map((p) => esc(p.name || 'ohne Namen')).join(', ')})</span>`}`;
+  }
+  /** Chips „Wer isst mit“ (nur mit Profilen) */
+  const werChipsHTML = (gewaehlt) => profile.map((p) => `<button type="button" class="chip wer-chip${gewaehlt.includes(p.uid) ? ' aktiv' : ''}" data-wer="${p.uid}" data-f="wer${p.uid}" aria-pressed="${gewaehlt.includes(p.uid)}">${esc(p.name || 'ohne Namen')} <span class="klein">${portionText(p.faktor)}</span></button>`).join('');
+
   function seitePlan() {
     document.title = 'Wochenplan – Rezepte';
     const gruppen = [...TAGE, ''].map((tag) => ({ tag, eintraege: plan.filter((e) => (e.tag || '') === tag) }))
@@ -881,20 +1046,28 @@
 
     const zeile = (e) => {
       const r = nachId[e.id];
+      const w = werVon(e);
       return `
-        <li class="plan-eintrag" data-uid="${e.uid}">
-          <a href="#/rezept/${esc(r.id)}?p=${e.personen}">${esc(r.titel)}</a>
-          <select data-feld="tag" aria-label="Tag">
-            <option value="">– kein Tag –</option>
-            ${TAGE.map((t) => `<option ${t === e.tag ? 'selected' : ''}>${t}</option>`).join('')}
-          </select>
-          <span class="stepper">
-            <button type="button" data-schritt="-1" aria-label="Weniger">${svg('minus')}</button>
-            <strong>${e.personen}</strong>
-            <button type="button" data-schritt="1" aria-label="Mehr">${svg('plus')}</button>
-          </span>
-          <span class="klein">Pers.</span>
-          <button type="button" class="knopf leise icon-knopf" data-weg aria-label="Entfernen">${svg('muell')}</button>
+        <li class="plan-eintrag${e.gekocht ? ' gekocht' : ''}" data-uid="${e.uid}">
+          <div class="pe-kopf">
+            <button type="button" class="pe-haken nur-bildschirm" data-gekocht aria-pressed="${!!e.gekocht}" aria-label="${e.gekocht ? 'Doch nicht gekocht' : 'Als gekocht abhaken'}" title="${e.gekocht ? 'Doch nicht gekocht' : 'Gekocht'}"><span class="box">${svg('haken')}</span></button>
+            <a href="#/rezept/${esc(r.id)}?p=${begrenzen(portionen(e))}"><span class="pe-titel">${esc(r.titel)}</span>${e.gekocht ? `<small>gekocht am ${datumText(e.gekocht)}</small>` : ''}</a>
+          </div>
+          <div class="pe-steuer">
+            <select data-feld="tag" aria-label="Tag">
+              <option value="">– kein Tag –</option>
+              ${TAGE.map((t) => `<option ${t === e.tag ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+            ${w.length ? `<span class="pe-portionen">${portionenHTML(e)}</span>` : `
+            <span class="stepper">
+              <button type="button" data-schritt="-1" aria-label="Weniger" ${e.personen <= 1 ? 'disabled' : ''}>${svg('minus')}</button>
+              <strong>${e.personen}</strong>
+              <button type="button" data-schritt="1" aria-label="Mehr">${svg('plus')}</button>
+            </span>
+            <span class="klein">Pers.</span>`}
+            <button type="button" class="knopf leise icon-knopf" data-weg aria-label="Entfernen">${svg('muell')}</button>
+          </div>
+          ${profile.length ? `<div class="chips pe-wer nur-bildschirm" aria-label="Wer isst mit">${werChipsHTML(e.wer || [])}</div>` : ''}
         </li>`;
     };
 
@@ -911,12 +1084,14 @@
           <option value="">Rezept hinzufügen …</option>
           ${rezepte.map((r) => `<option value="${esc(r.id)}">${esc(r.titel)}</option>`).join('')}
         </select>
+        <button type="button" class="knopf${plan.length ? '' : ' haupt'}" id="plan-vorschlag">${svg('funke')} Woche vorschlagen</button>
       </div>
       ${gruppen.length ? gruppen.map((g) => `
         <section class="plan-tag">
-          <h2>${g.tag || 'Ohne Tag'}</h2>
+          <h2>${g.tag || 'Ohne Tag'}${g.tag === heuteTag() ? ' <span class="klein nur-bildschirm">· heute</span>' : ''}</h2>
           <ul>${g.eintraege.map(zeile).join('')}</ul>
-        </section>`).join('') : '<p class="leer">Noch nichts geplant. Rezept oben auswählen oder in einem Rezept auf „Zum Wochenplan“ tippen.</p>'}`;
+        </section>`).join('') : '<p class="leer">Noch nichts geplant. Rezept oben auswählen, „Woche vorschlagen“ antippen oder in einem Rezept auf „Zum Wochenplan“ tippen.</p>'}
+      ${profile.length || !plan.length ? '' : '<p class="klein nur-bildschirm">Tipp: Unter <a href="#/mehr">Mehr → Haushalt</a> Personen mit Portionsgröße anlegen (z. B. Kind ½) – dann hier wählen, wer mitisst.</p>'}`;
 
     const finde = (el) => plan.find((e) => e.uid === el.closest('[data-uid]').dataset.uid);
     app.querySelectorAll('[data-feld="tag"]').forEach((s) => s.addEventListener('change', () => {
@@ -928,14 +1103,228 @@
     app.querySelectorAll('[data-weg]').forEach((b) => b.addEventListener('click', () => {
       const e = finde(b); plan = plan.filter((x) => x !== e); sichern(); zeichnen();
     }));
+    app.querySelectorAll('[data-wer]').forEach((b) => b.addEventListener('click', () => {
+      const e = finde(b), u = b.dataset.wer;
+      const vorher = portionen(e);
+      e.wer = (e.wer || []).includes(u) ? e.wer.filter((x) => x !== u) : [...(e.wer || []), u];
+      if (!werVon(e).length) { delete e.wer; e.personen = begrenzen(vorher); }   // zurück zur Personenzahl
+      else e.personen = begrenzen(portionen(e));
+      sichern(); zeichnen();
+    }));
+    app.querySelectorAll('[data-gekocht]').forEach((b) => b.addEventListener('click', () => {
+      const e = finde(b);
+      if (e.gekocht) { gekochtHilfe.vergessen(e.id, e.gekocht); delete e.gekocht; sichern(); zeichnen(); }
+      else kochenAbschliessen(nachId[e.id], e);
+    }));
     document.getElementById('plan-rezept').addEventListener('change', (ev) => {
       const r = nachId[ev.target.value];
-      if (r) { plan.push({ uid: uid(), id: r.id, personen: r.personen || STANDARD_PERSONEN, tag: '' }); sichern(); zeichnen(); }
+      if (r) { plan.push(planEintrag(r.id)); sichern(); zeichnen(); }
     });
+    document.getElementById('plan-vorschlag').addEventListener('click', vorschlagBlatt);
     const leeren = document.getElementById('plan-leeren');
     if (leeren) leeren.addEventListener('click', () => {
       if (confirm('Wochenplan wirklich leeren?')) { plan = []; abgehakt = {}; sichern(); zeichnen(); }
     });
+  }
+
+  // ---------------------------------------------------------------- Wochenplan-Vorschlag
+  // Wünsche (zuletzt benutzte) und angenommene Vorschläge: speicher 'vorschlag' = {wuensche, verlauf: [{id, datum}]}
+  const VS_KATEGORIEN = ['Hauptgericht', 'Suppe', 'Salat'];       // Frühstück, Backen, Beilage … nur auf Wunsch
+  const VS_ZEITEN = [0, 30, 45, 60];
+  const VS_VERLAUF_MAX = 40;
+  const vsSpeicher = () => {
+    const v = speicher.lesen('vorschlag', {});
+    return { wuensche: v.wuensche || {}, verlauf: Array.isArray(v.verlauf) ? v.verlauf : [] };
+  };
+  const istVeg = (r) => ['vegan', 'vegetarisch'].includes(ernaehrungVon(r).id);
+  const istFisch = (r) => ernaehrungVon(r).fisch;
+  /** Rollen eines Platzes: welche Rezepte dort passen */
+  const ROLLEN = { fisch: istFisch, veg: istVeg, frei: () => true };
+
+  function vsKandidaten(w) {
+    return rezepte.filter((r) => {
+      const e = ernaehrungVon(r), z = gesamtzeit(r.zeit);
+      if (!w.kat.includes(r.kategorie)) return false;
+      if (w.zeit && z && z > w.zeit) return false;
+      if (w.ohne.includes('fleisch') && e.fleisch) return false;
+      if (w.ohne.includes('fisch') && e.fisch) return false;
+      return true;
+    });
+  }
+  /** Je höher, desto lieber: viel zuhause, nicht im Plan, länger nicht gekocht/vorgeschlagen, etwas Zufall */
+  function vsWertung(r, verlauf) {
+    const zut = nurZutaten(r).filter((z) => z.menge != null && !z.optional && !Zutaten.info(z).nie);
+    let w = (zut.length ? 1 - fehlend(r) / zut.length : 0) * 2 + Math.random() * 1.5;
+    if (planOffen().some((e) => e.id === r.id)) w -= 10;
+    const t = tageSeitGekocht(r.id);
+    if (t < 21) w -= 2 * (21 - t) / 21;
+    const v = verlauf.filter((x) => x.id === r.id).map((x) => x.datum).sort().pop();
+    if (v && (new Date(heuteISO()) - new Date(v)) / 864e5 < 14) w -= 1;
+    return w;
+  }
+  /** Bestes Rezept für eine Rolle; ohne Treffer für die Rolle irgendein passendes (gemerkt als fehl) */
+  function vsWaehlen(pool, rolle, ausschluss, verlauf) {
+    const frei = pool.filter((r) => !ausschluss.has(r.id));
+    const bewertet = (l) => l.map((r) => ({ r, w: vsWertung(r, verlauf) })).sort((a, b) => b.w - a.w)[0];
+    const treffer = bewertet(frei.filter(ROLLEN[rolle]));
+    if (treffer) return { r: treffer.r, rolle };
+    const ersatz = bewertet(frei);
+    return ersatz ? { r: ersatz.r, rolle, fehl: true } : null;
+  }
+  /** Nächste freie Tage ab heute (am Wochenende: ab Montag); ohne freien Tag „kein Tag“ */
+  function freieTage(n) {
+    const heute = (new Date().getDay() + 6) % 7;
+    const start = heute >= 5 ? 0 : heute;
+    const belegt = new Set(planOffen().map((e) => e.tag).filter(Boolean));
+    const frei = TAGE.map((t, i) => TAGE[(start + i) % 7]).filter((t) => !belegt.has(t));
+    return Array.from({ length: n }, (x, i) => frei[i] || '');
+  }
+
+  function vorschlagBlatt() {
+    const sp = vsSpeicher();
+    const kats = [...new Set(rezepte.map((r) => r.kategorie).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
+    const w = Object.assign({ anzahl: 5, personen: STANDARD_PERSONEN, wer: null, veg: 0, fisch: 0, ohne: [], zeit: 0, kat: VS_KATEGORIEN.slice() }, sp.wuensche);
+    w.wer = (w.wer || standardWer()).filter((u) => profile.some((p) => p.uid === u));
+    w.kat = w.kat.filter((k) => kats.includes(k));
+    if (!w.kat.length) w.kat = VS_KATEGORIEN.filter((k) => kats.includes(k));
+    let auswahl = null;                 // [{r, rolle, tag, fehl, gezeigt: Set}]
+    const b = blattAuf('Woche vorschlagen', { klasse: 'vs-blatt' });
+    const grenzen = () => {
+      w.anzahl = Math.min(7, Math.max(1, w.anzahl));
+      if (w.ohne.includes('fisch')) w.fisch = 0;
+      w.fisch = Math.min(w.fisch, w.anzahl);
+      w.veg = Math.min(w.veg, w.anzahl - w.fisch);
+    };
+    const wer = () => werVon({ wer: w.wer });
+    const fuerText = () => (wer().length ? portionenHTML({ wer: w.wer, personen: w.personen }) : w.personen + (w.personen === 1 ? ' Person' : ' Personen'));
+    const chip = (attr, wert, an, text) => `<button type="button" class="chip${an ? ' aktiv' : ''}" ${attr}="${esc(wert)}" data-f="${attr}${esc(wert)}" aria-pressed="${an}">${esc(text)}</button>`;
+
+    function formZeigen(neu) {
+      grenzen();
+      const n = vsKandidaten(w).length;
+      b.zeigen(`
+        <div class="vs-form">
+          <div class="vs-feld"><span>Gerichte</span>${stepperHTML('anzahl', w.anzahl, w.anzahl > 1, w.anzahl < 7, 'Anzahl Gerichte')}</div>
+          ${profile.length ? `<div class="feld"><span>Wer isst mit</span><div class="chips">${werChipsHTML(w.wer)}</div></div>` : ''}
+          ${wer().length ? `<p class="klein vs-fuer">${fuerText()}</p>` : `<div class="vs-feld"><span>Personen</span>${stepperHTML('personen', w.personen, w.personen > 1, w.personen < 30, 'Personen')}</div>`}
+          <div class="vs-feld"><span>mind. vegetarisch</span>${stepperHTML('veg', w.veg, w.veg > 0, w.veg < w.anzahl - w.fisch, 'Mindestens vegetarisch')}</div>
+          <div class="vs-feld${w.ohne.includes('fisch') ? ' aus' : ''}"><span>mind. mit Fisch</span>${stepperHTML('fisch', w.fisch, w.fisch > 0, !w.ohne.includes('fisch') && w.fisch < w.anzahl - w.veg, 'Mindestens mit Fisch')}</div>
+          <div class="feld"><span>Nicht vorschlagen</span><div class="chips">
+            ${chip('data-ohne', 'fleisch', w.ohne.includes('fleisch'), 'ohne Fleisch')}${chip('data-ohne', 'fisch', w.ohne.includes('fisch'), 'ohne Fisch')}
+          </div></div>
+          <div class="feld"><span>Zeit höchstens</span><div class="chips">
+            ${VS_ZEITEN.map((z) => chip('data-zeit', z, w.zeit === z, z ? z + ' Min.' : 'egal')).join('')}
+          </div></div>
+          <div class="feld"><span>Kategorien</span><div class="chips">${kats.map((k) => chip('data-kat', k, w.kat.includes(k), k)).join('')}</div></div>
+          <p class="klein">${n} passende Rezepte. Bevorzugt wird, was du größtenteils <a href="#/zuhause">zuhause</a> hast; was schon im Plan steht oder kürzlich gekocht wurde, kommt seltener.</p>
+        </div>`,
+      `<button type="button" class="knopf leise" data-blatt-zu>Abbrechen</button>
+       <button type="button" class="knopf haupt" id="vs-los" ${n ? '' : 'disabled'}>${svg('funke')} Vorschlagen</button>`, neu);
+    }
+
+    function erzeugen() {
+      speicher.schreiben('vorschlag', Object.assign(vsSpeicher(), { wuensche: w }));
+      const pool = vsKandidaten(w);
+      const rollen = [...Array(w.fisch).fill('fisch'), ...Array(w.veg).fill('veg')];
+      while (rollen.length < w.anzahl) rollen.push('frei');
+      const genommen = new Set();
+      const tage = freieTage(w.anzahl);
+      auswahl = [];
+      for (const rolle of rollen) {
+        const v = vsWaehlen(pool, rolle, genommen, sp.verlauf);
+        if (!v) break;
+        genommen.add(v.r.id);
+        auswahl.push(Object.assign(v, { gezeigt: new Set([v.r.id]) }));
+      }
+      // Tage in Plan-Reihenfolge vergeben, Rezepte dabei mischen (Fisch nicht immer am Montag)
+      auswahl.sort(() => Math.random() - 0.5).forEach((v, i) => { v.tag = tage[i]; });
+      vorschauZeigen(true);
+    }
+    function wuerfeln(i) {
+      const v = auswahl[i];
+      const pool = vsKandidaten(w);
+      const andere = new Set(auswahl.filter((x) => x !== v).map((x) => x.r.id));
+      let neu = vsWaehlen(pool, v.rolle, new Set([...andere, ...v.gezeigt]), sp.verlauf);
+      if (!neu || (neu.fehl && !v.fehl)) {          // alles schon gezeigt: von vorn, nur nicht das aktuelle
+        v.gezeigt = new Set([v.r.id]);
+        neu = vsWaehlen(pool, v.rolle, new Set([...andere, v.r.id]), sp.verlauf) || neu;
+      }
+      if (!neu) { melden('Kein weiteres passendes Rezept'); return; }
+      v.gezeigt.add(neu.r.id);
+      Object.assign(v, { r: neu.r, fehl: neu.fehl });
+      vorschauZeigen();
+    }
+    const ROLLEN_TEXT = { fisch: 'mit Fisch', veg: 'vegetarisch' };
+    function vorschauZeigen(neu) {
+      const fehl = auswahl.filter((v) => v.fehl);
+      b.zeigen(`
+        <p class="klein">${auswahl.length} Gerichte für ${fuerText()}. ${svg('wuerfel')} tauscht ein Gericht aus.</p>
+        ${auswahl.length < w.anzahl ? `<p class="hinweis fehler klein">Nur ${auswahl.length} passende Rezepte – Wünsche lockern für mehr.</p>` : ''}
+        ${fehl.length ? `<p class="hinweis fehler klein">Nicht genug passende Rezepte für: ${[...new Set(fehl.map((v) => ROLLEN_TEXT[v.rolle]))].join(', ')}.</p>` : ''}
+        <ul class="vs-liste">${auswahl.map((v, i) => {
+          const r = v.r, z = gesamtzeit(r.zeit), f = fehlend(r);
+          const ern = ERNAEHRUNG.find((x) => x.id === ernaehrungVon(r).id).name;
+          return `
+          <li class="vs-zeile">
+            <select class="vs-tag" data-tag="${i}" aria-label="Tag für ${esc(r.titel)}">
+              <option value="">– kein Tag –</option>
+              ${TAGE.map((t) => `<option ${t === v.tag ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+            <div class="vs-text"><strong>${esc(r.titel)}</strong>
+              <small>${[r.kategorie, z ? dauer(z) : '', ern, zuhause.length ? (f ? 'fehlt: ' + f : 'alles da') : ''].filter(Boolean).map(esc).join(' · ')}</small></div>
+            <button type="button" class="knopf icon-knopf vs-wuerfeln" data-wuerfeln="${i}" data-f="w${i}" aria-label="Neu würfeln: ${esc(r.titel)}" title="Anderes Gericht">${svg('wuerfel')}</button>
+          </li>`; }).join('')}</ul>`,
+      `<button type="button" class="knopf leise" id="vs-aendern">${svg('zurueck')} Wünsche</button>
+       <button type="button" class="knopf" data-blatt-zu>Verwerfen</button>
+       <button type="button" class="knopf haupt" id="vs-ok" ${auswahl.length ? '' : 'disabled'}>${svg('haken')} Übernehmen</button>`, neu);
+    }
+    function uebernehmen() {
+      const heute = heuteISO();
+      for (const v of auswahl) {
+        const e = { uid: uid(), id: v.r.id, personen: begrenzen(w.personen), tag: v.tag || '' };
+        if (wer().length) { e.wer = w.wer.slice(); e.personen = begrenzen(portionen(e)); }
+        plan.push(e);
+      }
+      const verlauf = [...vsSpeicher().verlauf, ...auswahl.map((v) => ({ id: v.r.id, datum: heute }))].slice(-VS_VERLAUF_MAX);
+      speicher.schreiben('vorschlag', { wuensche: w, verlauf });
+      sichern();
+      const n = auswahl.length;
+      b.schliessen();
+      zeichnen();
+      melden(n + (n === 1 ? ' Gericht' : ' Gerichte') + ' eingeplant', '#/einkauf', 'Einkaufsliste');
+    }
+
+    b.el.addEventListener('click', (e) => {
+      const s = e.target.closest('[data-stepper] button');
+      const t = (sel) => e.target.closest(sel);
+      if (s) {
+        const feld = s.closest('[data-stepper]').dataset.stepper;
+        w[feld] += Number(s.dataset.d);
+        if (feld === 'personen') w.personen = begrenzen(w.personen);
+        formZeigen();
+      } else if (t('[data-wer]')) {
+        const u = t('[data-wer]').dataset.wer;
+        w.wer = w.wer.includes(u) ? w.wer.filter((x) => x !== u) : [...w.wer, u];
+        formZeigen();
+      } else if (t('[data-ohne]')) {
+        const o = t('[data-ohne]').dataset.ohne;
+        w.ohne = w.ohne.includes(o) ? w.ohne.filter((x) => x !== o) : [...w.ohne, o];
+        formZeigen();
+      } else if (t('[data-zeit]')) { w.zeit = Number(t('[data-zeit]').dataset.zeit); formZeigen(); }
+      else if (t('[data-kat]')) {
+        const k = t('[data-kat]').dataset.kat;
+        w.kat = w.kat.includes(k) ? w.kat.filter((x) => x !== k) : [...w.kat, k];
+        formZeigen();
+      } else if (t('#vs-los')) erzeugen();
+      else if (t('[data-wuerfeln]')) wuerfeln(Number(t('[data-wuerfeln]').dataset.wuerfeln));
+      else if (t('#vs-aendern')) formZeigen(true);
+      else if (t('#vs-ok')) uebernehmen();
+    });
+    b.el.addEventListener('change', (e) => {
+      const s = e.target.closest('[data-tag]');
+      if (s) auswahl[Number(s.dataset.tag)].tag = s.value;
+    });
+    formZeigen();
   }
 
   // ---------------------------------------------------------------- Einkaufsliste
@@ -943,7 +1332,7 @@
     const map = new Map();
     for (const e of fuerEinkauf()) {
       const r = nachId[e.id];
-      const faktor = e.personen / (r.personen || STANDARD_PERSONEN);
+      const faktor = portionen(e) / (r.personen || STANDARD_PERSONEN);
       for (const z of nurZutaten(r)) {
         const info = Zutaten.info(z);
         if (info.nie) continue;
@@ -972,21 +1361,20 @@
       return Object.assign(p, { menge, anzeigeName: name });
     });
 
+    // Kategorien in der Reihenfolge im Laden (Mehr → Einkaufen); unbekannte Kategorien zählen als „Sonstiges“
     const gruppen = [];
-    for (const k of Zutaten.KATEGORIEN) {
-      const liste = posten.filter((p) => !p.vorrat && p.kategorie === k);
+    for (const k of kategorienFolge()) {
+      const liste = posten.filter((p) => !p.vorrat && (p.kategorie === k || (k === 'Sonstiges' && !Zutaten.KATEGORIEN.includes(p.kategorie))));
       if (liste.length) gruppen.push({ titel: k, liste: liste.sort((a, b) => a.anzeigeName.localeCompare(b.anzeigeName, 'de')) });
     }
-    const unbekannt = posten.filter((p) => !p.vorrat && !Zutaten.KATEGORIEN.includes(p.kategorie));
-    if (unbekannt.length) gruppen.push({ titel: 'Sonstiges', liste: unbekannt });
     const eigene = extras.map((x) => ({ schluessel: 'extra|' + x.uid, uid: x.uid, anzeigeName: x.text, menge: '', rezepte: new Set(), extra: true }));
-    if (eigene.length) gruppen.push({ titel: 'Eigene Einträge', liste: eigene });
+    if (eigene.length) gruppen.push({ titel: 'Eigene Einträge', liste: eigene, eigene: true });
     const vorrat = posten.filter((p) => p.vorrat).sort((a, b) => a.anzeigeName.localeCompare(b.anzeigeName, 'de'));
     if (vorrat.length) gruppen.push({ titel: 'Vorrat prüfen', liste: vorrat, vorrat: true });
     // Was zuhause ist, aus allen Gruppen in "Schon zuhause" verschieben
     const da = [];
     for (const g of gruppen) {
-      if (g.titel === 'Eigene Einträge') continue;
+      if (g.eigene) continue;
       g.liste = g.liste.filter((p) => (istZuhause(p.name) ? (da.push(p), false) : true));
     }
     const ergebnis = gruppen.filter((g) => g.liste.length);
@@ -996,7 +1384,7 @@
 
   function alsText(gruppen, markdown) {
     const datum = new Date().toLocaleDateString('de-DE');
-    const fuer = fuerEinkauf().map((e) => `${nachId[e.id].titel} (${e.personen} P.)`).join(', ');
+    const fuer = fuerEinkauf().map((e) => `${nachId[e.id].titel} (${portionText(portionen(e))} P.)`).join(', ');
     const box = markdown ? '- [ ] ' : '☐ ';
     let t = (markdown ? '# ' : '') + 'Einkaufsliste – ' + datum + '\n';
     if (fuer) t += (markdown ? '\n_Für: ' + fuer + '_\n' : 'Für: ' + fuer + '\n');
@@ -1015,7 +1403,7 @@
     const gruppen = einkaufsliste();
     const quellen = fuerEinkauf();
     const leer = !quellen.length && !extras.length;
-    const offen = gruppen.filter((g) => !g.zuhause).reduce((n, g) => n + g.liste.filter((p) => !abgehakt[p.schluessel]).length, 0);
+    const an = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
 
     app.innerHTML = `
       <div class="werkzeuge">
@@ -1031,7 +1419,7 @@
         </div>`}
       </div>
       ${quellen.length ? `<div class="ek-fuer"><span class="nur-druck">Für: </span>${quellen.map((e) => `
-        <span class="ek-chip">${esc(nachId[e.id].titel)} <span class="klein">${e.personen} P.</span>${plan.includes(e) ? ' <span class="klein nur-bildschirm">· Plan</span>' : `<button type="button" class="nur-bildschirm" data-weg-liste="${e.uid}" aria-label="Von der Liste nehmen">×</button>`}</span>`).join('<span class="nur-druck">, </span>')}</div>` : ''}
+        <span class="ek-chip">${esc(nachId[e.id].titel)} <span class="klein">${portionenHTML(e, true)}</span>${plan.includes(e) ? ' <span class="klein nur-bildschirm">· Plan</span>' : `<button type="button" class="nur-bildschirm" data-weg-liste="${e.uid}" aria-label="Von der Liste nehmen">×</button>`}</span>`).join('<span class="nur-druck">, </span>')}</div>` : ''}
       ${leer ? `<p class="leer">Noch leer. Öffne ein Rezept und tippe auf <strong>„Auf Einkaufsliste“</strong> – oder plane Rezepte im <a href="#/plan">Wochenplan</a> ein.</p>` : ''}
       <form class="ek-neu nur-bildschirm" id="ek-neu">
         <input id="ek-text" placeholder="Eigener Eintrag, z. B. Spülmittel" autocomplete="off">
@@ -1057,15 +1445,32 @@
             </ul>
           </section>`).join('')}
       </div>
-      ${leer ? '' : `<p class="nur-bildschirm klein">${offen} offen · Antippen zum Abhaken · <a href="#" id="ek-zuruecksetzen">Haken zurücksetzen</a>${liste.length || extras.length ? ' · <a href="#" id="ek-leeren">Liste leeren</a>' : ''}</p>`}`;
+      ${leer ? '' : `
+      <div class="ek-fertig nur-bildschirm">
+        <button type="button" class="knopf haupt" id="ek-erledigt">${svg('haus')} <span>Einkauf erledigt</span></button>
+        <span class="klein" id="ek-erledigt-text"></span>
+      </div>
+      <p class="nur-bildschirm klein"><span id="ek-offen"></span> · Antippen zum Abhaken · <a href="#" id="ek-zuruecksetzen">Haken zurücksetzen</a>${liste.length || extras.length ? ' · <a href="#" id="ek-leeren">Liste leeren</a>' : ''}</p>`}`;
 
+    // Zähler „offen“ und Knopf „Einkauf erledigt“ ohne Neuzeichnen aktuell halten
+    const zaehlen = () => {
+      if (leer) return;
+      const offen = gruppen.filter((g) => !g.zuhause).reduce((n, g) => n + g.liste.filter((p) => !abgehakt[p.schluessel]).length, 0);
+      const n = gekauftePosten(gruppen).length;
+      document.getElementById('ek-offen').textContent = offen + ' offen';
+      document.getElementById('ek-erledigt').disabled = !n && !gekaufteExtras().length;
+      document.getElementById('ek-erledigt-text').textContent = n ? n + ' abgehakte ' + (n === 1 ? 'Zutat kommt' : 'Zutaten kommen') + ' nach „Zuhause“' : 'Abgehaktes kommt danach nach „Zuhause“';
+    };
     app.querySelectorAll('.ek-posten').forEach((li) => li.addEventListener('click', (ev) => {
       if (ev.target.closest('[data-extra], [data-da], [data-nicht-da]')) return;
       const k = li.dataset.k;
       if (abgehakt[k]) delete abgehakt[k]; else abgehakt[k] = true;
       sichern();
       li.classList.toggle('erledigt');
+      zaehlen();
     }));
+    zaehlen();
+    an('ek-erledigt', () => einkaufErledigt(gruppen));
     app.querySelectorAll('[data-da]').forEach((b) => b.addEventListener('click', () => {
       zuhause.push({ uid: uid(), name: b.dataset.da }); sichern(); zeichnen(); melden(b.dataset.da + ' als zuhause gemerkt');
     }));
@@ -1083,7 +1488,6 @@
       const text = document.getElementById('ek-text').value.trim();
       if (text) { extras.push({ uid: uid(), text }); sichern(); zeichnen(); document.getElementById('ek-text').focus(); }
     });
-    const an = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
     an('ek-zuruecksetzen', (ev) => { ev.preventDefault(); abgehakt = {}; sichern(); zeichnen(); });
     an('ek-leeren', (ev) => {
       ev.preventDefault();
@@ -1093,6 +1497,135 @@
     an('ek-txt', () => herunterladen('einkaufsliste.txt', alsText(einkaufsliste(), false), 'text/plain'));
     an('ek-md', () => herunterladen('einkaufsliste.md', alsText(einkaufsliste(), true), 'text/markdown'));
     an('ek-teilen', () => navigator.share({ title: 'Einkaufsliste', text: alsText(einkaufsliste(), false) }).catch(() => {}));
+  }
+
+  // ---------------------------------------------------------------- Einkauf erledigt → Zuhause
+  /** Abgehakte Zutaten (ohne eigene Einträge und ohne „Schon zuhause“) */
+  const gekauftePosten = (gruppen) => gruppen.filter((g) => !g.zuhause && !g.eigene).flatMap((g) => g.liste).filter((p) => abgehakt[p.schluessel]);
+  const gekaufteExtras = () => extras.filter((x) => abgehakt['extra|' + x.uid]);
+  function einkaufErledigt(gruppen) {
+    const namen = [];
+    for (const p of gekauftePosten(gruppen)) {
+      if (!namen.some((n) => Zutaten.normal(n) === Zutaten.normal(p.name))) namen.push(p.name);
+    }
+    const eigene = gekaufteExtras();
+    const b = blattAuf('Einkauf erledigt');
+    b.zeigen(`
+      ${namen.length ? `<p>${namen.length === 1 ? 'Diese Zutat kommt' : `Diese ${namen.length} Zutaten kommen`} in deine Zuhause-Liste:</p>
+      <div class="ek-uebernahme">${namen.map((n) => `<span class="ek-chip">${esc(n)}</span>`).join('')}</div>` : ''}
+      ${eigene.length ? `<p class="klein">${eigene.length === 1 ? 'Ein abgehakter eigener Eintrag wird' : eigene.length + ' abgehakte eigene Einträge werden'} von der Liste genommen.</p>` : ''}
+      ${liste.length ? `<label class="haken-zeile"><input type="checkbox" id="ee-liste" checked><span class="box">${svg('haken')}</span>
+        <span>Rezepte direkt auf der Liste entfernen<small>${liste.map((e) => esc(nachId[e.id].titel)).join(', ')}</small></span></label>` : ''}
+      ${planOffen().length ? '<p class="klein">Rezepte im Wochenplan bleiben – ihre Zutaten stehen dann unter „Schon zuhause“.</p>' : ''}`,
+    `<button type="button" class="knopf leise" data-blatt-zu>Abbrechen</button>
+     <button type="button" class="knopf haupt" id="ee-ok">${svg('haken')} Übernehmen</button>`);
+    b.el.querySelector('#ee-ok').addEventListener('click', () => {
+      const listeWeg = b.el.querySelector('#ee-liste');
+      namen.forEach((name) => { if (!istZuhause(name)) zuhause.push({ uid: uid(), name }); });
+      extras = extras.filter((x) => !eigene.includes(x));
+      if (listeWeg && listeWeg.checked) liste = [];
+      abgehakt = {};
+      sichern();
+      b.schliessen();
+      zeichnen();
+      melden(namen.length + (namen.length === 1 ? ' Zutat' : ' Zutaten') + ' nach „Zuhause“ übernommen', '#/zuhause', 'Ansehen');
+    });
+  }
+
+  // ---------------------------------------------------------------- Reihenfolge im Laden
+  /** Kategorien in der eigenen Reihenfolge; neue Kategorien (aus zutaten.js) an ihrer Standardstelle */
+  function kategorienFolge() {
+    const alle = Zutaten.KATEGORIEN;
+    if (!ladenfolge) return alle.slice();
+    const f = ladenfolge.filter((k, i) => alle.includes(k) && ladenfolge.indexOf(k) === i);
+    alle.forEach((k, i) => { if (!f.includes(k)) f.splice(Math.min(i, f.length), 0, k); });
+    return f;
+  }
+  function ladenfolgeBlatt() {
+    const b = blattAuf('Reihenfolge im Laden', { zu: () => { if (document.body.dataset.seite === 'mehr') zeichnen(); } });
+    const zeigen = () => {
+      const f = kategorienFolge();
+      b.zeigen(`
+        <p class="klein">So ist die Einkaufsliste sortiert – am besten in der Reihenfolge deines Wegs durch den Laden.
+          „Eigene Einträge“, „Vorrat prüfen“ und „Schon zuhause“ stehen immer am Ende.</p>
+        <ol class="lf-liste">${f.map((k, i) => `
+          <li data-k="${esc(k)}">
+            <span class="lf-nr">${i + 1}</span>
+            <span class="lf-name">${esc(k)}</span>
+            <button type="button" class="knopf icon-knopf" data-lf="-1" data-f="${esc(k)}-" aria-label="${esc(k)} nach oben" ${i ? '' : 'disabled'}>${svg('hoch')}</button>
+            <button type="button" class="knopf icon-knopf" data-lf="1" data-f="${esc(k)}+" aria-label="${esc(k)} nach unten" ${i < f.length - 1 ? '' : 'disabled'}>${svg('runter')}</button>
+          </li>`).join('')}</ol>`,
+      `<button type="button" class="knopf leise" id="lf-zurueck" ${ladenfolge ? '' : 'disabled'}>Zurücksetzen</button>
+       <button type="button" class="knopf haupt" data-blatt-zu>Fertig</button>`);
+    };
+    b.el.addEventListener('click', (e) => {
+      const k = e.target.closest('[data-lf]');
+      if (k) {
+        const f = kategorienFolge(), i = f.indexOf(k.closest('[data-k]').dataset.k), j = i + Number(k.dataset.lf);
+        if (j < 0 || j >= f.length) return;
+        [f[i], f[j]] = [f[j], f[i]];
+        ladenfolge = f.join() === Zutaten.KATEGORIEN.join() ? null : f;
+        sichern(); zeigen();
+      } else if (e.target.closest('#lf-zurueck')) { ladenfolge = null; sichern(); zeigen(); }
+    });
+    zeigen();
+  }
+
+  // ---------------------------------------------------------------- Haushalt (Profile)
+  const PROFIL_VORLAGEN = [['Erwachsen', 1], ['Kind', 0.5], ['Großer Hunger', 1.5]];
+  function haushaltText() {
+    if (!profile.length) return 'Noch keine Personen – der Wochenplan rechnet mit der Personenzahl';
+    const std = profile.filter((p) => p.standard);
+    return profile.map((p) => (p.name || 'ohne Namen') + ' ' + portionText(p.faktor)).join(', ') +
+      (std.length ? ' · meist ' + portionText(std.reduce((n, p) => n + p.faktor, 0)) + ' Portionen' : '');
+  }
+  function haushaltBlatt() {
+    const b = blattAuf('Haushalt', { zu: () => {
+      profile.forEach((p, i) => { p.name = p.name.trim() || 'Person ' + (i + 1); });
+      datenPruefen(); sichern(); zeichnen();   // gelöschte Profile aus dem Plan nehmen, Seite aktualisieren
+    } });
+    const zeigen = () => {
+      b.zeigen(`
+        <p class="klein">Personen mit ihrer Portionsgröße (1 = normale Portion). Im Wochenplan wählst du dann, wer mitisst –
+          die Einkaufsliste rechnet mit der Summe, z. B. 1 + 1 + ½ = 2½ Portionen. „Isst meist mit“ ist die Vorauswahl für neue Einträge.</p>
+        ${profile.length ? `<ul class="hh-liste">${profile.map((p) => `
+          <li class="hh-profil" data-uid="${p.uid}">
+            <div class="hh-zeile">
+              <input class="hh-name" value="${esc(p.name)}" placeholder="Name" aria-label="Name" maxlength="30" autocomplete="off" data-f="n${p.uid}">
+              <button type="button" class="knopf leise icon-knopf" data-hh-weg aria-label="${esc(p.name || 'Person')} entfernen">${svg('muell')}</button>
+            </div>
+            <div class="hh-zeile">
+              <span class="klein">Portion</span>
+              ${stepperHTML('faktor', portionText(p.faktor), p.faktor > 0.25, p.faktor < 4, 'Portionsgröße').replace(/data-f="faktor/g, `data-f="${p.uid}`)}
+              <label class="hh-std"><input type="checkbox" data-hh-std ${p.standard ? 'checked' : ''}><span class="box">${svg('haken')}</span> isst meist mit</label>
+            </div>
+          </li>`).join('')}</ul>` : ''}
+        <div class="feld"><span>Person hinzufügen</span><div class="chips">
+          ${PROFIL_VORLAGEN.map(([n, f]) => `<button type="button" class="chip" data-hh-neu="${esc(n)}" data-faktor="${f}" data-f="neu${esc(n)}">+ ${esc(n)} ${portionText(f)}</button>`).join('')}
+        </div></div>`,
+      `<button type="button" class="knopf haupt" data-blatt-zu>Fertig</button>`);
+    };
+    const finde = (el) => profile.find((p) => p.uid === el.closest('[data-uid]').dataset.uid);
+    b.el.addEventListener('click', (e) => {
+      const t = (sel) => e.target.closest(sel);
+      if (t('[data-stepper] button')) {
+        const p = finde(e.target); p.faktor = faktorBegrenzen(p.faktor + 0.25 * Number(t('[data-stepper] button').dataset.d)); sichern(); zeigen();
+      } else if (t('[data-hh-weg]')) {
+        const p = finde(e.target);
+        if (!p.name.trim() || confirm(p.name + ' entfernen?')) { profile = profile.filter((x) => x !== p); datenPruefen(); sichern(); zeigen(); }
+      } else if (t('[data-hh-neu]')) {
+        const v = t('[data-hh-neu]'), basis = v.dataset.hhNeu;
+        let name = basis, n = 1;
+        while (profile.some((p) => p.name === name)) name = basis + ' ' + ++n;
+        const p = { uid: uid(), name, faktor: Number(v.dataset.faktor), standard: true };
+        profile.push(p); sichern(); zeigen();
+        const feld = b.el.querySelector(`[data-uid="${p.uid}"] .hh-name`);
+        if (feld) { feld.scrollIntoView({ block: 'nearest' }); }
+      }
+    });
+    b.el.addEventListener('input', (e) => { if (e.target.matches('.hh-name')) { finde(e.target).name = e.target.value; sichern(); } });
+    b.el.addEventListener('change', (e) => { if (e.target.matches('[data-hh-std]')) { finde(e.target).standard = e.target.checked; sichern(); } });
+    zeigen();
   }
 
   // ---------------------------------------------------------------- Zuhause
@@ -1108,7 +1641,8 @@
       if (!gruppen.has(k)) gruppen.set(k, []);
       gruppen.get(k).push(x);
     }
-    const reihenfolge = [...gruppen.keys()].sort((a, b) => Zutaten.KATEGORIEN.indexOf(a) - Zutaten.KATEGORIEN.indexOf(b));
+    const folge = kategorienFolge();
+    const reihenfolge = [...gruppen.keys()].sort((a, b) => folge.indexOf(a) - folge.indexOf(b));
 
     app.innerHTML = `
       <div class="werkzeuge">
@@ -1179,6 +1713,65 @@
     melden.t = setTimeout(() => el.classList.remove('sichtbar'), link ? 4000 : 2200);
   }
 
+  // ---------------------------------------------------------------- Blatt (Dialog)
+  // Am Handy ein Bottom-Sheet über der Tab-Leiste, am PC ein Dialog in der Mitte. Immer nur eines offen;
+  // Seitenwechsel, Escape, Tippen daneben und × schließen es.
+  //   const b = blattAuf('Titel', { zu: () => … });   b.zeigen(inhaltHTML, fussHTML); b.inhalt / b.el; b.schliessen()
+  let blatt = null;
+  function blattAuf(titel, opt) {
+    blattZu();
+    const hinter = document.createElement('div');
+    hinter.className = 'blatt-hinter nur-bildschirm';
+    hinter.innerHTML = `
+      <section class="blatt${opt && opt.klasse ? ' ' + opt.klasse : ''}" role="dialog" aria-modal="true" aria-labelledby="blatt-titel">
+        <header class="blatt-kopf">
+          <h2 id="blatt-titel" tabindex="-1">${esc(titel)}</h2>
+          <button type="button" class="knopf leise icon-knopf" data-blatt-zu aria-label="Schließen">${svg('schliessen')}</button>
+        </header>
+        <div class="blatt-inhalt"></div>
+        <footer class="blatt-fuss" hidden></footer>
+      </section>`;
+    document.body.appendChild(hinter);
+    document.body.classList.add('blatt-an');
+    const el = hinter.querySelector('.blatt');
+    const b = blatt = {
+      hinter, el, inhalt: el.querySelector('.blatt-inhalt'), fuss: el.querySelector('.blatt-fuss'), zu: opt && opt.zu,
+      /** Inhalt (neu) setzen; Scrollstand und Fokus (Element mit data-f) bleiben erhalten, außer neueAnsicht */
+      zeigen(inhalt, fuss, neueAnsicht) {
+        const a = document.activeElement, f = a && el.contains(a) && a.dataset.f, oben = neueAnsicht ? 0 : b.inhalt.scrollTop;
+        b.inhalt.innerHTML = inhalt;
+        b.fuss.innerHTML = fuss || '';
+        b.fuss.hidden = !fuss;
+        b.inhalt.scrollTop = oben;
+        const neu = f && el.querySelector(`[data-f="${CSS.escape(f)}"]`);
+        if (neu && !neu.disabled) neu.focus({ preventScroll: true });
+      },
+      schliessen: () => { if (blatt === b) blattZu(); },
+    };
+    hinter.addEventListener('click', (e) => {
+      if (e.target === hinter || e.target.closest('[data-blatt-zu]')) b.schliessen();
+    });
+    el.querySelector('h2').focus({ preventScroll: true });
+    return b;
+  }
+  function blattZu() {
+    if (!blatt) return;
+    const b = blatt;
+    blatt = null;
+    b.hinter.remove();
+    document.body.classList.remove('blatt-an');
+    if (b.zu) b.zu();
+  }
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && blatt) { e.stopImmediatePropagation(); blattZu(); } }, true);
+
+  /** Stepper-HTML für Blätter: data-stepper = Feldname, Wert als Text */
+  const stepperHTML = (feld, text, minus, plus, label) => `
+    <span class="stepper" data-stepper="${feld}" role="group" aria-label="${esc(label)}">
+      <button type="button" data-d="-1" data-f="${feld}-" aria-label="Weniger" ${minus ? '' : 'disabled'}>${svg('minus')}</button>
+      <strong>${text}</strong>
+      <button type="button" data-d="1" data-f="${feld}+" aria-label="Mehr" ${plus ? '' : 'disabled'}>${svg('plus')}</button>
+    </span>`;
+
   // ---------------------------------------------------------------- Druck
   // Vor dem Drucken das Druckbild aktivieren und jedes Rezept ausmessen:
   // Ist es nur etwas zu lang, wird es leicht verkleinert (bis 85 %), damit es auf eine A4-Seite passt.
@@ -1230,6 +1823,8 @@
     if (e.key === 'rezepte.timer') return;   // erledigt assets/timer.js
     plan = speicher.lesen('plan', []); abgehakt = speicher.lesen('abgehakt', {}); extras = speicher.lesen('extras', []); liste = speicher.lesen('liste', []); zuhause = speicher.lesen('zuhause', []);
     kochen = speicher.lesen('kochen', {});
+    profile = speicher.lesen('profile', []); ladenfolge = speicher.lesen('ladenfolge', null); gekocht = speicher.lesen('gekocht', {});
+    datenPruefen();
     zeichnen();
   });
   document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = svg(el.dataset.icon); });
@@ -1248,7 +1843,11 @@
   // App-Gefühl: kein Zoomen per Geste (iOS ignoriert user-scalable=no teilweise)
   ['gesturestart', 'gesturechange'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
 
-  window.RezeptApp = { mehrEintrag, mehrAbschnitt, speicher, melden, zeichnen };
+  window.RezeptApp = {
+    mehrEintrag, mehrAbschnitt, speicher, melden, zeichnen, blattAuf,
+    gekocht: gekochtHilfe,          // „zuletzt gekocht“ & Verlauf, siehe oben bei GEKOCHT_MAX
+    portionen, kategorienFolge,
+  };
   // Browser bitten, die Daten dauerhaft zu behalten (nicht bei Speicherknappheit löschen)
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* egal */ }
   laden().then(zeichnen);
