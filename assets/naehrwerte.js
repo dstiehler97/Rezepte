@@ -48,6 +48,8 @@
     'mandeln': N(580, 21, 6, 4, 52, 12, { handvoll: 30 }),
     'cashewkerne': N(575, 18, 30, 6, 46, 3, { handvoll: 30 }),
     'walnüsse': N(665, 15, 7, 3, 65, 6, { handvoll: 30 }),
+    'haselnüsse': N(645, 15, 11, 4, 61, 8, { handvoll: 30 }),
+    'haselnusskerne': N(645, 15, 11, 4, 61, 8, { handvoll: 30 }),
 
     // Kühlregal
     'butter': N(741, 0.7, 0.6, 0.6, 83, 0, { dichte: 0.9 }),
@@ -94,6 +96,8 @@
     'spinat': N(23, 2.9, 0.6, 0.4, 0.4, 2.6, { handvoll: 30 }),
     'salat': N(15, 1.2, 1.5, 1, 0.2, 1.5, { stueck: 300, handvoll: 25 }),
     'gurke': N(12, 0.6, 1.8, 1.8, 0.2, 0.5, { stueck: 400 }),
+    'grüne bohnen': N(33, 2.4, 5, 1.4, 0.2, 1.9),
+    'brechbohnen': N(33, 2.4, 5, 1.4, 0.2, 1.9),
     'apfel': N(54, 0.3, 14, 10, 0.2, 2, { stueck: 150 }),
     'ingwer': N(80, 1.8, 16, 1.7, 0.8, 2, { stueck: 20 }),
 

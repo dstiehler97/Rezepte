@@ -229,56 +229,63 @@ label.inline input { width: 4.5rem; }
 
 /* ============================================================ Druck (A4) */
 @page { size: A4; margin: 15mm 15mm 14mm; }
+/* Druckbild: wird vor dem Drucken per JS aktiviert (body.druck), damit die App
+   das Rezept ausmessen und bei Bedarf auf eine Seite verkleinern kann. */
+body.druck main { width: 180mm; }
+body.druck { --akzent: #000; --akzent-hell: #fff; --linie: #bbb; --leise: #555; }
+body.druck { background: #fff; font-size: 10pt; line-height: 1.4; color: #000; }
+body.druck .nur-bildschirm, body.druck .leiste, body.druck #meldung { display: none !important; }
+body.druck .nur-druck { display: inline; }
+body.druck main { max-width: none; padding: 0; }
+body.druck a { color: inherit; text-decoration: none; }
+body.druck .werkzeuge { margin-bottom: 4mm; }
+body.druck .werkzeuge h1 { font-size: 18pt; }
+
+/* Rezeptseite: jedes Rezept auf eigener Seite, gleiches Raster */
+body.druck .rezept { border: 0; border-radius: 0; padding: 0; margin: 0; break-after: page; }
+body.druck .rezept:last-child { break-after: auto; }
+body.druck .r-kat { font-size: 8pt; color: #555; }
+body.druck .r-kopf h1 { font-size: 24pt; margin: 1mm 0 2mm; }
+body.druck .r-beschreibung { font-size: 11pt; color: #333; }
+body.druck .r-bild { width: 62mm; aspect-ratio: 16/10; border-radius: 2mm; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+body.druck .r-kopf { gap: 7mm; flex-direction: row; }
+body.druck .r-meta { margin: 4mm 0 5mm; padding: 2.5mm 0; border-color: #000; gap: 2mm 8mm; flex-wrap: nowrap; }
+body.druck .meta-feld > .icon { color: #000; }
+body.druck .muetzen .an { color: #000; }
+body.druck .muetzen .aus { color: #ccc; }
+body.druck .r-inhalt { grid-template-columns: 62mm minmax(0, 1fr); gap: 9mm; }
+body.druck .r-inhalt h2, body.druck .r-tipps h2 { font-size: 12pt; border-bottom: 1.5pt solid #000; }
+body.druck .zutat { grid-template-columns: 5mm 20mm minmax(0, 1fr); gap: 2mm; padding: .7mm 0; break-inside: avoid; }
+body.druck .zutat .icon { color: #444; }
+body.druck .schritt { gap: 3mm; margin-bottom: 2.5mm; }
+body.druck .schritt-abschnitt { margin: 3.5mm 0 2mm; font-size: 10.5pt; }
+body.druck .r-inhalt h2 { margin-bottom: 2.5mm; }
+body.druck .schritt .nr { width: 6mm; height: 6mm; border: 1pt solid #000; font-size: 9pt; background: none; color: #000; }
+body.druck .r-naehrwerte { margin-top: 4mm; }
+body.druck .r-naehrwerte h2 { font-size: 12pt; border-bottom: 1.5pt solid #000; }
+body.druck .r-naehrwerte table { font-size: 9pt; }
+body.druck .r-naehrwerte thead th { font-size: 7pt; }
+body.druck .r-naehrwerte th, body.druck .r-naehrwerte td { padding: .8mm 1.5mm; }
+body.druck .nw-hinweis { font-size: 7.5pt; }
+body.druck .kcal-marke { color: #000; }
+body.druck .r-tipps { background: none; border: 1pt solid #bbb; padding: 2.5mm 3mm; margin-top: 5mm; font-size: 9.5pt; }
+body.druck .r-tipps ul { padding-left: 4mm; }
+
+/* Einkaufsliste kompakt */
+body.druck .ek-fuer { margin: 0 0 4mm; color: #333; }
+body.druck .ek-gruppen { columns: 2; column-gap: 10mm; }
+body.druck .ek-gruppe { margin-bottom: 4mm; }
+body.druck .ek-gruppe h2 { font-size: 10.5pt; border-bottom: 1pt solid #000; }
+body.druck .ek-posten { grid-template-columns: 4mm 4.5mm 20mm minmax(0, 1fr); gap: 1.5mm; padding: .9mm 0; }
+body.druck .ek-posten .box { width: 3.4mm; height: 3.4mm; border: .8pt solid #000; }
+body.druck .ek-posten.erledigt { display: none; }
+
+/* Wochenplan */
+body.druck .plan-eintrag { border: 0; border-bottom: .5pt solid #bbb; border-radius: 0; padding: 1.5mm 0; }
+body.druck .plan-eintrag select, body.druck .plan-eintrag .stepper button, body.druck .icon-knopf { display: none; }
 @media print {
-  :root { --akzent: #000; --akzent-hell: #fff; --linie: #bbb; --leise: #555; }
-  body { background: #fff; font-size: 10pt; line-height: 1.4; color: #000; }
   .nur-bildschirm, .leiste, #meldung { display: none !important; }
-  .nur-druck { display: inline; }
-  main { max-width: none; padding: 0; }
-  a { color: inherit; text-decoration: none; }
-  .werkzeuge { margin-bottom: 4mm; }
-  .werkzeuge h1 { font-size: 18pt; }
-
-  /* Rezeptseite: jedes Rezept auf eigener Seite, gleiches Raster */
-  .rezept { border: 0; border-radius: 0; padding: 0; margin: 0; break-after: page; }
-  .rezept:last-child { break-after: auto; }
-  .r-kat { font-size: 8pt; color: #555; }
-  .r-kopf h1 { font-size: 24pt; margin: 1mm 0 2mm; }
-  .r-beschreibung { font-size: 11pt; color: #333; }
-  .r-bild { width: 62mm; aspect-ratio: 16/10; border-radius: 2mm; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-  .r-kopf { gap: 7mm; }
-  .r-meta { margin: 4mm 0 5mm; padding: 2.5mm 0; border-color: #000; gap: 2mm 8mm; flex-wrap: nowrap; }
-  .meta-feld > .icon { color: #000; }
-  .muetzen .an { color: #000; }
-  .muetzen .aus { color: #ccc; }
-  .r-inhalt { grid-template-columns: 62mm minmax(0, 1fr); gap: 9mm; }
-  .r-inhalt h2, .r-tipps h2 { font-size: 12pt; border-bottom: 1.5pt solid #000; }
-  .zutat { grid-template-columns: 5mm 20mm minmax(0, 1fr); gap: 2mm; padding: .7mm 0; break-inside: avoid; }
-  .zutat .icon { color: #444; }
-  .schritt { gap: 3mm; margin-bottom: 2.5mm; }
-  .schritt-abschnitt { margin: 3.5mm 0 2mm; font-size: 10.5pt; }
-  .r-inhalt h2 { margin-bottom: 2.5mm; }
-  .schritt .nr { width: 6mm; height: 6mm; border: 1pt solid #000; font-size: 9pt; background: none; color: #000; }
-  .r-naehrwerte { margin-top: 4mm; }
-  .r-naehrwerte h2 { font-size: 12pt; border-bottom: 1.5pt solid #000; }
-  .r-naehrwerte table { font-size: 9pt; }
-  .r-naehrwerte thead th { font-size: 7pt; }
-  .r-naehrwerte th, .r-naehrwerte td { padding: .8mm 1.5mm; }
-  .nw-hinweis { font-size: 7.5pt; }
-  .kcal-marke { color: #000; }
-  .r-tipps { background: none; border: 1pt solid #bbb; padding: 2.5mm 3mm; margin-top: 5mm; font-size: 9.5pt; }
-  .r-tipps ul { padding-left: 4mm; }
-
-  /* Einkaufsliste kompakt */
-  .ek-fuer { margin: 0 0 4mm; color: #333; }
-  .ek-gruppen { columns: 2; column-gap: 10mm; }
-  .ek-gruppe { margin-bottom: 4mm; }
-  .ek-gruppe h2 { font-size: 10.5pt; border-bottom: 1pt solid #000; }
-  .ek-posten { grid-template-columns: 4mm 4.5mm 20mm minmax(0, 1fr); gap: 1.5mm; padding: .9mm 0; }
-  .ek-posten .box { width: 3.4mm; height: 3.4mm; border: .8pt solid #000; }
-  .ek-posten.erledigt { display: none; }
-
-  /* Wochenplan */
-  .plan-eintrag { border: 0; border-bottom: .5pt solid #bbb; border-radius: 0; padding: 1.5mm 0; }
-  .plan-eintrag select, .plan-eintrag .stepper button, .icon-knopf { display: none; }
+  body { background: #fff; }
+  main { width: auto !important; }
 }
+

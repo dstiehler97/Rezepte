@@ -68,6 +68,8 @@
     'mandeln':       { k: BA, icon: 'nuss' },
     'cashewkerne':   { k: BA, icon: 'nuss' },
     'walnüsse':      { k: BA, icon: 'nuss' },
+    'haselnüsse':    { k: BA, icon: 'nuss' },
+    'haselnusskerne': { k: BA, icon: 'nuss' },
 
     // Kühlregal
     'butter':        { k: KU, icon: 'butter' },
@@ -114,6 +116,8 @@
     'spinat':        { k: OG, icon: 'kraeuter' },
     'salat':         { k: OG, icon: 'kraeuter' },
     'gurke':         { k: OG },
+    'grüne bohnen':  { k: OG },
+    'brechbohnen':   { k: OG },
     'apfel':         { k: OG },
     'ingwer':        { k: OG },
 
