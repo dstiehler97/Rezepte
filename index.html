@@ -2,8 +2,16 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Rezepte</title>
+  <meta name="theme-color" content="#a8432a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Rezepte">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/app.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/app-180.png">
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -11,13 +19,20 @@
     <a class="marke" href="#/">Rezepte</a>
     <nav class="nav">
       <a href="#/">Rezepte</a>
-      <a href="#/plan">Wochenplan <span id="plan-zahl" class="zahl"></span></a>
-      <a href="#/einkauf">Einkaufsliste</a>
+      <a href="#/plan">Wochenplan <span class="zahl" data-zahl="plan"></span></a>
+      <a href="#/einkauf">Einkaufsliste <span class="zahl" data-zahl="einkauf"></span></a>
       <a href="#/kochbuch">Kochbuch</a>
     </nav>
   </header>
 
   <main id="app"><p class="leer">Lade Rezepte …</p></main>
+
+  <nav class="tabs nur-bildschirm" aria-label="Navigation">
+    <a href="#/"><span class="tab-icon" data-icon="buch"></span>Rezepte</a>
+    <a href="#/plan"><span class="tab-icon" data-icon="kalender"></span>Plan<span class="zahl" data-zahl="plan"></span></a>
+    <a href="#/einkauf"><span class="tab-icon" data-icon="korb"></span>Einkauf<span class="zahl" data-zahl="einkauf"></span></a>
+    <a href="#/kochbuch"><span class="tab-icon" data-icon="drucker"></span>Kochbuch</a>
+  </nav>
   <div id="meldung" role="status" aria-live="polite"></div>
 
   <script src="assets/einheiten.js"></script>

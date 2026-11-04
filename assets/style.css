@@ -207,26 +207,95 @@ label.inline input { width: 4.5rem; }
 
 /* ============================================================ Meldung */
 #meldung {
+  z-index: 30;
   position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 1rem);
   padding: .6rem 1rem; border-radius: 8px; background: var(--text); color: var(--papier);
   opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
 }
-#meldung.sichtbar { opacity: 1; transform: translate(-50%, 0); }
+#meldung.sichtbar { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 
 /* ============================================================ Handy */
-@media (max-width: 720px) {
+/* ============================================================ Untere Navigation (nur Handy) */
+.tabs { display: none; }
+.ek-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .35rem .2rem .7rem; margin: 0 .35rem .35rem 0;
+  border: 1px solid var(--linie); border-radius: 999px; background: var(--flaeche); color: var(--text); font-size: .9rem; }
+.ek-chip .klein { font-size: .8rem; }
+.ek-chip button { border: 0; background: var(--papier); color: var(--leise); width: 1.6rem; height: 1.6rem; border-radius: 50%;
+  font-size: 1.1rem; line-height: 1; cursor: pointer; }
+.ek-chip > .klein:last-child { padding-right: .35rem; }
+.ek-export { display: flex; gap: .5rem; flex-wrap: wrap; }
+#meldung a { color: #fff; font-weight: 600; margin-left: .5rem; }
+
+@media screen and (max-width: 720px) {
+  body { font-size: 17px; padding-bottom: calc(4.2rem + env(safe-area-inset-bottom)); }
   h1 { font-size: 1.6rem; }
-  .leiste { gap: .4rem; }
-  .nav { margin-left: 0; width: 100%; overflow-x: auto; flex-wrap: nowrap; }
-  .nav a { white-space: nowrap; }
-  .rezept { padding: 1.25rem 1rem; }
-  .r-kopf { flex-direction: column; }
-  .r-kopf h1 { font-size: 1.8rem; }
-  .r-bild { width: 100%; }
+  main { padding-top: 1rem; }
+
+  /* Kopfzeile schlank, Navigation wandert nach unten */
+  .leiste { display: none; }
+  main { padding-top: max(1rem, env(safe-area-inset-top)); }
+  .tabs {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    padding: .3rem .25rem calc(.3rem + env(safe-area-inset-bottom));
+    background: var(--flaeche); border-top: 1px solid var(--linie);
+  }
+  .tabs a {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: .1rem;
+    padding: .35rem 0; color: var(--leise); text-decoration: none; font-size: .72rem; font-weight: 500;
+  }
+  .tabs .icon { width: 1.55rem; height: 1.55rem; }
+  .tabs a.aktiv { color: var(--akzent); }
+  .tabs .zahl:not(:empty) { position: absolute; top: 0; left: calc(50% + .45rem); margin: 0; font-size: .68rem; }
+  #meldung { bottom: calc(5rem + env(safe-area-inset-bottom)); max-width: calc(100% - 32px); }
+
+  /* Knöpfe: groß genug zum Tippen */
+  .knopf { min-height: 2.75rem; }
+  .werkzeuge { gap: .5rem; }
+
+  /* Rezeptseite */
+  .r-werkzeuge { flex-wrap: nowrap; margin-bottom: .9rem; gap: .4rem; }
+  .r-werkzeuge > * { flex-shrink: 0; }
+  .r-werkzeuge #zur-liste { flex-shrink: 1; min-width: 0; overflow: hidden; }
+  .r-werkzeuge .zurueck span { display: none; }
+  .r-werkzeuge .zurueck { padding: .5rem; }
+  .r-werkzeuge .abstand { display: none; }
+  .r-werkzeuge .knopf { white-space: nowrap; }
+  .r-werkzeuge #zur-liste { flex: 1; justify-content: center; }
+  .r-werkzeuge #zum-plan span { display: none; }
+  .r-werkzeuge #zum-plan, .r-werkzeuge .icon-knopf { padding: .5rem .7rem; }
+  .rezept { padding: 0 1rem 1.25rem; overflow: hidden; }
+  .r-kopf { flex-direction: column-reverse; gap: 1rem; }
+  .r-bild { width: calc(100% + 2rem); margin: 0 -1rem; border-radius: var(--radius) var(--radius) 0 0; aspect-ratio: 16/10; }
+  .r-kopf:not(:has(.r-bild)) { padding-top: 1.25rem; }
+  .r-kopf h1 { font-size: 1.75rem; }
+  .r-meta { gap: .75rem 1.5rem; }
+  .stepper button { width: 2.5rem; height: 2.5rem; }
+  .stepper strong { font-size: 1.25rem; min-width: 1.6em; }
   .r-inhalt { grid-template-columns: 1fr; gap: 1.5rem; }
-  .r-naehrwerte { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem 1rem; }
+  .r-naehrwerte { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem 1rem; margin-top: -.25rem; }
   .nw-titel { grid-column: 1 / -1; flex-direction: row; gap: .6rem; align-items: baseline; }
-  .ek-posten { grid-template-columns: 1.2rem 1.3rem 5.2rem minmax(0, 1fr) auto; }
+  .zutat { grid-template-columns: 1.4rem 5.2rem minmax(0, 1fr); padding: .45rem 0; }
+  .schritt { gap: .75rem; }
+
+  /* Übersicht */
+  .suchfeld { max-width: none; }
+  .chips { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 0 16px .2rem; scrollbar-width: none; }
+  .chip { white-space: nowrap; padding: .45rem .95rem; }
+
+  /* Wochenplan */
+  .plan-neu select { width: 100%; min-width: 0; min-height: 2.75rem; }
+  .plan-eintrag a { flex-basis: 100%; }
+  .plan-eintrag select { flex: 1; min-height: 2.5rem; }
+
+  /* Einkaufsliste */
+  .ek-export { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
+  .ek-export .knopf { justify-content: center; padding: .5rem .3rem; font-size: .85rem; flex-direction: column; gap: .15rem; }
+  .ek-export #ek-teilen { grid-column: 1 / -1; flex-direction: row; font-size: 1rem; }
+  .ek-neu { max-width: none; }
+  .ek-neu input { min-height: 2.75rem; }
+  .ek-posten { grid-template-columns: 1.5rem 1.3rem 5rem minmax(0, 1fr) auto; padding: .7rem 0; }
+  .ek-posten .box { width: 1.35rem; height: 1.35rem; border-radius: 4px; }
 }
 
 /* ============================================================ Druck (A4) */
