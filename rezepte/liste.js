@@ -2,6 +2,8 @@
 window.REZEPT_DATEIEN = [
   "chinesische-pilzpfanne-mit-austernsauce-reis",
   "cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen",
+  "crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree",
+  "gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips",
   "kaspressknoedel",
   "koettbullar",
   "one-pot-hackfleisch-porree-nudeln",

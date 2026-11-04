@@ -7,6 +7,7 @@
  *  4. testet die Rundungsregeln
  *  Außerdem: Nährwerte je Rezept, Warnung bei fehlenden Nährwertdaten,
  *  Fehler wenn Nudeln/Reis nicht als Trockengewicht in g angegeben sind.
+ *  Ernährungsform je Rezept (aus den Zutaten oder Feld ernaehrung); Fehler bei widersprüchlichen Tags.
  */
 'use strict';
 const fs = require('fs');
@@ -48,17 +49,26 @@ for (const datei of dateien) {
   if (!Array.isArray(r.zutaten) || !r.zutaten.length) melde(datei, 'zutaten fehlen');
   if (!Array.isArray(r.schritte) || !r.schritte.length) melde(datei, 'schritte fehlen');
   if (r.schwierigkeit && !['einfach', 'mittel', 'anspruchsvoll'].includes(r.schwierigkeit)) melde(datei, 'schwierigkeit: einfach | mittel | anspruchsvoll');
+  if (r.ernaehrung !== undefined && !Zutaten.ERNAEHRUNG.includes(r.ernaehrung)) melde(datei, 'ernaehrung: ' + Zutaten.ERNAEHRUNG.join(' | '));
   for (const z of r.zutaten || []) {
     if (z.abschnitt) continue;
+    if (z.ernaehrung !== undefined && !['fleisch', 'fisch', 'tierisch', 'vegan'].includes(z.ernaehrung)) melde(datei, `${z.name}: ernaehrung fleisch | fisch | tierisch | vegan`);
     if (!z.name) { melde(datei, 'Zutat ohne name: ' + JSON.stringify(z)); continue; }
     try { Einheiten.skalieren(z, 1); } catch (e) { melde(datei, e.message); }
     if (z.menge != null && typeof z.menge !== 'number') melde(datei, `menge bei ${z.name} muss eine Zahl sein`);
     if (Zutaten.info(z).kategorie === 'Sonstiges' && !z.einkauf && !Zutaten.info(z).nie) ohneKategorie.add(z.name);
     if (Zutaten.info(z).trocken && z.menge != null && !['g', 'kg'].includes(z.einheit)) melde(datei, `${z.name}: Nudeln/Reis/Getreide immer als Trockengewicht in g angeben`);
   }
+  // Ernährungsform: Tags dürfen nicht widersprechen
+  const ern = Zutaten.ernaehrung(r);
+  const tags = (r.tags || []).map((t) => t.toLowerCase());
+  if (tags.includes('vegan') && ern.id !== 'vegan') melde(datei, `Tag "Vegan", aber ${ern.id} (${ern.gruende.join(', ') || 'Feld ernaehrung'})`);
+  if (tags.includes('vegetarisch') && !['vegan', 'vegetarisch'].includes(ern.id)) melde(datei, `Tag "Vegetarisch", aber ${ern.id} (${ern.gruende.join(', ') || 'Feld ernaehrung'})`);
+  if (tags.includes('fleisch') && !ern.fleisch) melde(datei, `Tag "Fleisch", aber ${ern.id}`);
+  if (r.ernaehrung && r.ernaehrung !== ern.auto) console.log(`  ! ${datei}: ernaehrung "${r.ernaehrung}" überschreibt erkannt "${ern.auto}"`);
   const nw = Naehrwerte.berechnen(r);
   const p = nw.portion;
-  console.log(`  ${r.titel}: ${Math.round(p.kcal)} kcal · E ${Math.round(p.eiweiss)} g · KH ${Math.round(p.kh)} g · F ${Math.round(p.fett)} g pro Portion`);
+  console.log(`  ${r.titel}: ${Math.round(p.kcal)} kcal · E ${Math.round(p.eiweiss)} g · KH ${Math.round(p.kh)} g · F ${Math.round(p.fett)} g pro Portion · ${ern.id}${ern.gruende.length ? ' (' + ern.gruende.join(', ') + ')' : ''}`);
   if (nw.fehlend.length) console.log(`  ! ${datei}: keine Nährwerte für ${nw.fehlend.join(', ')} – in assets/naehrwerte.js ergänzen oder gramm/naehrwerte angeben`);
   for (const s of r.schritte || []) {
     if (typeof s === 'string' && /\d+\s?(g|ml|EL|TL|kg|l)\b/.test(s)) console.log(`  ! ${datei}: Menge im Schritt ("${s.slice(0, 50)}…") – wird nicht umgerechnet`);

@@ -131,6 +131,7 @@
     'lauch':         { k: OG, icon: 'lauch' },
     'porree':        { k: OG, icon: 'lauch' },
     'spinat':        { k: OG, icon: 'kraeuter' },
+    'grünkohl':      { k: OG, icon: 'kraeuter' },
     'salat':         { k: OG, icon: 'kraeuter' },
     'gurke':         { k: OG },
     'grüne bohnen':  { k: OG },
