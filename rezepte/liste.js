@@ -5,6 +5,7 @@ window.REZEPT_DATEIEN = [
   "cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen",
   "crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree",
   "gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips",
+  "guacamole-salat-bowl-mit-knusprigem-brot",
   "kaspressknoedel",
   "koettbullar",
   "low-carb-huehnchen-mit-mozzarella-tomaten-pesto",
