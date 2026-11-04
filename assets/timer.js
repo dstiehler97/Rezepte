@@ -3,9 +3,10 @@
  * Laufende Timer stehen in einer schwebenden Leiste über der Tab-Leiste (alle Seiten).
  *
  *   Timer.chips(html)   Zeitangaben in fertigem HTML (nach fett()) in Chips umwandeln.
- *                       Name und Ziel-Link des Timers kommen vom nächsten Eltern-Element mit
- *                       data-timer-name / data-timer-link (z. B. „Köttbullar · Schritt 4“).
- *   Timer.starten({ name, label, sek, link })
+ *                       Name, Zusatz und Ziel-Link des Timers kommen vom nächsten Eltern-Element mit
+ *                       data-timer-name / data-timer-zusatz / data-timer-link (z. B. „Köttbullar“, „Schritt 4“).
+ *   Timer.starten({ name, zusatz, label, sek, link })
+ *   Timer.markieren()   Chips mit laufendem Timer hervorheben (nach dem Neuzeichnen einer Seite)
  *
  * Gerechnet wird mit dem Endzeitpunkt (Date.now), nicht durch Mitzählen – so stimmt die Restzeit
  * auch nach Hintergrund/Bildschirmsperre. Laufende Timer liegen in localStorage ('rezepte.timer').
@@ -19,7 +20,8 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  /** [{uid, name, label, link, dauer (ms), ende (Zeitpunkt, wenn läuft), rest (ms, wenn pausiert), fertig (Zeitpunkt)}] */
+  /** [{uid, name, zusatz, label, link, sek (ursprünglich), dauer (ms, mit +1 Min.), ende (Zeitpunkt, wenn läuft),
+   *    rest (ms, wenn pausiert), fertig (Zeitpunkt des Ablaufs)}] */
   let timer = lesen();
   function lesen() { try { return JSON.parse(localStorage.getItem(SCHLUESSEL)) || []; } catch (e) { return []; } }
   function sichern() { try { localStorage.setItem(SCHLUESSEL, JSON.stringify(timer)); } catch (e) { /* privat-modus */ } }
@@ -82,12 +84,13 @@
   const uid = () => Math.random().toString(36).slice(2, 9);
   const restMs = (t) => (t.fertig ? 0 : t.ende ? Math.max(0, t.ende - Date.now()) : t.rest);
 
-  function starten({ name, label, sek, link }) {
+  function starten({ name, zusatz, label, sek, link }) {
     entsperren();
     const jetzt = Date.now();
+    name = name || 'Timer'; zusatz = zusatz || '';
     // versehentlicher Doppeltipp: gleicher Timer gerade eben gestartet
-    if (timer.some((t) => t.name === name && t.dauer === sek * 1000 && t.ende && jetzt - (t.ende - t.dauer) < 2500)) return;
-    timer.push({ uid: uid(), name: name || 'Timer', label: label || '', link: link || '', dauer: sek * 1000, ende: jetzt + sek * 1000, rest: 0, fertig: 0 });
+    if (timer.some((t) => t.name === name && t.zusatz === zusatz && t.sek === sek && t.ende && jetzt - (t.ende - t.dauer) < 2500)) return;
+    timer.push({ uid: uid(), name, zusatz, label: label || '', link: link || '', sek, dauer: sek * 1000, ende: jetzt + sek * 1000, rest: 0, fertig: 0 });
     aenderung();
   }
   function aktion(id, was) {
@@ -137,7 +140,8 @@
       if (!c) return;
       e.preventDefault();
       const k = c.closest('[data-timer-name]');
-      starten({ name: k ? k.dataset.timerName : 'Timer', link: k ? k.dataset.timerLink : '', label: c.dataset.label, sek: Number(c.dataset.sek) });
+      const d = k ? k.dataset : {};
+      starten({ name: d.timerName, zusatz: d.timerZusatz, link: d.timerLink, label: c.dataset.label, sek: Number(c.dataset.sek) });
     });
     // Jede Berührung entsperrt den Ton (z. B. nach Neuladen mit laufenden Timern)
     document.addEventListener('pointerdown', () => { if (timer.length) entsperren(); }, { passive: true });
@@ -149,7 +153,8 @@
     if (!leiste) return;
     leiste.innerHTML = timer.map((t) => {
       const zustand = t.fertig ? 'fertig' : t.ende ? 'laeuft' : 'pause';
-      const name = `<span class="t-name">${esc(t.name)}<small>${esc(t.label)}${zustand === 'pause' ? ' · pausiert' : ''}</small></span>`;
+      const unten = [t.zusatz, t.label, zustand === 'pause' ? 'pausiert' : ''].filter(Boolean).join(' · ');
+      const name = `<span class="t-name">${esc(t.name)}<small>${esc(unten)}</small></span>`;
       return `
         <div class="timer t-${zustand}" data-uid="${t.uid}">
           <span class="t-zeit">${t.fertig ? 'Fertig' : zeit(restMs(t))}</span>
@@ -168,7 +173,7 @@
         <div class="ta-karte">
           <span class="ta-icon">${svg('glocke')}</span>
           <strong>Timer abgelaufen</strong>
-          <ul>${fertig.map((t) => `<li>${esc(t.name)} <span>${esc(t.label)}</span></li>`).join('')}</ul>
+          <ul>${fertig.map((t) => `<li>${esc(t.name)}<span>${esc([t.zusatz, t.label].filter(Boolean).join(' · '))}</span></li>`).join('')}</ul>
           <button type="button" class="knopf haupt" data-ok>OK</button>
         </div>`;
     }
@@ -180,9 +185,8 @@
   function markieren() {
     document.querySelectorAll('.timer-chip.laeuft').forEach((c) => c.classList.remove('laeuft'));
     for (const t of timer.filter((x) => !x.fertig)) {
-      document.querySelectorAll(`[data-timer-name="${CSS.escape(t.name)}"] .timer-chip`).forEach((c) => {
-        if (Number(c.dataset.sek) * 1000 === t.dauer) c.classList.add('laeuft');
-      });
+      document.querySelectorAll(`[data-timer-name="${CSS.escape(t.name)}"][data-timer-zusatz="${CSS.escape(t.zusatz || '')}"] .timer-chip[data-sek="${t.sek}"]`)
+        .forEach((c) => c.classList.add('laeuft'));
     }
   }
 

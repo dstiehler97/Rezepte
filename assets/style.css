@@ -452,11 +452,13 @@ a.mehr-zeile:hover { background: var(--papier); }
 @keyframes wackeln { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
 .ta-karte strong { font: 600 1.5rem var(--serif); }
 .ta-karte ul { list-style: none; margin: 0; padding: 0; }
-.ta-karte li span { color: var(--leise); }
+.ta-karte li { font-weight: 600; }
+.ta-karte li + li { margin-top: .4rem; }
+.ta-karte li span { display: block; color: var(--leise); font-weight: 400; font-size: .9rem; }
 .ta-karte .knopf { width: 100%; justify-content: center; min-height: 3rem; font-size: 1.1rem; margin-top: .4rem; }
 
 /* ============================================================ Kochmodus */
-.koch-zeile { display: flex; align-items: center; gap: .5rem 1rem; flex-wrap: wrap; margin: -.5rem 0 1.75rem; }
+.koch-zeile { display: flex; align-items: center; gap: .5rem 1rem; flex-wrap: wrap; margin-top: 1rem; }
 .koch-knopf { font-size: 1.05rem; padding: .65rem 1.2rem; }
 .koch-knopf .icon { width: 1.4em; height: 1.4em; }
 
@@ -506,6 +508,7 @@ body[data-seite="kochen"] main { padding: 0; }
 .km-z.an .km-z-name, .km-z.an .km-z-menge, .km-zl-z.an .km-z-name, .km-zl-z.an .km-z-menge { text-decoration: line-through; color: var(--leise); }
 .km-z-menge { font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .km-z-name small { display: none; }
+.km-z .km-z-menge:empty { display: none; }
 .km-z-name em { color: var(--leise); font-style: normal; font-size: .85em; }
 .km-fuss { display: grid; grid-template-columns: 1fr 1.6fr; gap: .6rem; padding: .6rem 0 max(.75rem, env(safe-area-inset-bottom)); flex: none; }
 .km-fuss .knopf { justify-content: center; min-height: 3.4rem; font-size: 1.1rem; border-radius: 12px; }
@@ -541,7 +544,7 @@ body[data-seite="kochen"] main { padding: 0; }
 }
 @media screen and (max-width: 720px) {
   .koch-knopf { flex: 1 1 100%; justify-content: center; min-height: 3.1rem; }
-  .koch-zeile { margin: -.25rem 0 1.5rem; justify-content: center; text-align: center; }
+  .koch-zeile { justify-content: center; text-align: center; gap: .35rem; }
   .km-text { font-size: 1.45rem; }
   .km-zut-knopf { padding: .45rem .75rem; min-height: 2.5rem; }
   .km-fuss { padding-bottom: .75rem; }    /* Tab-Leiste darunter übernimmt den Home-Indikator */

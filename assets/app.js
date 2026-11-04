@@ -132,7 +132,7 @@
       const x = a.dataset.bereich;
       a.classList.toggle('aktiv', x === b);
       // Handy-Tabs mit Gedächtnis; PC-Kopfzeile: Rezepte = Übersicht mit letzten Filtern
-      const ziel = a.closest('.tabs') ? (x === b ? START[x] : tabStand[x] || START[x]) : (x === 'rezepte' && b !== 'rezepte' ? letzteUebersicht : START[x]);
+      const ziel = a.closest('.tabs') ? (x === b ? START[x] : tabStand[x] || START[x]) : (x === 'rezepte' && seite ? letzteUebersicht : START[x]);
       a.setAttribute('href', ziel);
     });
   }
@@ -141,9 +141,13 @@
   // ein neu geöffneter Link (Rezeptkarte, „Kochen“) beginnt oben.
   const scrollStand = {};       // Pfad ohne ?… -> scrollY
   let obenStarten = false;
+  let gezeichnet = '';          // Pfad der angezeigten Seite
   const pfadVon = (hash) => (hash || '#/').split('?')[0] || '#/';
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-  window.addEventListener('scroll', () => { scrollStand[pfadVon(location.hash)] = window.scrollY; }, { passive: true });
+  window.addEventListener('scroll', () => {
+    // verspätete Scroll-Ereignisse nach einem Adresswechsel (vor dem Neuzeichnen) nicht der neuen Seite zuschreiben
+    if (pfadVon(location.hash) === gezeichnet) scrollStand[gezeichnet] = window.scrollY;
+  }, { passive: true });
   document.addEventListener('click', (e) => {
     const a = e.target.closest('a[href^="#"]');
     if (!a || e.defaultPrevented) return;
@@ -173,7 +177,8 @@
     else if (teile[0] === 'kochbuch') seiteKochbuch(q);
     else if (teile[0] === 'mehr') seiteMehr();
     else { document.body.dataset.seite = 'start'; seiteUebersicht(q); }
-    window.scrollTo(0, obenStarten ? 0 : scrollStand[pfadVon(location.hash)] || 0);
+    gezeichnet = pfadVon(location.hash);
+    window.scrollTo(0, obenStarten ? 0 : scrollStand[gezeichnet] || 0);
     obenStarten = false;
     Timer.markieren();
   }
@@ -433,6 +438,7 @@
             <span class="r-kat">${esc([r.kategorie, ...(r.tags || [])].filter(Boolean).join(' · '))}</span>
             <h1>${esc(r.titel)}</h1>
             ${r.beschreibung ? `<p class="r-beschreibung">${esc(r.beschreibung)}</p>` : ''}
+            ${interaktiv ? kochKnopfHTML(r, personen) : ''}
           </div>
           ${r.bild ? `<img class="r-bild" src="${esc(r.bild)}" alt="">` : ''}
         </header>
@@ -458,7 +464,6 @@
 
         ${naehrwertHTML(r, personen)}
         ${merkmalHTML(r)}
-        ${interaktiv ? kochKnopfHTML(r, personen) : ''}
 
         <div class="r-inhalt">
           <div class="r-links">
@@ -648,7 +653,7 @@
   }
   /** Attribute für Timer-Chips eines Schritts: Name in der Timer-Leiste und Ziel beim Antippen */
   const timerZiel = (r, nr, personen) =>
-    `data-timer-name="${esc(r.titel + ' · Schritt ' + nr)}" data-timer-link="#/kochen/${esc(r.id)}?p=${personen}&amp;s=${nr}"`;
+    `data-timer-name="${esc(r.titel)}" data-timer-zusatz="Schritt ${nr}" data-timer-link="#/kochen/${esc(r.id)}?p=${personen}&amp;s=${nr}"`;
 
   // Zutaten ↔ Schritt per Namensabgleich: Wortformen (Zwiebeln/Zwiebel, Walnüsse/Walnusskerne), Zusammensetzungen
   // (Zwiebelwürfel, Salzwasser → Salz) und Oberbegriffe (Öl → Pflanzenöl, Brühe → Rinderbrühe). „ohne Öl“ zählt nicht.
@@ -770,6 +775,7 @@
           <p class="km-text">${Timer.chips(fett(sch.text))}</p>
           ${zut.length ? `<div class="km-dafuer"><h3>Dafür</h3><ul>${zut.map((i) => `<li>${zutatKnopf(i, 'km-z')}</li>`).join('')}</ul></div>` : ''}
         </div>`;
+      if (richtung) $('km-buehne').scrollTop = 0;
       $('km-balken').style.width = (stand.s / schritte.length * 100) + '%';
       $('km-zurueck').disabled = stand.s <= 1;
       const letzter = stand.s >= schritte.length;
@@ -1232,7 +1238,8 @@
   function abstaendeMessen() {
     const h = (sel) => { const el = document.querySelector(sel); return el ? el.getBoundingClientRect().height : 0; };
     document.documentElement.style.setProperty('--tabs-h', h('.tabs') + 'px');
-    document.documentElement.style.setProperty('--timer-h', h('#timer-leiste.sichtbar') + 'px');
+    const t = h('#timer-leiste.sichtbar');
+    document.documentElement.style.setProperty('--timer-h', (t ? t + 8 : 0) + 'px');   // + Abstand der schwebenden Leiste
   }
   window.addEventListener('resize', abstaendeMessen);
   window.addEventListener('timerleiste', abstaendeMessen);
