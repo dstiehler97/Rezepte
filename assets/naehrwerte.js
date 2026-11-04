@@ -90,6 +90,7 @@
     'hefe': N(100, 12, 9, 0, 1, 7, { wuerfel: 42, paeckchen: 7 }),
     'gnocchi': N(155, 4, 32, 1, 0.6, 2, { packung: 400 }),         // Frischware, Kühlregal
     'pfannenkäse': N(300, 17, 12, 1, 21, 1, { stueck: 25 }),      // panierter Ofenkäse
+    'käsetaler': N(300, 17, 12, 1, 21, 1, { stueck: 25 }),        // panierte Käsetaler
     'tofu': N(125, 13, 1.5, 0.5, 7.5, 1.5, { packung: 200, stueck: 200 }),
     'blätterteig': N(390, 5.5, 33, 1.5, 26, 1.5, { packung: 275, stueck: 275 }),   // frisch, Kühlregal
     'griechischer joghurt': N(120, 4.5, 4, 4, 10, 0, { becher: 150 }),   // 10 % Fett
@@ -236,7 +237,7 @@
 
   /**
    * Nährwerte eines Rezepts.
-   * Rückgabe: { portion: {...}, gesamt: {...} (für r.personen), fehlend: [Namen] }
+   * Rückgabe: { portion: {...}, stueck: {...} | null (bei ergibt), gesamt: {...} (für r.personen), fehlend: [Namen] }
    * Zutaten ohne Menge (Salz nach Geschmack) und optionale Zutaten zählen nicht mit.
    */
   function berechnen(rezept) {
@@ -252,7 +253,13 @@
     const personen = rezept.personen || 4;
     const portion = {};
     for (const k of Object.keys(summe)) portion[k] = summe[k] / personen;
-    return { portion, gesamt: summe, fehlend };
+    // Backrezepte mit ergibt: { menge: 12, einheit: 'Muffins' } → zusätzlich pro Stück
+    let stueck = null;
+    if (rezept.ergibt && rezept.ergibt.menge > 0) {
+      stueck = {};
+      for (const k of Object.keys(summe)) stueck[k] = summe[k] / rezept.ergibt.menge;
+    }
+    return { portion, stueck, gesamt: summe, fehlend };
   }
 
   /**
@@ -268,6 +275,7 @@
     { id: 'fettreich', name: 'Fettreich', test: (p) => p.fett * 9 >= p.kcal * 0.5 },
   ];
   function merkmale(rezept) {
+    if (rezept.ergibt) return [];   // Gebäck nach Stück: Richtwerte für Hauptgerichte passen nicht
     const p = berechnen(rezept).portion;
     return p.kcal ? MERKMALE.filter((m) => m.test(p)) : [];
   }

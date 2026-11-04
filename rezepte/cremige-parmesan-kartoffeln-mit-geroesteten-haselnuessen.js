@@ -20,13 +20,14 @@ Rezept({
     { menge: 100, einheit: 'g', name: 'Blattspinat', hinweis: 'frisch' },
     { abschnitt: 'Für die Sauce' },
     { menge: 100, einheit: 'g', name: 'Schlagsahne' },
-    { menge: 40, einheit: 'g', name: 'Parmesan', hinweis: 'plus etwas zum Garnieren' },
+    { menge: 40, einheit: 'g', name: 'Parmesan' },
     { menge: 1, name: 'Zitrone', mehrzahl: 'Zitronen' },
     { name: 'Salz' },
     { name: 'Pfeffer' },
     { abschnitt: 'Zum Servieren' },
     { menge: 80, einheit: 'g', name: 'Haselnusskerne', hinweis: 'ganz' },
     { menge: 10, einheit: 'g', name: 'Schnittlauch', hinweis: 'frisch' },
+    { name: 'Parmesan', hinweis: 'zum Garnieren', optional: true },
   ],
 
   schritte: [

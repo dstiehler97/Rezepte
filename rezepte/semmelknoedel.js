@@ -14,7 +14,7 @@ Rezept({
     { menge: 300, einheit: 'ml', name: 'Milch' },
     { menge: 1, name: 'Zwiebel', mehrzahl: 'Zwiebeln' },
     { menge: 1, einheit: 'EL', name: 'Butter' },
-    { menge: 3, name: 'Eier' },
+    { menge: 3, name: 'Ei', mehrzahl: 'Eier' },
     { menge: 0.5, einheit: 'Bund', name: 'Petersilie' },
     { name: 'Salz' },
     { name: 'Pfeffer' },

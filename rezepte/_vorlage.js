@@ -18,8 +18,11 @@
  *   icon      Icon überschreiben (Name aus assets/icons.js) oder null für keins
  *   gramm     Gewicht der angegebenen Menge, falls die Nährwertberechnung es nicht kennt
  *   naehrwerte false = nicht in die Nährwerte einrechnen
- *   ernaehrung fleisch | fisch | tierisch | vegan – falls die automatische Erkennung danebenliegt
+ *   ernaehrung fleisch | fisch | fischzutat | tierisch | vegan – falls die automatische Erkennung danebenliegt
+ *             (fischzutat = Würzmittel aus Fisch wie Austernsauce: nicht vegetarisch, aber kein Fischgericht)
  * Abschnitte: { abschnitt: 'Für den Teig' }
+ * Teilmengen (Zutat in mehreren Schritten): je Schritt ein eigener Eintrag, z. B. im Abschnitt „Für die Sauce“
+ *   und „Zum Braten“ oder mit hinweis „zum Ablöschen“ – Summe = Originalmenge.
  *
  * Nudeln, Reis & Getreide IMMER als Trockengewicht in g (wie auf der Packung).
  * Nährwerte werden automatisch aus assets/naehrwerte.js berechnet (pro Portion + gesamt).
@@ -28,8 +31,8 @@
  * (assets/zutaten.js, TIERISCH; optionale Zutaten zählen nicht). Überschreiben mit
  *   ernaehrung: 'vegan' | 'vegetarisch' | 'fisch' | 'fleisch'
  *
- * In Schritten keine Mengen schreiben ("die Hälfte der Milch" statt "250 ml Milch"),
- * damit beim Umrechnen nichts falsch wird. **fett** ist erlaubt.
+ * In Schritten keine Mengen schreiben (nicht "250 ml Milch", nicht "die Hälfte der Milch" – dann Milch aufteilen),
+ * damit beim Umrechnen nichts falsch wird. **fett** ist erlaubt. Kein Tag "Schnell" (wird berechnet).
  */
 Rezept({
   id: 'rezept-id',              // = Dateiname ohne .js
@@ -38,6 +41,7 @@ Rezept({
   kategorie: 'Hauptgericht',    // z. B. Frühstück, Vorspeise, Hauptgericht, Beilage, Süßes, Backen
   tags: [],
   personen: 4,
+  // ergibt: { menge: 12, einheit: 'Muffins' },   // nur Backrezepte nach Stück: Stepper zeigt Stückzahl, Nährwerte pro Stück
   zeit: { vorbereitung: 0, kochen: 0 },   // Minuten; optional auch ruhen, backen
   schwierigkeit: 'einfach',     // einfach | mittel | anspruchsvoll
   // ernaehrung: 'vegetarisch', // nur falls die Erkennung aus den Zutaten nicht passt

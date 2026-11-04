@@ -5,6 +5,7 @@ Rezept({
   kategorie: 'Vorspeise',
   tags: ['Mediterran', 'Vegetarisch', 'Blätterteig', 'Feta'],
   personen: 4,
+  ergibt: { menge: 6, einheit: 'Tartelettes' },
   zeit: { vorbereitung: 20, backen: 15 },
   schwierigkeit: 'einfach',
   bild: 'bilder/tartelettes-mit-feta-creme-geroesteten-cherrytomaten.jpg',
@@ -44,6 +45,6 @@ Rezept({
   ],
 
   tipps: [
-    'Ergibt 6 Tartelettes. Dazu passt ein trockener Riesling-Sekt.',
+    'Dazu passt ein trockener Riesling-Sekt.',
   ],
 });

@@ -142,8 +142,8 @@
   /** Neuer Plan-Eintrag; ohne ausdrückliche Personenzahl isst der Standard-Haushalt mit */
   function planEintrag(id, personen, tag) {
     const r = nachId[id];
-    const wer = personen ? [] : standardWer();
-    const e = { uid: uid(), id, personen: begrenzen(personen || r.personen || STANDARD_PERSONEN), tag: tag || '' };
+    const wer = personen || stueckRezept(r) ? [] : standardWer();   // Gebäck nach Stück: ohne Haushalt-Portionen
+    const e = { uid: uid(), id, personen: pFuer(r, personen || r.personen || STANDARD_PERSONEN), tag: tag || '' };
     if (wer.length) { e.wer = wer; e.personen = begrenzen(portionen(e)); }
     return e;
   }
@@ -153,6 +153,24 @@
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fett = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   const begrenzen = (n) => Math.min(30, Math.max(1, Math.round(Number(n) || STANDARD_PERSONEN)));
+  // Backrezepte nach Stückzahl (ergibt: { menge: 12, einheit: 'Muffins' }): intern bleibt die Personenzahl
+  // (Faktor × personen), eingestellt wird in halben Rezepten – bei personen 4 also 2, 4, 6 … = 6, 12, 18 … Muffins.
+  const stueckRezept = (r) => !!(r && r.ergibt && r.ergibt.menge > 0);
+  const pSchritt = (r) => (stueckRezept(r) ? Math.max(1, (r.personen || STANDARD_PERSONEN) / 2) : 1);
+  /** Personenzahl für ein Rezept: begrenzen, bei Stück-Rezepten auf halbe Rezepte runden */
+  function pFuer(r, n) {
+    const p = begrenzen(n);
+    if (!stueckRezept(r)) return p;
+    const st = pSchritt(r);
+    return Math.min(Math.floor(30 / st) * st, Math.max(st, Math.round(p / st) * st));
+  }
+  /** Stückzahl bei p (nur Stück-Rezepte) */
+  const stueckZahl = (r, p) => Math.round(p / (r.personen || STANDARD_PERSONEN) * r.ergibt.menge * 4) / 4;
+  /** „12 Muffins“ bzw. „4 Personen“ (kurz: „4 P.“) */
+  function mengeText(r, p, kurz) {
+    if (stueckRezept(r)) return Einheiten.zahlText(stueckZahl(r, p)) + ' ' + r.ergibt.einheit;
+    return p + ' ' + (kurz ? 'P.' : p === 1 ? 'Person' : 'Personen');
+  }
 
   function dauer(min) {
     if (!min) return '';
@@ -175,7 +193,8 @@
     if (!m) return { menge: '', name: z.name, info };
     const f = format(m.wert, m.basis, { ganz: info.ganz, einheit: m.einheit, exakt: faktor === 1 });
     const menge = f.zahl + (f.einheit ? ' ' + f.einheit : '');
-    const plural = f.wert > 1 && !f.einheit && z.mehrzahl;
+    // Mehrzahl bei Stück > 1 und bei Gewicht/Volumen („300 g Cherrytomaten“), bei EL, Bund, Dose … die Einzahl
+    const plural = z.mehrzahl && (!f.einheit ? f.wert > 1 : ['g', 'kg', 'ml', 'l'].includes(f.einheit));
     return { menge, name: plural ? z.mehrzahl : z.name, info };
   }
 
@@ -372,7 +391,7 @@
     if (teile[0] === 'rezept' && nachId[teile[1]]) {
       const r = nachId[teile[1]];
       if (obenStarten || reiterStand.id !== r.id) Object.assign(reiterStand, { id: r.id, reiter: 'zutaten' });   // neuer Besuch: Zutaten
-      seiteRezept(r, begrenzen(q.get('p') || r.personen || STANDARD_PERSONEN), q.has('p'));
+      seiteRezept(r, pFuer(r, q.get('p') || r.personen || STANDARD_PERSONEN), q.has('p'));
     } else if (teile[0] === 'kochen' && nachId[teile[1]]) seiteKochen(nachId[teile[1]], q);
     else if (teile[0] === 'plan') seitePlan();
     else if (teile[0] === 'einkauf') seiteEinkauf();
@@ -438,7 +457,10 @@
   /** Anzahl Zutaten mit Menge, die nicht zuhause sind (Salz & Co. nach Geschmack zählen nicht) */
   const fehlend = (r) => nurZutaten(r).filter((z) => z.menge != null && !z.optional && !Zutaten.info(z).nie && !istZuhause(z.name)).length;
   const nwCache = new Map();
-  const nwp = (r) => { if (!nwCache.has(r)) nwCache.set(r, Naehrwerte.berechnen(r).portion); return nwCache.get(r); };
+  // pro Portion, bei Stück-Rezepten (Muffins) pro Stück
+  const nwp = (r) => { if (!nwCache.has(r)) { const nw = Naehrwerte.berechnen(r); nwCache.set(r, nw.stueck || nw.portion); } return nwCache.get(r); };
+  const proText = (r) => (stueckRezept(r) ? 'pro Stück' : 'pro Portion');
+  const kcalText = (r) => nwZahl(nwp(r).kcal, 'kcal') + (stueckRezept(r) ? ' pro Stück' : '');
 
   // Ernährungsform aus den Zutaten (assets/zutaten.js), im Rezept mit ernaehrung: '…' überschreibbar
   const ERNAEHRUNG = [
@@ -446,12 +468,14 @@
     { id: 'vegetarisch', name: 'Vegetarisch', passt: (e) => e.id === 'vegan' || e.id === 'vegetarisch' },
     { id: 'fisch', name: 'Mit Fisch', passt: (e) => e.fisch },
     { id: 'fleisch', name: 'Mit Fleisch', passt: (e) => e.fleisch },
+    // Austernsauce & Co.: nicht vegetarisch, aber kein Fischgericht – kein eigener Filter-Chip
+    { id: 'fischzutat', name: 'Nicht vegetarisch', passt: (e) => e.id === 'fischzutat', versteckt: true },
   ];
   const ernCache = new Map();
   const ernaehrungVon = (r) => { if (!ernCache.has(r)) ernCache.set(r, Zutaten.ernaehrung(r)); return ernCache.get(r); };
   function ernaehrungHTML(r) {
     const e = ernaehrungVon(r);
-    const name = ERNAEHRUNG.find((x) => x.id === e.id).name;
+    const name = ERNAEHRUNG.find((x) => x.id === e.id).name + (e.id === 'fischzutat' && e.gruende.length ? ' (' + e.gruende.join(', ') + ')' : '');
     // Fisch/Fleisch nur am Bildschirm, damit der Druck unverändert bleibt
     return `<span class="merkmal m-${e.id}${e.fisch || e.fleisch ? ' nur-bildschirm' : ''}"${e.gruende.length ? ` title="${esc('Wegen: ' + e.gruende.join(', '))}"` : ''}>${name}</span>`;
   }
@@ -563,7 +587,7 @@
       const chip = (attr, wert, an, inhalt, klasse) => ({ an, html: `<button type="button" class="chip${klasse ? ' ' + klasse : ''}${an ? ' aktiv' : ''}" ${attr}="${esc(wert)}" aria-pressed="${an}">${inhalt}</button>` });
       const gruppen = [
         [chip('data-fav', '1', f.fav, svg('herz', f.fav ? 'voll' : '') + ' Favoriten', 'fav-chip')],
-        ERNAEHRUNG.map((x) => chip('data-e', x.id, f.e === x.id, x.name, 'e-' + x.id)),
+        ERNAEHRUNG.filter((x) => !x.versteckt || f.e === x.id).map((x) => chip('data-e', x.id, f.e === x.id, x.name, 'e-' + x.id)),
         kategorien.map((k) => chip('data-k', k, f.k === k, esc(k))),
       ];
       const teile = [gruppen.flat().filter((c) => c.an), ...gruppen.map((g) => g.filter((c) => !c.an))].filter((g) => g.length);
@@ -614,7 +638,7 @@
       else if (c.hasAttribute('data-weg-z')) f.z = '';
       aktualisieren();
     });
-    $('wuerfel').addEventListener('click', () => wuerfelBlatt(() => filtern(f)));
+    $('wuerfel').addEventListener('click', () => wuerfelBlatt(() => wurfAuswahl(filtern(f), f.k)));
     const blattOeffnen = () => { fb = filterBlatt(f, aktualisieren); aktualisieren(); };
     $('filter-auf').addEventListener('click', blattOeffnen);
     $('listen-sort').addEventListener('click', blattOeffnen);
@@ -811,7 +835,7 @@
       </section>`;
 
     const w = document.getElementById('heute-wuerfel');
-    if (w) w.addEventListener('click', () => wuerfelBlatt(() => rezepte));
+    if (w) w.addEventListener('click', () => wuerfelBlatt(() => wurfAuswahl(rezepte)));
     app.querySelectorAll('[data-gekocht-uid]').forEach((k) => k.addEventListener('click', () => {
       const e = plan.find((x) => x.uid === k.dataset.gekochtUid);
       if (e) kochenAbschliessen(nachId[e.id], e);
@@ -864,7 +888,7 @@
     const teile = [
       hervor ? `<span class="sortwert">${esc(hervor)}</span>` : '',
       z ? `<span${o === 'zeit' ? ' class="sortwert"' : ''}>${dauer(z)}</span>` : '',
-      !hervor || o === 'kcal' ? `<span${o === 'kcal' ? ' class="sortwert"' : ''}>${nwZahl(nwp(r).kcal, 'kcal')}</span>` : '',
+      !hervor || o === 'kcal' ? `<span${o === 'kcal' ? ' class="sortwert"' : ''}>${kcalText(r)}</span>` : '',
     ].filter(Boolean);
     return `
       <a class="karte" href="#/rezept/${esc(r.id)}">
@@ -904,14 +928,20 @@
     letzterWurf = r.id;
     return r;
   }
+  // Für „Was koche ich heute?“ standardmäßig keine Kuchen, Süßes, Frühstück – außer der Filter steht auf dieser Kategorie
+  const WURF_OHNE = ['Backen', 'Süßes', 'Frühstück'];
+  function wurfAuswahl(treffer, kategorie) {
+    const ohne = treffer.filter((r) => !WURF_OHNE.includes(r.kategorie) || r.kategorie === kategorie);
+    return ohne.length ? ohne : treffer;
+  }
   /** trefferHolen = aktuelle Treffer der Übersicht (bei jedem Wurf neu, falls sich etwas geändert hat) */
   function wuerfelBlatt(trefferHolen) {
     if (!trefferHolen().length) { melden('Keine passenden Rezepte – Filter lockern'); return; }
     const b = blattAuf('Was koche ich heute?', { klasse: 'wf-blatt' });
     function zeigen() {
       const treffer = trefferHolen(), r = wuerfeln(treffer), z = gesamtzeit(r.zeit), t = tageSeitGekocht(r.id);
-      const personen = begrenzen(standardWer().length ? portionen({ wer: standardWer() }) : r.personen || STANDARD_PERSONEN);
-      const info = [z ? svg('uhr') + ' ' + dauer(z) : '', nwZahl(nwp(r).kcal, 'kcal'),
+      const personen = stueckRezept(r) ? r.personen : begrenzen(standardWer().length ? portionen({ wer: standardWer() }) : r.personen || STANDARD_PERSONEN);
+      const info = [z ? svg('uhr') + ' ' + dauer(z) : '', kcalText(r),
         zuhause.length ? (fehlend(r) ? 'fehlt: ' + fehlend(r) : 'alles da') : ''].filter(Boolean);
       const ich = [istFavorit(r.id) ? svg('herz', 'voll') + ' Favorit' : '', sterneVon(r.id) ? '★ ' + sterneVon(r.id) : '',
         t === Infinity ? 'noch nie gekocht' : 'gekocht ' + vorText(t)].filter(Boolean);
@@ -943,6 +973,11 @@
     const faktor = personen / (r.personen || STANDARD_PERSONEN);
     const zg = gesamtzeit(r.zeit);
     const stufe = SCHWIERIGKEIT[r.schwierigkeit] || 1;
+    // Stepper: Personen, bei Backrezepten Stückzahl (in halben Rezepten)
+    const sch = pSchritt(r);
+    const anzahl = stueckRezept(r) ? Einheiten.zahlText(stueckZahl(r, personen)) : personen;
+    const einheitWort = stueckRezept(r) ? r.ergibt.einheit : personen === 1 ? 'Person' : 'Personen';
+    const tipps = [...(r.tipps || []), Zutaten.labTipp(r)].filter(Boolean);
 
     const zutaten = (r.zutaten || []).map((z) => {
       if (z.abschnitt) return `<li class="abschnitt">${esc(z.abschnitt)}</li>`;
@@ -986,12 +1021,12 @@
             ${svg('personen')}
             ${interaktiv ? `
               <span class="stepper nur-bildschirm">
-                <button type="button" data-p="${personen - 1}" aria-label="Weniger" ${personen <= 1 ? 'disabled' : ''}>${svg('minus')}</button>
-                <strong>${personen}</strong>
-                <button type="button" data-p="${personen + 1}" aria-label="Mehr">${svg('plus')}</button>
+                <button type="button" data-p="${personen - sch}" aria-label="Weniger" ${personen <= sch ? 'disabled' : ''}>${svg('minus')}</button>
+                <strong>${anzahl}</strong>
+                <button type="button" data-p="${personen + sch}" aria-label="Mehr" ${personen + sch > 30 ? 'disabled' : ''}>${svg('plus')}</button>
               </span>
-              <span class="nur-druck"><strong>${personen}</strong></span>` : `<strong>${personen}</strong>`}
-            <span>${personen === 1 ? 'Person' : 'Personen'}</span>
+              <span class="nur-druck"><strong>${anzahl}</strong></span>` : `<strong>${anzahl}</strong>`}
+            <span>${einheitWort}</span>
           </div>
           ${zg ? `<div class="meta-feld">${svg('uhr')}<span><strong>${dauer(zg)}</strong>${zeitDetail ? `<small>${esc(zeitDetail)}</small>` : ''}</span></div>` : ''}
           <div class="meta-feld">
@@ -1011,7 +1046,7 @@
               <h2>Zutaten</h2>
               <ul>${zutaten}</ul>
             </section>
-            ${(r.tipps && r.tipps.length) ? `<section class="r-tipps"><h2>Tipps</h2><ul>${r.tipps.map((t) => `<li>${fett(t)}</li>`).join('')}</ul></section>` : ''}
+            ${tipps.length ? `<section class="r-tipps"><h2>Tipps</h2><ul>${tipps.map((t) => `<li>${fett(t)}</li>`).join('')}</ul></section>` : ''}
             ${notizHTML(r, interaktiv)}
             ${interaktiv ? verlaufHTML(r) : ''}
           </div>
@@ -1037,7 +1072,7 @@
   /** Nährwerte in einer Zeile für den Kopf am Handy (Details im Reiter „Zutaten“) */
   function nwKurzHTML(r) {
     const p = nwp(r);
-    return `<p class="r-nw-kurz nur-bildschirm"><strong>${nwZahl(p.kcal, 'kcal')}</strong><span>${nwZahl(p.eiweiss, 'g')} Eiweiß</span><span>${nwZahl(p.kh, 'g')} KH</span><span>${nwZahl(p.fett, 'g')} Fett</span><small>pro Portion</small></p>`;
+    return `<p class="r-nw-kurz nur-bildschirm"><strong>${nwZahl(p.kcal, 'kcal')}</strong><span>${nwZahl(p.eiweiss, 'g')} Eiweiß</span><span>${nwZahl(p.kh, 'g')} KH</span><span>${nwZahl(p.fett, 'g')} Fett</span><small>${proText(r)}</small></p>`;
   }
   /** „Zuletzt gekocht“ und „Gekocht“-Knopf im Reiter „Notizen“ (am PC stehen sie im Kopf) */
   function verlaufHTML(r) {
@@ -1094,12 +1129,12 @@
       (nw.fehlend.length ? '. Ohne: ' + nw.fehlend.join(', ') : '');
     return `
       <section class="r-naehrwerte" aria-label="Nährwerte" title="${esc(hinweis)}">
-        <div class="nw-titel"><strong>Nährwerte</strong><span>pro Portion</span><span class="nw-ges">gesamt ${personen} P.</span></div>
+        <div class="nw-titel"><strong>Nährwerte</strong><span>${proText(r)}</span><span class="nw-ges">gesamt ${esc(mengeText(r, personen, true))}</span></div>
         ${NW_ZEILEN.map(([k, name, e]) => `
           <div class="nw-wert${k === 'kcal' ? ' kcal' : ''}">
             <span class="nw-name">${name}</span>
-            <strong>${nwZahl(nw.portion[k], e)}</strong>
-            <span class="nw-ges">${nwZahl(nw.portion[k] * personen, e)}</span>
+            <strong>${nwZahl((nw.stueck || nw.portion)[k], e)}</strong>
+            <span class="nw-ges">${nwZahl(nw.gesamt[k] * personen / (r.personen || STANDARD_PERSONEN), e)}</span>
           </div>`).join('')}
       </section>`;
   }
@@ -1170,8 +1205,8 @@
 
     app.querySelectorAll('.stepper button').forEach((b) => b.addEventListener('click', () => {
       notizenJetzt();
-      adresseSetzen('#/rezept/' + r.id + '?p=' + begrenzen(b.dataset.p));
-      seiteRezept(r, begrenzen(b.dataset.p), true);
+      adresseSetzen('#/rezept/' + r.id + '?p=' + pFuer(r, b.dataset.p));
+      seiteRezept(r, pFuer(r, b.dataset.p), true);
       Timer.markieren();
       kopfleisteBinden();
       abstaendeMessen();
@@ -1221,18 +1256,20 @@
     const gemerkt = (n) => {
       sichern(); zaehlerAktualisieren();
       if (fertig) fertig();
-      melden('Auf der Einkaufsliste · ' + n + ' P.', '#/einkauf', 'Ansehen');
+      melden('Auf der Einkaufsliste · ' + mengeText(r, n, true), '#/einkauf', 'Ansehen');
     };
+    personen = pFuer(r, personen);
     if (!da) { liste.push({ uid: uid(), id: r.id, personen }); gemerkt(personen); return; }
-    const summe = begrenzen(da.personen + personen);
+    const summe = pFuer(r, da.personen + personen);
+    const m = (n) => esc(mengeText(r, n, true));
     const b = blattAuf('Schon auf der Einkaufsliste');
     b.zeigen(`
-      <p><strong>${esc(r.titel)}</strong> steht schon mit <strong>${da.personen} P.</strong> auf der Einkaufsliste.</p>
+      <p><strong>${esc(r.titel)}</strong> steht schon mit <strong>${m(da.personen)}</strong> auf der Einkaufsliste.</p>
       <div class="sg-wahl">
-        ${summe > da.personen ? `<button type="button" class="knopf wahl-knopf" data-al="summe">${svg('plus')}<span><strong>Auf ${summe} P. erhöhen</strong>
-          <small>${da.personen} + ${personen} P. – zum Beispiel für zwei Mahlzeiten</small></span></button>` : ''}
-        ${personen !== da.personen ? `<button type="button" class="knopf wahl-knopf" data-al="ersetzen">${svg('personen')}<span><strong>Auf ${personen} P. ändern</strong>
-          <small>Statt ${da.personen} P.</small></span></button>` : ''}
+        ${summe > da.personen ? `<button type="button" class="knopf wahl-knopf" data-al="summe">${svg('plus')}<span><strong>Auf ${m(summe)} erhöhen</strong>
+          <small>${m(da.personen)} + ${m(personen)} – zum Beispiel für zwei Mahlzeiten</small></span></button>` : ''}
+        ${personen !== da.personen ? `<button type="button" class="knopf wahl-knopf" data-al="ersetzen">${svg('personen')}<span><strong>Auf ${m(personen)} ändern</strong>
+          <small>Statt ${m(da.personen)}</small></span></button>` : ''}
       </div>`,
     '<button type="button" class="knopf leise" data-blatt-zu>So lassen</button><a class="knopf" href="#/einkauf">Einkaufsliste</a>');
     b.el.addEventListener('click', (e) => {
@@ -1290,7 +1327,7 @@
         <button class="knopf haupt" onclick="window.print()">${svg('drucker')} Alle ${rezepte.length} drucken</button>
       </div>
       <p class="hinweis nur-bildschirm">Jedes Rezept beginnt auf einer neuen Seite.</p>
-      ${rezepte.map((r) => rezeptHTML(r, personen, false)).join('')}`;
+      ${rezepte.map((r) => rezeptHTML(r, stueckRezept(r) ? r.personen : personen, false)).join('')}`;
     document.getElementById('kb-p').addEventListener('change', (e) => {
       location.hash = '#/kochbuch?p=' + begrenzen(e.target.value);
     });
@@ -1621,8 +1658,12 @@
     `data-timer-name="${esc(r.titel)}" data-timer-zusatz="Schritt ${nr}" data-timer-link="#/kochen/${esc(r.id)}?p=${personen}&amp;s=${nr}"`;
 
   // Zutaten ↔ Schritt per Namensabgleich: Wortformen (Zwiebeln/Zwiebel, Walnüsse/Walnusskerne), Zusammensetzungen
-  // (Zwiebelwürfel, Salzwasser → Salz) und Oberbegriffe (Öl → Pflanzenöl, Brühe → Rinderbrühe). „ohne Öl“ zählt nicht.
-  // Kommt eine Zutat mehrfach vor (Butter zum Braten, Butter für die Sauce), bekommt die k-te Erwähnung das k-te Vorkommen.
+  // (Zwiebelwürfel, Salzwasser → Salz), Oberbegriffe (Öl → Pflanzenöl, Brühe → Rinderbrühe) und Wortanfänge
+  // (Sesam → Sesamsaat, aber nicht Sesamöl). „ohne Öl“ zählt nicht.
+  // Kommt eine Zutat mehrfach vor (Teilmengen: Butter zum Braten / Butter für die Sauce), entscheidet
+  //   1. ein Stichwort aus Abschnitt oder Hinweis der Zutat direkt neben der Erwähnung („Sojasauce zum Ablöschen“),
+  //   2. sonst der Abschnitt des Schritts („Rahmsauce“ ↔ „Für die Rahmsauce“),
+  //   3. sonst die Reihenfolge: das nächste Vorkommen nach dem zuletzt benutzten („restliche Butter“).
   const OBERBEGRIFF_NICHT = ['sauce', 'soße', 'masse', 'teig', 'wasser', 'mischung', 'flüssigkeit'];
   const ohneUmlaut = (w) => w.replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u');
   const woerter = (t) => ohneUmlaut(Zutaten.normal(String(t).replace(/\*\*/g, ''))).replace(/[^a-zß0-9]+/g, ' ').trim().split(' ').filter(Boolean);
@@ -1637,26 +1678,64 @@
     if (kopf.length >= 4 && [kopf, kopf.replace(/n$/, '')].some((f) => f.length >= 4 && w.startsWith(f))) return true;
     return (w.length >= 4 || w === 'ol') && !OBERBEGRIFF_NICHT.includes(w) && kopf.length > w.length && kopf.endsWith(w);
   }
+  // Wortanfang: „Sesam“ passt zu Sesamsaat, nicht zu Sesamöl (der Rest „öl“ ist selbst eine Zutat)
+  let zutatWoerter = null;
+  function wortanfang(w, kopf) {
+    if (w.length < 5 || kopf.length <= w.length || !kopf.startsWith(w)) return false;
+    if (!zutatWoerter) zutatWoerter = new Set(Object.keys(Zutaten.LEXIKON).filter((k) => !k.includes(' ')).map(ohneUmlaut));
+    return !zutatWoerter.has(kopf.slice(w.length));
+  }
+  const STICH_NICHT = new Set(['fur', 'zum', 'zur', 'den', 'die', 'das', 'dem', 'der', 'und', 'oder', 'mit', 'etwas', 'plus', 'nach',
+    'belieben', 'frisch', 'fein', 'grob', 'ganz', 'aus', 'vom', 'von', 'auf', 'beim', 'nicht', 'dose', 'glas']);
+  const stichwoerter = (t) => woerter(t || '').filter((w) => w.length >= 4 && !STICH_NICHT.has(w));
+  const passtStich = (a, b) => gleich(a, b) || (Math.min(a.length, b.length) >= 5 && (a.endsWith(b) || b.endsWith(a)));
   function schrittZutaten(r, schritte) {
-    const zut = (r.zutaten || []).map((z, i) => ({ z, i, k: Zutaten.normal(z.name) })).filter((x) => !x.z.abschnitt);
+    let abschnitt = '';
+    const zut = [];
+    (r.zutaten || []).forEach((z, i) => {
+      if (z.abschnitt) abschnitt = z.abschnitt;
+      else zut.push({ z, i, k: Zutaten.normal(z.name), stich: [...stichwoerter(abschnitt), ...stichwoerter(z.hinweis)] });
+    });
     const koepfe = zut.map((x) => [x.z.name, x.z.mehrzahl].filter(Boolean).flatMap(kopfwoerter));
     const gruppe = {};
-    zut.forEach((x) => { (gruppe[x.k] = gruppe[x.k] || []).push(x.i); });
-    const gezaehlt = {};
+    zut.forEach((x) => { (gruppe[x.k] = gruppe[x.k] || []).push(x); });
+    // Stichwörter, die alle Vorkommen einer Zutat haben, unterscheiden nichts
+    for (const g of Object.values(gruppe)) {
+      if (g.length < 2) continue;
+      const gemeinsam = g[0].stich.filter((w) => g.every((x) => x.stich.includes(w)));
+      g.forEach((x) => { x.stich = x.stich.filter((w) => !gemeinsam.includes(w)); });
+    }
+    const zuletzt = {};
     return schritte.map((s) => {
-      const treffer = new Set();
-      const ws = woerter(s.text);
+      const ws = woerter(s.text), abs = stichwoerter(s.abschnitt);
+      const treffer = new Map();     // k -> {fest: Set(i), offen}
       for (const [n, w] of ws.entries()) {
         if (ws[n - 1] === 'ohne') continue;
-        const exakt = zut.filter((x, j) => koepfe[j].some((k) => gleich(w, k)));
+        let gef = zut.filter((x, j) => koepfe[j].some((k) => gleich(w, k)));
         // Zusammensetzungen nur, wenn das Wort nicht selbst eine Zutat ist (Tomatenmark ≠ Tomaten)
-        (exakt.length ? exakt : zut.filter((x, j) => koepfe[j].some((k) => zusammengesetzt(w, k)))).forEach((x) => treffer.add(x.k));
+        if (!gef.length) gef = zut.filter((x, j) => koepfe[j].some((k) => zusammengesetzt(w, k)));
+        if (!gef.length) gef = zut.filter((x, j) => koepfe[j].some((k) => wortanfang(w, k)));
+        const umgebung = [...ws.slice(Math.max(0, n - 3), n), ...ws.slice(n + 1, n + 5)];
+        for (const k of new Set(gef.map((x) => x.k))) {
+          const alle = gruppe[k];
+          const t = treffer.get(k) || { fest: new Set(), offen: false };
+          treffer.set(k, t);
+          if (alle.length === 1) { t.fest.add(alle[0].i); continue; }
+          const nah = alle.filter((x) => x.stich.some((sw) => umgebung.some((u) => passtStich(u, sw))));
+          const imAbschnitt = alle.filter((x) => x.stich.some((sw) => abs.some((u) => passtStich(u, sw))));
+          const wahl = nah.length ? nah : imAbschnitt;
+          if (wahl.length) wahl.forEach((x) => t.fest.add(x.i)); else t.offen = true;
+        }
       }
-      return [...treffer].map((k) => {
-        const n = gezaehlt[k] || 0;
-        gezaehlt[k] = n + 1;
-        return gruppe[k][Math.min(n, gruppe[k].length - 1)];
-      }).sort((a, b) => a - b);
+      const ergebnis = [];
+      for (const [k, t] of treffer) {
+        const alle = gruppe[k];
+        let ids = [...t.fest];
+        if (!ids.length) ids = [alle[Math.min((zuletzt[k] == null ? -1 : zuletzt[k]) + 1, alle.length - 1)].i];
+        zuletzt[k] = Math.max(...ids.map((i) => alle.findIndex((x) => x.i === i)));
+        ergebnis.push(...ids);
+      }
+      return [...new Set(ergebnis)].sort((a, b) => a - b);
     });
   }
 
@@ -1712,7 +1791,7 @@
     const alt = kochStand(r.id);
     const frisch = kochFrisch(alt);
     const stand = {
-      p: begrenzen(q.get('p') || (frisch && alt.p) || r.personen || STANDARD_PERSONEN),
+      p: pFuer(r, q.get('p') || (frisch && alt.p) || r.personen || STANDARD_PERSONEN),
       s: Math.min(schritte.length, Math.max(1, Math.round(Number(q.get('s'))) || (frisch && alt.s) || 1)),
       haken: frisch ? alt.haken || {} : {},
     };
@@ -1795,11 +1874,11 @@
         <div class="km-zl-kopf">
           <h2>Zutaten</h2>
           <span class="stepper">
-            <button type="button" data-kp="-1" aria-label="Weniger" ${stand.p <= 1 ? 'disabled' : ''}>${svg('minus')}</button>
-            <strong>${stand.p}</strong>
-            <button type="button" data-kp="1" aria-label="Mehr">${svg('plus')}</button>
+            <button type="button" data-kp="-1" aria-label="Weniger" ${stand.p <= pSchritt(r) ? 'disabled' : ''}>${svg('minus')}</button>
+            <strong>${stueckRezept(r) ? Einheiten.zahlText(stueckZahl(r, stand.p)) : stand.p}</strong>
+            <button type="button" data-kp="1" aria-label="Mehr" ${stand.p + pSchritt(r) > 30 ? 'disabled' : ''}>${svg('plus')}</button>
           </span>
-          <span class="klein">${stand.p === 1 ? 'Person' : 'Personen'}</span>
+          <span class="klein">${stueckRezept(r) ? esc(r.ergibt.einheit) : stand.p === 1 ? 'Person' : 'Personen'}</span>
           <span class="abstand"></span>
           <button type="button" class="knopf leise icon-knopf" data-zl-zu aria-label="Zutatenliste schließen">${svg('schliessen')}</button>
         </div>
@@ -1832,7 +1911,7 @@
       else if (e.target.closest('[data-zl-zu]')) listeAuf(false);
       else if (e.target.closest('[data-zl-reset]')) { stand.haken = {}; kochenSichern(r.id, stand); listeZeigen(); zeigen(); }
       else if (e.target.closest('[data-kp]')) {
-        stand.p = begrenzen(stand.p + Number(e.target.closest('[data-kp]').dataset.kp));
+        stand.p = pFuer(r, stand.p + Number(e.target.closest('[data-kp]').dataset.kp) * pSchritt(r));
         $('km-zu').setAttribute('href', zurueck());
         listeZeigen(); zeigen();
       }
@@ -1955,7 +2034,7 @@
   /** „3½ Portionen (Anna, Ben)“ bzw. „4 Personen“ */
   function portionenHTML(e, kurz) {
     const w = werVon(e);
-    if (!w.length) return `${e.personen} ${kurz ? 'P.' : e.personen === 1 ? 'Person' : 'Personen'}`;
+    if (!w.length || stueckRezept(nachId[e.id])) return nachId[e.id] ? esc(mengeText(nachId[e.id], e.personen, kurz)) : `${e.personen} ${kurz ? 'P.' : e.personen === 1 ? 'Person' : 'Personen'}`;
     const n = portionen(e);
     return `${portionText(n)} ${kurz ? 'P.' : n === 1 ? 'Portion' : 'Portionen'}${kurz ? '' : ` <span class="klein">(${w.map((p) => esc(p.name || 'ohne Namen')).join(', ')})</span>`}`;
   }
@@ -2048,15 +2127,15 @@
           </div>
           <div class="pe-steuer">
             <button type="button" class="knopf leise pe-verschieben nur-bildschirm" data-verschieben aria-label="Verschieben – jetzt: ${e.tag || 'ohne Tag'}" title="Anderem Tag zuordnen">${svg('verschieben')} <span>${e.tag ? 'Verschieben' : 'Tag wählen'}</span></button>
-            ${w.length ? `<span class="pe-portionen">${portionenHTML(e)}</span>` : `
+            ${w.length && !stueckRezept(r) ? `<span class="pe-portionen">${portionenHTML(e)}</span>` : `
             <span class="stepper">
-              <button type="button" data-schritt="-1" aria-label="Weniger" ${e.personen <= 1 ? 'disabled' : ''}>${svg('minus')}</button>
-              <strong>${e.personen}</strong>
-              <button type="button" data-schritt="1" aria-label="Mehr">${svg('plus')}</button>
+              <button type="button" data-schritt="-1" aria-label="Weniger" ${e.personen <= pSchritt(r) ? 'disabled' : ''}>${svg('minus')}</button>
+              <strong>${stueckRezept(r) ? Einheiten.zahlText(stueckZahl(r, e.personen)) : e.personen}</strong>
+              <button type="button" data-schritt="1" aria-label="Mehr" ${e.personen + pSchritt(r) > 30 ? 'disabled' : ''}>${svg('plus')}</button>
             </span>
-            <span class="klein">Pers.</span>`}
+            <span class="klein">${stueckRezept(r) ? esc(r.ergibt.einheit) : 'Pers.'}</span>`}
           </div>
-          ${profile.length ? `<div class="chips pe-wer nur-bildschirm" aria-label="Wer isst mit">${werChipsHTML(e.wer || [])}</div>` : ''}
+          ${profile.length && !stueckRezept(r) ? `<div class="chips pe-wer nur-bildschirm" aria-label="Wer isst mit">${werChipsHTML(e.wer || [])}</div>` : ''}
         </li>`;
     };
     const neuFuer = planAuswahl && planAuswahl !== 'ohne' ? planAuswahl : '';
@@ -2093,7 +2172,8 @@
     }));
     app.querySelectorAll('[data-verschieben]').forEach((b) => b.addEventListener('click', () => verschiebenBlatt(finde(b))));
     app.querySelectorAll('[data-schritt]').forEach((b) => b.addEventListener('click', () => {
-      const e = finde(b); e.personen = begrenzen(e.personen + Number(b.dataset.schritt)); sichern(); zeichnen();
+      const e = finde(b), r = nachId[e.id];
+      e.personen = pFuer(r, e.personen + Number(b.dataset.schritt) * pSchritt(r)); sichern(); zeichnen();
     }));
     app.querySelectorAll('[data-weg]').forEach((b) => b.addEventListener('click', () => {
       const e = finde(b); plan = plan.filter((x) => x !== e); sichern(); zeichnen();
@@ -2143,7 +2223,7 @@
       if (!w.kat.includes(r.kategorie)) return false;
       if (w.zeit && z && z > w.zeit) return false;
       if (w.ohne.includes('fleisch') && e.fleisch) return false;
-      if (w.ohne.includes('fisch') && e.fisch) return false;
+      if (w.ohne.includes('fisch') && (e.fisch || e.fischzutat)) return false;
       return true;
     });
   }
@@ -2278,7 +2358,8 @@
       const heute = heuteISO();
       for (const v of auswahl) {
         const e = { uid: uid(), id: v.r.id, personen: begrenzen(w.personen), tag: v.tag || '' };
-        if (wer().length) { e.wer = w.wer.slice(); e.personen = begrenzen(portionen(e)); }
+        if (stueckRezept(v.r)) e.personen = pFuer(v.r, v.r.personen);   // Gebäck: ein ganzes Rezept
+        else if (wer().length) { e.wer = w.wer.slice(); e.personen = begrenzen(portionen(e)); }
         plan.push(e);
       }
       const verlauf = [...vsSpeicher().verlauf, ...auswahl.map((v) => ({ id: v.r.id, datum: heute }))].slice(-VS_VERLAUF_MAX);
@@ -2346,7 +2427,7 @@
   const FLUESSIG_KATEGORIEN = ['Gewürze & Öle', 'Getränke'];
   const mengeVon = (f) => f.zahl + (f.einheit ? ' ' + f.einheit : '');
   /** Umgerechnete Summe auf die Stufe von Einheiten.format aufrunden (280 g → 300 g, nicht 275 g) */
-  const aufStufe = (x) => { const st = x < 10 ? 1 : x < 250 ? 5 : x < 975 ? 25 : 50; return Math.max(st, Math.ceil(x / st - 1e-9) * st); };
+  const aufStufe = (x) => { const st = x < 10 ? 1 : x < 250 ? 5 : x < 975 ? 25 : 100; return Math.max(st, Math.ceil(x / st - 1e-9) * st); };
   /** Menge eines Postens: {menge, art: 'stueck' | 'mass' (g/ml) | 'einheit' (EL, Bund …) | 'gemischt', wert} */
   function postenMenge(p) {
     const teile = [...p.teile].sort((a, b) => (TEIL_FOLGE.indexOf(a[0]) + 1 || 9) - (TEIL_FOLGE.indexOf(b[0]) + 1 || 9));
@@ -2456,7 +2537,7 @@
 
   function alsText(gruppen, markdown) {
     const datum = new Date().toLocaleDateString('de-DE');
-    const fuer = fuerEinkauf().map((e) => `${nachId[e.id].titel} (${portionText(portionen(e))} P.)`).join(', ');
+    const fuer = fuerEinkauf().map((e) => `${nachId[e.id].titel} (${stueckRezept(nachId[e.id]) ? mengeText(nachId[e.id], e.personen, true) : portionText(portionen(e)) + ' P.'})`).join(', ');
     const box = markdown ? '- [ ] ' : '☐ ';
     let t = (markdown ? '# ' : '') + 'Einkaufsliste – ' + datum + '\n';
     if (fuer) t += (markdown ? '\n_Für: ' + fuer + '_\n' : 'Für: ' + fuer + '\n');

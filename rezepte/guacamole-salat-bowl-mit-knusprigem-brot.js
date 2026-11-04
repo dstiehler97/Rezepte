@@ -3,7 +3,7 @@ Rezept({
   titel: 'Guacamole-Salat-Bowl mit knusprigem Brot',
   beschreibung: 'Bunter Salat mit Cherrytomaten, Radieschen und Oliven, dazu frische Guacamole, wachsweiche Eier und in der Pfanne geröstetes Baguette.',
   kategorie: 'Salat',
-  tags: ['Vegetarisch', 'Avocado', 'Ei', 'Bowl', 'Schnell'],
+  tags: ['Vegetarisch', 'Avocado', 'Ei', 'Bowl'],
   personen: 4,
   zeit: { vorbereitung: 20, kochen: 10 },
   schwierigkeit: 'einfach',

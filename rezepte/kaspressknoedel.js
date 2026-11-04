@@ -15,7 +15,7 @@ Rezept({
     { menge: 200, einheit: 'g', name: 'Bergkäse', hinweis: 'würzig, gerieben' },
     { menge: 1, name: 'Zwiebel', mehrzahl: 'Zwiebeln' },
     { menge: 1, einheit: 'EL', name: 'Butter' },
-    { menge: 3, name: 'Eier' },
+    { menge: 3, name: 'Ei', mehrzahl: 'Eier' },
     { menge: 150, einheit: 'ml', name: 'Milch' },
     { menge: 0.5, einheit: 'Bund', name: 'Petersilie' },
     { name: 'Salz' },

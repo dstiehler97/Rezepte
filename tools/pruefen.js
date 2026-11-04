@@ -30,6 +30,34 @@ for (const f of ['einheiten.js', 'zutaten.js', 'icons.js', 'naehrwerte.js']) {
 const { Einheiten, Zutaten, Icons, Naehrwerte } = kontext;
 
 let fehler = 0;
+
+/*
+ * Teilmengen in Schritten („die Hälfte der Milch“, „restliches Öl“): Steht die Zutat nur einmal in der Liste,
+ * zeigt der Kochmodus bei jedem Schritt die volle Menge. → Zutat aufteilen (zwei Einträge, Gesamtmenge gleich).
+ * Liefert [{wort, name}] für Teilmengen, deren Zutat nur einmal vorkommt.
+ */
+const TEIL_WORT = /(?:^|[^a-zäöüß])(hälfte|teils?|größten teil|restlichen?|restliches|restlicher|restliche|rest|übrigen?|übriges|übriger)(?![a-zäöüß])/gi;
+const wortFormen = (w) => [w, w.replace(/n$/, ''), w.replace(/en$/, ''), w.replace(/s$/, ''), w.replace(/e$/, ''), w.replace(/er$/, '')];
+function teilmengen(text, r) {
+  const zut = (r.zutaten || []).filter((z) => !z.abschnitt && z.name);
+  const anzahl = (n) => zut.filter((z) => Zutaten.normal(z.name) === n).length;
+  const ergebnis = [];
+  let m;
+  TEIL_WORT.lastIndex = 0;
+  while ((m = TEIL_WORT.exec(text))) {
+    // die nächsten Wörter bis zum Satzzeichen bzw. „und“/„mit“: „die Hälfte des Olivenöls“, „restliche Sojasauce“
+    const danach = text.slice(m.index + m[0].length).replace(/\*\*/g, '').split(/[.,;:–()]| und | mit | in | zum | zur /)[0];
+    const ws = Zutaten.normal(danach).split(' ').filter(Boolean).slice(0, 4);
+    for (const z of zut) {
+      const n = Zutaten.normal(z.name), kopf = n.split(' ').pop();
+      const koepfe = [kopf, ...(z.mehrzahl ? [Zutaten.normal(z.mehrzahl).split(' ').pop()] : [])].flatMap(wortFormen);
+      if (ws.some((w) => wortFormen(w).some((f) => f.length > 2 && koepfe.includes(f))) && anzahl(n) === 1 && !ergebnis.some((e) => e.name === z.name)) {
+        ergebnis.push({ wort: m[1], name: z.name });
+      }
+    }
+  }
+  return ergebnis;
+}
 const melde = (datei, text) => { fehler++; console.log('  ✗ ' + datei + ': ' + text); };
 
 // ---------------------------------------------------------------- 1. Rezepte
@@ -56,9 +84,19 @@ for (const datei of dateien) {
   if (!Array.isArray(r.schritte) || !r.schritte.length) melde(datei, 'schritte fehlen');
   if (r.schwierigkeit && !['einfach', 'mittel', 'anspruchsvoll'].includes(r.schwierigkeit)) melde(datei, 'schwierigkeit: einfach | mittel | anspruchsvoll');
   if (r.ernaehrung !== undefined && !Zutaten.ERNAEHRUNG.includes(r.ernaehrung)) melde(datei, 'ernaehrung: ' + Zutaten.ERNAEHRUNG.join(' | '));
+  // Backrezepte nach Stückzahl: ergibt: { menge: 12, einheit: 'Muffins' } (personen bleibt 4, Umrechnung über den Faktor)
+  if (r.ergibt !== undefined) {
+    const e = r.ergibt;
+    if (!e || typeof e !== 'object') melde(datei, "ergibt: { menge: 12, einheit: 'Muffins' } erwartet");
+    else {
+      if (typeof e.menge !== 'number' || !(e.menge > 0) || !Number.isInteger(e.menge * 2)) melde(datei, 'ergibt.menge muss eine positive Zahl sein (ganz oder halb)');
+      if (typeof e.einheit !== 'string' || !e.einheit.trim()) melde(datei, "ergibt.einheit fehlt (z. B. 'Muffins', 'Stück', 'Tartelettes', 'Blech')");
+      if (Object.keys(e).some((k) => !['menge', 'einheit'].includes(k))) melde(datei, 'ergibt: nur menge und einheit');
+    }
+  }
   for (const z of r.zutaten || []) {
     if (z.abschnitt) continue;
-    if (z.ernaehrung !== undefined && !['fleisch', 'fisch', 'tierisch', 'vegan'].includes(z.ernaehrung)) melde(datei, `${z.name}: ernaehrung fleisch | fisch | tierisch | vegan`);
+    if (z.ernaehrung !== undefined && !['fleisch', 'fisch', 'fischzutat', 'tierisch', 'vegan'].includes(z.ernaehrung)) melde(datei, `${z.name}: ernaehrung fleisch | fisch | fischzutat | tierisch | vegan`);
     if (!z.name) { melde(datei, 'Zutat ohne name: ' + JSON.stringify(z)); continue; }
     try { Einheiten.skalieren(z, 1); } catch (e) { melde(datei, e.message); }
     if (z.menge != null && typeof z.menge !== 'number') melde(datei, `menge bei ${z.name} muss eine Zahl sein`);
@@ -79,7 +117,15 @@ for (const datei of dateien) {
   if (nw.fehlend.length) console.log(`  ! ${datei}: keine Nährwerte für ${nw.fehlend.join(', ')} – in assets/naehrwerte.js ergänzen oder gramm/naehrwerte angeben`);
   for (const s of r.schritte || []) {
     if (typeof s === 'string' && /\d+\s?(g|ml|EL|TL|kg|l)\b/.test(s)) console.log(`  ! ${datei}: Menge im Schritt ("${s.slice(0, 50)}…") – wird nicht umgerechnet`);
+    if (typeof s === 'string') for (const t of teilmengen(s, r)) {
+      console.log(`  ! ${datei}: Teilmenge „${t.wort} … ${t.name}“ im Schritt, aber ${t.name} steht nur einmal in den Zutaten – in Teilmengen aufteilen (eigene Einträge, z. B. „Zum Braten“), sonst zeigt der Kochmodus die volle Menge`);
+    }
   }
+  // „Schnell“ berechnet die App aus der Gesamtzeit (≤ 30 Min.) – als Tag nicht nötig und oft falsch
+  const gesamt = Object.values(r.zeit || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+  if (tags.includes('schnell')) console.log(`  ! ${datei}: Tag „Schnell“ entfernen – wird automatisch aus der Zeit berechnet${gesamt > 30 ? ` (und stimmt nicht: ${gesamt} Min.)` : ''}`);
+  // Lab-Hinweis kommt automatisch (Zutaten.labTipp) – nicht zusätzlich in die Tipps schreiben
+  if (Zutaten.labTipp(r) && (r.tipps || []).some((t) => /\bLab\b/.test(t))) console.log(`  ! ${datei}: Tipp zum Lab steht schon automatisch im Rezept – eigenen Lab-Tipp entfernen`);
 }
 if (ohneKategorie.size) console.log('  ! ohne Einkaufs-Kategorie (landen unter "Sonstiges"): ' + [...ohneKategorie].join(', '));
 console.log(`  ${dateien.length} Rezepte`);
@@ -143,7 +189,13 @@ fall(1250, 'ml', 1, '1,25 l', { exakt: true });
 fall(330, 'g', 1, '330 g', { exakt: true });
 fall(250, 'g', 0.5, '125 g');
 fall(500, 'g', 1.5, '750 g');
-fall(500, 'g', 2.5, '1,25 kg');
+fall(500, 'g', 2.5, '1,3 kg');
+fall(700, 'g', 1.5, '1,1 kg');        // ab 1 kg auf 100 g: nicht 1,05 kg
+fall(600, 'g', 1.75, '1,1 kg');
+fall(1200, 'ml', 1.75, '2,1 l');
+fall(1200, 'ml', 1.125, '1,4 l');     // nicht 1,35 l
+fall(390, 'g', 2.5, '1 kg');
+fall(1200, 'ml', 1, '1,2 l', { exakt: true });
 fall(200, 'g', 1 / 3, '65 g');
 fall(250, 'g', 1.33, '325 g');
 fall(250, 'ml', 0.25, '65 ml');
@@ -160,6 +212,17 @@ fall(4, 'TL', 1.5, '2 EL');
 fall(1, 'EL', 1, '1 EL');
 fall(2, 'EL', 1.65, '3½ EL');
 fall(1, 'Prise', 2, '2 Prisen');
+// Prisen: höchstens 2, darüber ¼ TL, ½ TL … (1 Prise ≈ 1/16 TL); nie weniger als 1 Prise
+fall(1, 'Prise', 9, '½ TL');
+fall(1, 'Prise', 3, '¼ TL');
+fall(1, 'Prise', 7, '½ TL');
+fall(1, 'Prise', 16, '1 TL');
+fall(1, 'Prise', 2.25, '2 Prisen');
+fall(1, 'Prise', 0.25, '1 Prise');
+fall(2, 'Prise', 0.25, '1 Prise');
+fall(4, 'Prise', 1, '¼ TL', { exakt: true });
+fall(0.25, 'TL', 0.25, '1 Prise');
+fall(0.25, 'TL', 2.25, '½ TL');
 fall(1, undefined, 0.25, '½');
 fall(1, undefined, 1.5, '1½');
 fall(3, undefined, 1 / 3, '1');
