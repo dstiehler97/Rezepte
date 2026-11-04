@@ -1,0 +1,45 @@
+Rezept({
+  id: 'one-pot-reis-mit-spinat',
+  titel: 'One Pot-Reis mit Spinat',
+  beschreibung: 'Reis mit frischem Blattspinat und gehäuteten Tomaten nach türkischer Art aus einem Topf, serviert mit Joghurt und Chiliflocken.',
+  kategorie: 'Hauptgericht',
+  tags: ['Türkisch', 'Vegetarisch', 'Reis', 'Spinat', 'One-Pot'],
+  personen: 4,
+  zeit: { vorbereitung: 15, kochen: 25 },
+  schwierigkeit: 'einfach',
+  bild: 'bilder/one-pot-reis-mit-spinat.jpg',
+
+  zutaten: [
+    { abschnitt: 'Für den Reis' },
+    { menge: 320, einheit: 'g', name: 'Risottoreis' },
+    { menge: 720, einheit: 'ml', name: 'Wasser' },
+    { menge: 600, einheit: 'g', name: 'Tomate', mehrzahl: 'Tomaten' },
+    { menge: 320, einheit: 'g', name: 'Blattspinat', hinweis: 'frisch' },
+    { menge: 2, name: 'Zwiebel', mehrzahl: 'Zwiebeln' },
+    { menge: 2, einheit: 'Zehe', name: 'Knoblauch' },
+    { menge: 4, einheit: 'EL', name: 'Olivenöl' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+    { abschnitt: 'Zum Servieren' },
+    { menge: 120, einheit: 'g', name: 'Joghurt', hinweis: 'natur' },
+    { menge: 1, einheit: 'TL', name: 'Chiliflocken' },
+  ],
+
+  schritte: [
+    { abschnitt: 'Vorbereiten' },
+    'Tomaten kreuzweise einritzen, mit kochendem Wasser übergießen und kurz ziehen lassen. Die Haut abziehen und die Tomaten in kleine Stücke schneiden.',
+    'Spinat waschen, gut abtropfen lassen und grob hacken.',
+    'Zwiebeln schälen und fein würfeln. Knoblauch schälen und hacken.',
+    { abschnitt: 'Kochen' },
+    'Öl in einem großen Topf erhitzen und die Zwiebeln darin **ca. 2 Minuten** anschwitzen. Knoblauch zugeben und unter ständigem Rühren kurz mitbraten.',
+    'Spinat und Tomaten in den Topf geben und kurz zusammenfallen lassen.',
+    'Reis und Wasser zugeben, alles gut vermengen und **ca. 20 Minuten** bei mittlerer Hitze köcheln lassen, bis der Reis gar ist. Gelegentlich umrühren und bei Bedarf etwas Wasser nachgießen.',
+    { abschnitt: 'Servieren' },
+    'Mit Salz und Pfeffer abschmecken. Auf Teller verteilen, mit Joghurt beträufeln und mit Chiliflocken bestreuen.',
+  ],
+
+  tipps: [
+    'Ohne Joghurt (oder mit Sojajoghurt) ist das Gericht vegan.',
+    'Statt frischer Tomaten passen auch stückige Tomaten aus der Dose – dann entfällt das Häuten.',
+  ],
+});

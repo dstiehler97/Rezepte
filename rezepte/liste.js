@@ -5,11 +5,15 @@ window.REZEPT_DATEIEN = [
   "cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen",
   "crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree",
   "gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips",
+  "guacamole-salat-bowl-mit-knusprigem-brot",
   "kaspressknoedel",
   "koettbullar",
+  "linguine-in-paprika-mandel-sauce",
+  "linguine-mit-zitronenbutter-burrata",
   "low-carb-huehnchen-mit-mozzarella-tomaten-pesto",
   "mediterraner-salat-mit-geroestetem-pesto-gemuese",
   "one-pot-hackfleisch-porree-nudeln",
+  "one-pot-reis-mit-spinat",
   "pasta-mit-rotwein-sauce-steak-streifen",
   "pfannkuchen",
   "pfifferlinge-mit-spinatknoedeln-in-salbeibutter",
@@ -17,6 +21,8 @@ window.REZEPT_DATEIEN = [
   "semmelknoedel",
   "spaghetti-bolognese",
   "suesskartoffelragout-mit-bulgur-cashewkernen",
+  "tartelettes-mit-feta-creme-geroesteten-cherrytomaten",
   "thai-kokos-suesskartoffelsuppe",
-  "tofu-scramble-mit-gemuese"
+  "tofu-scramble-mit-gemuese",
+  "wuerziger-couscous-one-pot"
 ];

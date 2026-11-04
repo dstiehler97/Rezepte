@@ -169,6 +169,7 @@
     notiz: '<path d="M5 3.5h10l4 4v13H5z"/><path d="M15 3.5v4h4M8.5 12h7M8.5 15.5h7M8.5 8.5h3"/>',
     mond: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
     hochladen: '<path d="M12 15V3M7 8l5-5 5 5M4 21h16"/>',
+    verschieben: '<path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/>',
   };
 
   function svg(name, klasse) {

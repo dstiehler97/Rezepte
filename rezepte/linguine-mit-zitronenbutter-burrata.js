@@ -1,0 +1,47 @@
+Rezept({
+  id: 'linguine-mit-zitronenbutter-burrata',
+  titel: 'Linguine mit Zitronenbutter & Burrata',
+  beschreibung: 'Linguine mit gebratenen Zitronenscheiben, Kapern, Walnüssen und Thymian in Butter, frischen Cherrytomaten, Basilikum und cremiger Burrata.',
+  kategorie: 'Hauptgericht',
+  tags: ['Italienisch', 'Pasta', 'Vegetarisch', 'Zitrone'],
+  personen: 4,
+  zeit: { vorbereitung: 15, kochen: 20 },
+  schwierigkeit: 'einfach',
+  bild: 'bilder/linguine-mit-zitronenbutter-burrata.jpg',
+
+  zutaten: [
+    { menge: 320, einheit: 'g', name: 'Linguine', hinweis: 'oder Spaghetti' },
+    { name: 'Nudelkochwasser', hinweis: 'etwas aufheben' },
+    { abschnitt: 'Für die Zitronenbutter' },
+    { menge: 2, name: 'Zitrone', mehrzahl: 'Zitronen', hinweis: 'unbehandelt' },
+    { menge: 60, einheit: 'g', name: 'Butter' },
+    { menge: 8, einheit: 'Zweig', name: 'Thymian', hinweis: 'frisch' },
+    { menge: 2, einheit: 'Zehe', name: 'Knoblauch' },
+    { menge: 50, einheit: 'g', name: 'Walnusskerne' },
+    { menge: 40, einheit: 'g', name: 'Kapern' },
+    { abschnitt: 'Zum Fertigstellen' },
+    { menge: 400, einheit: 'g', name: 'Cherrytomate', mehrzahl: 'Cherrytomaten' },
+    { menge: 30, einheit: 'g', name: 'Basilikum', hinweis: 'frisch' },
+    { menge: 2, name: 'Burrata' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+    { name: 'Olivenöl', hinweis: 'zum Beträufeln', optional: true },
+  ],
+
+  schritte: [
+    { abschnitt: 'Vorbereiten' },
+    'Pasta nach Packungsanleitung kochen, beim Abgießen **etwas Kochwasser auffangen**. Zitronen heiß waschen und mit Schale in feine Scheiben schneiden.',
+    { abschnitt: 'Zitronenbutter' },
+    'Einen Teil der Butter in einer Pfanne erhitzen und die Zitronenscheiben bei mittlerer Hitze ca. **3–4 Minuten pro Seite** braten.',
+    'Währenddessen Thymian fein hacken, Knoblauch schälen und hacken, Walnüsse grob und Kapern fein hacken. Zitronenscheiben herausnehmen und hacken.',
+    'Kapern, Walnüsse, Knoblauch und Thymian mit der restlichen Butter in die Pfanne geben und ca. **3–4 Minuten** braten.',
+    'Währenddessen Basilikumblätter in feine Streifen schneiden, Cherrytomaten fein würfeln.',
+    { abschnitt: 'Servieren' },
+    'Pasta mit dem Kochwasser, der gehackten Zitrone, Tomaten und Basilikum in die Pfanne geben, mischen und mit Salz und Pfeffer würzen.',
+    'Mit der Burrata anrichten, nach Belieben mit Olivenöl beträufeln und nachwürzen.',
+  ],
+
+  tipps: [
+    'Statt Burrata passt Büffelmozzarella, statt Walnüssen Pinienkerne.',
+  ],
+});

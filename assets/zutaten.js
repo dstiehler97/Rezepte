@@ -50,11 +50,14 @@
     'ghee':          { k: KU, icon: 'butter' },
     'oregano':       { k: GW, icon: 'kraeuter', vorrat: true },
     'getrocknete minze': { k: GW, icon: 'kraeuter', vorrat: true },
+    'getrockneter rosmarin': { k: GW, icon: 'kraeuter', vorrat: true },
+    'getrockneter thymian': { k: GW, icon: 'kraeuter', vorrat: true },
     'lorbeerblatt':  { k: GW, icon: 'kraeuter', vorrat: true },
     'lorbeer':       { k: GW, icon: 'kraeuter', vorrat: true },
     'öl':            { k: GW, icon: 'oel', vorrat: true },
     'sesamöl':       { k: GW, icon: 'oel' },
     'essig':         { k: GW, icon: 'oel', vorrat: true },
+    'balsamico':     { k: GW, icon: 'oel', vorrat: true },
     'brühe':         { k: GW, icon: 'gewuerz', vorrat: true },
     'senf':          { k: GW, icon: 'gewuerz' },
     'sojasauce':     { k: GW, icon: 'oel' },
@@ -66,6 +69,7 @@
     'kräuter der provence': { k: GW, icon: 'kraeuter', vorrat: true },
     'knoblauchpulver': { k: GW, icon: 'gewuerz', vorrat: true },
     'pesto':         { k: KO, icon: 'kraeuter' },
+    'kapern':        { k: KO, icon: 'kraeuter' },
     'sriracha':      { k: GW, icon: 'chili' },
     'honig':         { k: GW, icon: 'gewuerz' },
     'wasser':        { icon: 'wasser', nie: true },
@@ -91,6 +95,7 @@
     'haselnusskerne': { k: BA, icon: 'nuss' },
     'sesamsaat':     { k: BA, icon: 'nuss' },
     'sesam':         { k: BA, icon: 'nuss' },
+    'pinienkerne':   { k: BA, icon: 'nuss' },
 
     // Kühlregal
     'butter':        { k: KU, icon: 'butter' },
@@ -104,6 +109,7 @@
     'käse':          { k: KU, icon: 'kaese' },
     'parmesan':      { k: KU, icon: 'kaese' },
     'mozzarella':    { k: KU, icon: 'kaese' },
+    'burrata':       { k: KU, icon: 'kaese' },
     'gouda':         { k: KU, icon: 'kaese' },
     'feta':          { k: KU, icon: 'kaese' },
     'schafkäse':     { k: KU, icon: 'kaese' },
@@ -111,6 +117,7 @@
     'gnocchi':       { k: KU, icon: 'nudeln' },
     'pfannenkäse':   { k: KU, icon: 'kaese' },
     'tofu':          { k: KU },
+    'blätterteig':   { k: KU, icon: 'mehl' },
 
     // Obst & Gemüse
     'zwiebel':       { k: OG, icon: 'zwiebel' },
@@ -152,6 +159,8 @@
     'apfel':         { k: OG },
     'banane':        { k: OG },
     'ingwer':        { k: OG },
+    'avocado':       { k: OG },
+    'radieschen':    { k: OG },
 
     // Kräuter (frisch)
     'petersilie':    { k: KR, icon: 'kraeuter' },
@@ -210,16 +219,20 @@
     'passierte tomaten': { k: KO, icon: 'tomate' },
     'geschälte tomaten': { k: KO, icon: 'tomate' },
     'getrocknete tomaten': { k: KO, icon: 'tomate' },
+    'geröstete paprika': { k: KO },
     'kokosmilch':        { k: KO, icon: 'milch' },
     'pflanzlicher drink': { k: KU, icon: 'milch' },
     'preiselbeeren':     { k: KO },
     'kichererbsen':      { k: KO },
+    'erbsen':            { k: 'Tiefkühl' },   // meist tiefgefroren
     'mais':              { k: KO },
+    'olive':             { k: KO },
 
     // Brot
     'brot':          { k: BR },
     'brötchen':      { k: BR },
     'knödelbrot':    { k: BR },
+    'baguette':      { k: BR },
     'semmelbrösel':  { k: BR, icon: 'mehl', vorrat: true },
 
     // Getränke
