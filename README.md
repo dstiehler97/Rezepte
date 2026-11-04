@@ -12,7 +12,7 @@ Läuft ohne Installation: `index.html` im Browser öffnen, oder über GitHub Pag
 - **Nudeln, Reis & Getreide** immer als Trockengewicht in g (wie auf der Packung) – wird geprüft und im Rezept als „Trockengewicht“ markiert.
 - **Nährwerte** (Kalorien, Eiweiß, Kohlenhydrate, Zucker, Fett, Ballaststoffe) werden aus den Zutaten berechnet: pro Portion und gesamt für die gewählte Personenzahl. Werte pro 100 g stehen in `assets/naehrwerte.js`.
 - **Einheitlicher Druck**: jedes Rezept gleich aufgebaut (Kopf, Personen/Zeit/Schwierigkeit, Zutaten links, Schritte rechts), schwarz-weiß-tauglich, gedruckt wird mit der gewählten Personenzahl.
-- **Immer eine Seite**: Vor dem Drucken misst die App das Rezept; ist es zu lang, wird es gleichmäßig verkleinert (bis 75 %), damit es auf eine A4-Seite passt.
+- **Immer eine Seite**: Vor dem Drucken misst die App das Rezept; ist es nur etwas zu lang, wird es leicht verkleinert (bis 85 %), damit es auf eine A4-Seite passt. Sehr lange Rezepte bleiben in normaler Größe und laufen sauber auf eine zweite Seite.
 - **Kochbuch**: alle Rezepte auf einmal drucken, jedes auf eigener Seite.
 - **Wochenplan**: Rezepte mit Personenzahl auf Tage verteilen (wird im Browser gespeichert).
 - **Einkaufsliste** aus dem Wochenplan: gleiche Zutaten werden zusammengerechnet, nach Ladenbereichen sortiert, Grundvorrat (Salz, Pfeffer, Öl, Mehl …) separat unter „Vorrat prüfen“. Abhaken, eigene Einträge, Export als **Text, .txt, .md**, Teilen (Handy) und Drucken.

@@ -243,6 +243,10 @@ body.druck .werkzeuge h1 { font-size: 18pt; }
 /* Rezeptseite: jedes Rezept auf eigener Seite, gleiches Raster */
 body.druck .rezept { border: 0; border-radius: 0; padding: 0; margin: 0; break-after: page; }
 body.druck .rezept:last-child { break-after: auto; }
+/* Zweiseitig: nichts mitten durchschneiden */
+body.druck .zweiseitig .r-zutaten li, body.druck .zweiseitig .schritt { break-inside: avoid; }
+body.druck .zweiseitig .schritt-abschnitt, body.druck .zweiseitig .abschnitt, body.druck .zweiseitig h2 { break-after: avoid; }
+body.druck .zweiseitig .r-naehrwerte, body.druck .zweiseitig .r-tipps { break-inside: avoid; }
 body.druck .r-kat { font-size: 8pt; color: #555; }
 body.druck .r-kopf h1 { font-size: 24pt; margin: 1mm 0 2mm; }
 body.druck .r-beschreibung { font-size: 11pt; color: #333; }

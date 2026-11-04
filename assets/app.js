@@ -538,28 +538,34 @@
 
   // ---------------------------------------------------------------- Druck
   // Vor dem Drucken das Druckbild aktivieren und jedes Rezept ausmessen:
-  // passt es nicht auf eine A4-Seite, wird es gleichmäßig verkleinert (höchstens auf 75 %).
+  // Ist es nur etwas zu lang, wird es leicht verkleinert (bis 85 %), damit es auf eine A4-Seite passt.
+  // Bräuchte es mehr, bleibt es in normaler Größe und läuft sauber auf eine zweite Seite.
   const SEITE_MM = 297 - 15 - 14 - 3;   // A4 minus Ränder minus Sicherheit
   const BREITE_MM = 180;
   const PX_JE_MM = 96 / 25.4;
+  const MIN_ZOOM = 0.85;
   function druckVorbereiten() {
     document.body.classList.add('druck');
     document.querySelectorAll('.rezept').forEach((el) => {
-      el.style.zoom = ''; el.style.width = '';
+      el.style.zoom = ''; el.style.width = ''; el.classList.remove('zweiseitig');
       let zoom = 1;
       for (let i = 0; i < 4; i++) {
-        const mm = el.getBoundingClientRect().height / PX_JE_MM;
-        if (mm <= SEITE_MM) break;
-        zoom = Math.max(0.75, zoom * SEITE_MM / mm * 0.99);
+        // Im echten Druck bricht Text minimal anders um -> 5 % Reserve
+        const mm = el.getBoundingClientRect().height / PX_JE_MM * 1.05;
+        if (mm <= SEITE_MM) return;
+        zoom = zoom * SEITE_MM / mm * 0.99;
+        if (zoom < MIN_ZOOM) break;
         el.style.zoom = zoom;
         el.style.width = (BREITE_MM / zoom) + 'mm';
-        if (zoom === 0.75) break;
       }
+      // passt auch verkleinert nicht: normale Größe, zwei Seiten
+      el.style.zoom = ''; el.style.width = '';
+      el.classList.add('zweiseitig');
     });
   }
   function druckEnde() {
     document.body.classList.remove('druck');
-    document.querySelectorAll('.rezept').forEach((el) => { el.style.zoom = ''; el.style.width = ''; });
+    document.querySelectorAll('.rezept').forEach((el) => { el.style.zoom = ''; el.style.width = ''; el.classList.remove('zweiseitig'); });
   }
   window.addEventListener('beforeprint', druckVorbereiten);
   window.addEventListener('afterprint', druckEnde);
