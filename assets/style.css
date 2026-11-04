@@ -85,6 +85,32 @@ label.inline input { width: 4.5rem; }
 }
 .suchfeld input { border: 0; flex: 1; padding: .6rem 0; background: transparent; outline: none; }
 .chips { display: flex; gap: .4rem; flex-wrap: wrap; }
+button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
+.such-zeile { display: flex; gap: .5rem; align-items: center; max-width: 560px; }
+.such-zeile .suchfeld { flex: 1; min-width: 0; }
+.suchfeld input { min-width: 0; }
+.such-zeile .filter-knopf { flex: none; }
+.filter-knopf { border-radius: 999px; position: relative; }
+.filter-knopf.an { border-color: var(--text); }
+.filter-knopf .zahl:not(:empty) { margin-left: .1rem; }
+.filter-feld { display: grid; gap: .9rem; padding: 1rem; background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); max-width: 720px; }
+.filter-feld[hidden] { display: none; }
+.feld { display: grid; gap: .35rem; }
+.feld > span { font-size: .75rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--leise); }
+.feld input, .feld select { width: 100%; }
+.merkmal-chips .chip.aktiv { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+#filter-weg { justify-self: start; padding-left: 0; }
+.treffer { margin: -.5rem 0 .75rem; min-height: 1em; }
+.merkmale { display: flex; flex-wrap: wrap; gap: .3rem; }
+.karte .merkmale { margin-top: .15rem; }
+.merkmal { font-size: .72rem; font-weight: 600; padding: .12rem .5rem; border-radius: 999px; background: var(--papier); color: var(--leise); border: 1px solid var(--linie); white-space: nowrap; }
+.m-eiweiss { background: #e6f0fa; border-color: #c4d9ef; color: #2b5d8a; }
+.m-veggie { background: #e8f3e6; border-color: #c8e1c3; color: #3d6b34; }
+.m-leicht, .m-fettarm, .m-lowcarb { background: #eef5ec; border-color: #d3e6cf; color: #4a6f43; }
+.m-ballast { background: #f3efe3; border-color: #e1d8bf; color: #6d5f33; }
+.m-fettreich { background: #fbeee6; border-color: #efd2c2; color: #93492a; }
+.m-schnell { background: #f1ecf7; border-color: #ddd1ec; color: #5e4787; }
+.rezept > .merkmale { margin: -1rem 0 1.5rem; }
 .chip {
   padding: .3rem .8rem; border-radius: 999px; border: 1px solid var(--linie);
   background: var(--flaeche); color: var(--text); text-decoration: none; font-size: .9rem;
@@ -280,6 +306,11 @@ label.inline input { width: 4.5rem; }
 
   /* Übersicht */
   .suchfeld { max-width: none; }
+  .such-zeile { max-width: none; }
+  .filter-knopf span:not(.zahl) { display: none; }
+  .filter-knopf { padding: .5rem .8rem; }
+  .chips.merkmal-chips { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; }
+  .rezept > .merkmale { margin-top: -.75rem; }
   .chips { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 0 16px .2rem; scrollbar-width: none; }
   .chip { white-space: nowrap; padding: .45rem .95rem; }
 
@@ -342,6 +373,8 @@ body.druck .nw-titel strong, body.druck .nw-wert strong { font-size: 10pt; }
 body.druck .nw-name { font-size: 6.5pt; }
 body.druck .nw-titel span, body.druck .nw-ges { font-size: 7.5pt; }
 body.druck .nw-wert.kcal strong { color: #000; }
+body.druck .rezept > .merkmale { margin: -3mm 0 5mm; }
+body.druck .merkmal { background: none; border-color: #999; color: #000; font-size: 7.5pt; padding: .3mm 2mm; }
 body.druck .r-tipps { background: none; border: 1pt solid #bbb; padding: 2.5mm 3mm; margin-top: 5mm; font-size: 9.5pt; }
 body.druck .r-tipps ul { padding-left: 4mm; }
 
