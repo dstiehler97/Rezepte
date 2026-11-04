@@ -485,12 +485,12 @@
         if (!f.m.every((m) => ids.includes(m))) return false;
       }
       const namen = nurZutaten(r).map((z) => Zutaten.normal(z.name));
-      if (zf.mit.some((w) => !namen.some((nm) => nm.includes(w)))) return false;
-      if (zf.ohne.some((w) => namen.some((nm) => nm.includes(w)))) return false;
+      if (zf.mit.some((w) => !namen.some((nm) => Zutaten.passtSuche(nm, w)))) return false;
+      if (zf.ohne.some((w) => namen.some((nm) => Zutaten.passtSuche(nm, w)))) return false;
       if (!n) return true;
       const ernText = ERNAEHRUNG.filter((x) => x.passt(ernaehrungVon(r))).map((x) => x.name).join(' ');
       const text = Zutaten.normal([r.titel, r.beschreibung, r.kategorie, (r.tags || []).join(' '), ernText, namen.join(' ')].join(' '));
-      return n.split(' ').every((w) => text.includes(w));
+      return n.split(' ').every((w) => Zutaten.passtSuche(text, w));
     }).sort(vergleich(f.o, f.d));
   }
 
