@@ -117,53 +117,135 @@
   }
 
   // ---------------------------------------------------------------- Übersicht
+  // Filter: Kategorie, Merkmale (Ernährung, Vegetarisch, Schnell), Suche, Zutaten; dazu Sortierung
+  const SCHNELL_MIN = 30;
+  const SORTIERUNGEN = [
+    ['name', 'Name A–Z', (a, b) => a.titel.localeCompare(b.titel, 'de')],
+    ['zeit', 'Schnellste zuerst', (a, b) => gesamtzeit(a.zeit) - gesamtzeit(b.zeit)],
+    ['kcal', 'Wenigste Kalorien', (a, b) => nwp(a).kcal - nwp(b).kcal],
+    ['eiweiss', 'Meistes Eiweiß', (a, b) => nwp(b).eiweiss - nwp(a).eiweiss],
+    ['fett', 'Wenigstes Fett', (a, b) => nwp(a).fett - nwp(b).fett],
+    ['kh', 'Wenigste Kohlenhydrate', (a, b) => nwp(a).kh - nwp(b).kh],
+  ];
+  const nwCache = new Map();
+  const nwp = (r) => { if (!nwCache.has(r)) nwCache.set(r, Naehrwerte.berechnen(r).portion); return nwCache.get(r); };
+  const istVegetarisch = (r) => (r.tags || []).some((t) => /^vegetarisch$|^vegan$/i.test(t));
+  /** Merkmale eines Rezepts als Liste {id, name} */
+  function merkmaleVon(r) {
+    const m = Naehrwerte.merkmale(r).map((x) => ({ id: x.id, name: x.name }));
+    if (istVegetarisch(r)) m.unshift({ id: 'veggie', name: (r.tags || []).some((t) => /^vegan$/i.test(t)) ? 'Vegan' : 'Vegetarisch' });
+    if (gesamtzeit(r.zeit) && gesamtzeit(r.zeit) <= SCHNELL_MIN) m.push({ id: 'schnell', name: 'Schnell' });
+    return m;
+  }
+  const FILTER_MERKMALE = [{ id: 'veggie', name: 'Vegetarisch' }, { id: 'schnell', name: 'Schnell (≤ 30 Min.)' },
+    ...Naehrwerte.MERKMALE.map((m) => ({ id: m.id, name: m.name }))];
+
+  /** Zutaten-Eingabe: "Spinat, Käse, -Pilze" -> mit Spinat UND Käse, ohne Pilze */
+  function zutatenFilter(text) {
+    const teile = String(text || '').split(/[,;]+/).map((t) => t.trim()).filter(Boolean);
+    return {
+      mit: teile.filter((t) => !/^(-|ohne )/i.test(t)).map((t) => Zutaten.normal(t)),
+      ohne: teile.filter((t) => /^(-|ohne )/i.test(t)).map((t) => Zutaten.normal(t.replace(/^(-|ohne )\s*/i, ''))).filter(Boolean),
+    };
+  }
+
+  function filtern(f) {
+    const n = Zutaten.normal(f.s);
+    const zf = zutatenFilter(f.z);
+    const sort = (SORTIERUNGEN.find((x) => x[0] === f.o) || SORTIERUNGEN[0])[2];
+    return rezepte.filter((r) => {
+      if (f.k && r.kategorie !== f.k) return false;
+      if (f.m.length) {
+        const ids = merkmaleVon(r).map((x) => x.id);
+        if (!f.m.every((m) => ids.includes(m))) return false;
+      }
+      const namen = nurZutaten(r).map((z) => Zutaten.normal(z.name));
+      if (zf.mit.some((w) => !namen.some((nm) => nm.includes(w)))) return false;
+      if (zf.ohne.some((w) => namen.some((nm) => nm.includes(w)))) return false;
+      if (!n) return true;
+      const text = Zutaten.normal([r.titel, r.beschreibung, r.kategorie, (r.tags || []).join(' '), namen.join(' ')].join(' '));
+      return n.split(' ').every((w) => text.includes(w));
+    }).sort(sort);
+  }
+
   function seiteUebersicht(q) {
     document.title = 'Rezepte';
-    const suche = q.get('s') || '';
-    const kat = q.get('k') || '';
+    const f = { s: q.get('s') || '', k: q.get('k') || '', z: q.get('z') || '', o: q.get('o') || 'name',
+      m: (q.get('m') || '').split(',').filter(Boolean) };
     const kategorien = [...new Set(rezepte.map((r) => r.kategorie).filter(Boolean))].sort();
-    const n = Zutaten.normal(suche);
-    const treffer = rezepte.filter((r) => {
-      if (kat && r.kategorie !== kat) return false;
-      if (!n) return true;
-      const text = Zutaten.normal([r.titel, r.beschreibung, r.kategorie, (r.tags || []).join(' '),
-        nurZutaten(r).map((z) => z.name).join(' ')].join(' '));
-      return n.split(' ').every((w) => text.includes(w));
-    });
+    const offen = !!(f.z || f.m.length || f.o !== 'name');
 
     app.innerHTML = `
       <section class="kopf-seite nur-bildschirm">
         <h1>Rezepte</h1>
         <div class="filter">
-          <label class="suchfeld">${svg('suche')}
-            <input id="suche" type="search" placeholder="Suchen: Titel, Zutat, Tag …" value="${esc(suche)}">
-          </label>
-          <div class="chips">
-            <a class="chip ${kat ? '' : 'aktiv'}" href="#/?s=${encodeURIComponent(suche)}">Alle</a>
-            ${kategorien.map((k) => `<a class="chip ${k === kat ? 'aktiv' : ''}" href="#/?k=${encodeURIComponent(k)}&s=${encodeURIComponent(suche)}">${esc(k)}</a>`).join('')}
+          <div class="such-zeile">
+            <label class="suchfeld">${svg('suche')}
+              <input id="suche" type="search" placeholder="Suchen: Titel, Zutat, Tag …" value="${esc(f.s)}" autocomplete="off">
+            </label>
+            <button type="button" class="knopf filter-knopf${offen ? ' an' : ''}" id="filter-auf" aria-expanded="${offen}">${svg('filter')} <span>Filter</span><span class="zahl" id="filter-zahl"></span></button>
+          </div>
+          <div class="chips" id="kat-chips">
+            <button type="button" class="chip" data-k="">Alle</button>
+            ${kategorien.map((k) => `<button type="button" class="chip" data-k="${esc(k)}">${esc(k)}</button>`).join('')}
+          </div>
+          <div class="filter-feld" id="filter-feld"${offen ? '' : ' hidden'}>
+            <label class="feld"><span>Mit Zutaten</span>
+              <input id="zutaten" type="search" placeholder="z. B. Spinat, Käse  ·  ohne: -Pilze" value="${esc(f.z)}" autocomplete="off">
+            </label>
+            <label class="feld"><span>Sortieren</span>
+              <select id="sortierung">${SORTIERUNGEN.map(([id, name]) => `<option value="${id}"${id === f.o ? ' selected' : ''}>${name}</option>`).join('')}</select>
+            </label>
+            <div class="feld"><span>Eigenschaften</span>
+              <div class="chips merkmal-chips" id="merkmal-chips">
+                ${FILTER_MERKMALE.map((m) => `<button type="button" class="chip" data-m="${m.id}">${esc(m.name)}</button>`).join('')}
+              </div>
+            </div>
+            <button type="button" class="knopf leise" id="filter-weg">Filter zurücksetzen</button>
           </div>
         </div>
       </section>
       ${ladefehler.length ? `<p class="hinweis fehler">Nicht geladen: ${ladefehler.map(esc).join(', ')} – Datei in /rezepte prüfen.</p>` : ''}
-      <div class="karten">
-        ${treffer.map(karte).join('') || '<p class="leer">Keine Rezepte gefunden.</p>'}
-      </div>`;
+      <p class="treffer klein" id="treffer"></p>
+      <div class="karten" id="karten"></div>`;
 
-    const feld = document.getElementById('suche');
+    const $ = (id) => document.getElementById(id);
+    function aktualisieren() {
+      const p = new URLSearchParams();
+      if (f.s) p.set('s', f.s);
+      if (f.k) p.set('k', f.k);
+      if (f.z) p.set('z', f.z);
+      if (f.m.length) p.set('m', f.m.join(','));
+      if (f.o !== 'name') p.set('o', f.o);
+      history.replaceState(null, '', '#/' + (p.toString() ? '?' + p.toString() : ''));
+      const liste = filtern(f);
+      $('karten').innerHTML = liste.map(karte).join('') || '<p class="leer">Keine Rezepte gefunden. Filter lockern?</p>';
+      const aktiv = f.m.length + (f.z ? 1 : 0) + (f.o !== 'name' ? 1 : 0);
+      $('filter-zahl').textContent = aktiv || '';
+      $('treffer').textContent = (aktiv || f.s || f.k) ? liste.length + ' von ' + rezepte.length + ' Rezepten' : '';
+      document.querySelectorAll('#kat-chips .chip').forEach((c) => c.classList.toggle('aktiv', c.dataset.k === f.k));
+      document.querySelectorAll('#merkmal-chips .chip').forEach((c) => c.classList.toggle('aktiv', f.m.includes(c.dataset.m)));
+    }
     let t;
-    feld.addEventListener('input', () => {
-      clearTimeout(t);
-      t = setTimeout(() => {
-        const p = new URLSearchParams();
-        if (feld.value) p.set('s', feld.value);
-        if (kat) p.set('k', kat);
-        history.replaceState(null, '', '#/?' + p.toString());
-        const pos = feld.selectionStart;
-        zeichnen();
-        const neu = document.getElementById('suche');
-        neu.focus(); neu.setSelectionRange(pos, pos);
-      }, 200);
+    const tippen = (el, feld) => el.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { f[feld] = el.value; aktualisieren(); }, 150); });
+    tippen($('suche'), 's');
+    tippen($('zutaten'), 'z');
+    $('sortierung').addEventListener('change', (e) => { f.o = e.target.value; aktualisieren(); });
+    $('kat-chips').addEventListener('click', (e) => { const c = e.target.closest('[data-k]'); if (c) { f.k = c.dataset.k; aktualisieren(); } });
+    $('merkmal-chips').addEventListener('click', (e) => {
+      const c = e.target.closest('[data-m]'); if (!c) return;
+      f.m = f.m.includes(c.dataset.m) ? f.m.filter((x) => x !== c.dataset.m) : [...f.m, c.dataset.m];
+      aktualisieren();
     });
+    $('filter-auf').addEventListener('click', (e) => {
+      const feld = $('filter-feld'); feld.hidden = !feld.hidden;
+      e.currentTarget.setAttribute('aria-expanded', String(!feld.hidden));
+      e.currentTarget.classList.toggle('an', !feld.hidden);
+    });
+    $('filter-weg').addEventListener('click', () => {
+      f.z = ''; f.m = []; f.o = 'name'; $('zutaten').value = ''; $('sortierung').value = 'name'; aktualisieren();
+    });
+    aktualisieren();
   }
 
   function karte(r) {
@@ -177,9 +259,14 @@
         <span class="karte-meta">
           ${z ? `<span>${svg('uhr')} ${dauer(z)}</span>` : ''}
           <span>${svg('muetze')} ${esc(r.schwierigkeit || '')}</span>
-          <span>${nwZahl(Naehrwerte.berechnen(r).portion.kcal, 'kcal')}</span>
+          <span>${nwZahl(nwp(r).kcal, 'kcal')}</span>
         </span>
+        ${merkmalHTML(r)}
       </a>`;
+  }
+  function merkmalHTML(r) {
+    const m = merkmaleVon(r);
+    return m.length ? `<span class="merkmale">${m.map((x) => `<span class="merkmal m-${x.id}">${esc(x.name)}</span>`).join('')}</span>` : '';
   }
 
   // ---------------------------------------------------------------- Rezept
@@ -239,6 +326,7 @@
         </div>
 
         ${naehrwertHTML(r, personen)}
+        ${merkmalHTML(r)}
 
         <div class="r-inhalt">
           <div class="r-links">

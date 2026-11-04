@@ -216,5 +216,22 @@
     return { portion, gesamt: summe, fehlend };
   }
 
-  g.Naehrwerte = { TABELLE, berechnen, gramm };
+  /**
+   * Ernährungs-Merkmale pro Portion (Richtwerte für ein Hauptgericht).
+   * Energieanteile: Eiweiß/Kohlenhydrate 4 kcal/g, Fett 9 kcal/g.
+   */
+  const MERKMALE = [
+    { id: 'eiweiss', name: 'Eiweißreich', test: (p) => p.eiweiss >= 30 || p.eiweiss * 4 >= p.kcal * 0.2 },
+    { id: 'leicht', name: 'Leicht', test: (p) => p.kcal <= 500 },
+    { id: 'lowcarb', name: 'Low Carb', test: (p) => p.kh <= 30 },
+    { id: 'fettarm', name: 'Fettarm', test: (p) => p.fett * 9 <= p.kcal * 0.3 },
+    { id: 'ballast', name: 'Ballaststoffreich', test: (p) => p.ballast >= 10 },
+    { id: 'fettreich', name: 'Fettreich', test: (p) => p.fett * 9 >= p.kcal * 0.5 },
+  ];
+  function merkmale(rezept) {
+    const p = berechnen(rezept).portion;
+    return p.kcal ? MERKMALE.filter((m) => m.test(p)) : [];
+  }
+
+  g.Naehrwerte = { TABELLE, berechnen, gramm, MERKMALE, merkmale };
 })(globalThis);
