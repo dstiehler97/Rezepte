@@ -22,8 +22,19 @@
 
   /** [{uid, name, zusatz, label, link, sek (ursprünglich), dauer (ms, mit +1 Min.), ende (Zeitpunkt, wenn läuft),
    *    rest (ms, wenn pausiert), fertig (Zeitpunkt des Ablaufs)}] */
+  const uid = () => Math.random().toString(36).slice(2, 9);
   let timer = lesen();
-  function lesen() { try { return JSON.parse(localStorage.getItem(SCHLUESSEL)) || []; } catch (e) { return []; } }
+  /** Gespeicherte Timer – beschädigte Werte (kein Array, falsche Felder) werden verworfen statt die Seite zu stören */
+  function lesen() {
+    let l;
+    try { l = JSON.parse(localStorage.getItem(SCHLUESSEL)); } catch (e) { return []; }
+    if (!Array.isArray(l)) return [];
+    const zahl = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
+    return l.filter((t) => t && typeof t === 'object' && !Array.isArray(t) && zahl(t.sek) > 0 && (t.ende || t.rest || t.fertig))
+      .map((t) => ({ uid: String(t.uid || uid()), name: String(t.name || 'Timer'), zusatz: String(t.zusatz || ''), label: String(t.label || ''),
+        link: typeof t.link === 'string' && t.link.startsWith('#') ? t.link : '', sek: zahl(t.sek), dauer: zahl(t.dauer) || zahl(t.sek) * 1000,
+        ende: zahl(t.ende), rest: zahl(t.rest), fertig: zahl(t.fertig) }));
+  }
   function sichern() { try { localStorage.setItem(SCHLUESSEL, JSON.stringify(timer)); } catch (e) { /* privat-modus */ } }
 
   // ---------------------------------------------------------------- Erkennen
@@ -81,7 +92,6 @@
   function testen() { entsperren(); piepen(3); vibrieren(); }
 
   // ---------------------------------------------------------------- Steuern
-  const uid = () => Math.random().toString(36).slice(2, 9);
   const restMs = (t) => (t.fertig ? 0 : t.ende ? Math.max(0, t.ende - Date.now()) : t.rest);
 
   function starten({ name, zusatz, label, sek, link }) {

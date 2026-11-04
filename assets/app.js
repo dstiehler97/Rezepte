@@ -23,8 +23,10 @@
       try { localStorage.setItem('rezepte.' + k, JSON.stringify(v)); } catch (e) { /* privat-modus */ }
     },
   };
-  // Wochenplan: wer = Profil-uids (optional, sonst zählt personen), gekocht = ISO-Datum (Eintrag bleibt, ausgegraut)
-  let plan = speicher.lesen('plan', []);           // [{uid, id, personen, tag, wer?: [uid], gekocht?: 'JJJJ-MM-TT'}]
+  // Wochenplan: datum = geplanter Tag ('JJJJ-MM-TT', '' = ohne Tag), wer = Profil-uids (optional, sonst zählt personen),
+  // gekocht = ISO-Datum (Eintrag bleibt ausgegraut, nach PLAN_GEKOCHT_TAGE automatisch weg; die Koch-Historie bleibt).
+  // Ältere Stände (und Sicherungen) kannten nur den Wochentag (tag: 'Montag') → datenPruefen: Tag der laufenden Woche.
+  let plan = speicher.lesen('plan', []);           // [{uid, id, personen, datum, wer?: [uid], gekocht?: 'JJJJ-MM-TT'}]
   let abgehakt = speicher.lesen('abgehakt', {});   // {schluessel: true}
   let extras = speicher.lesen('extras', []);       // [{uid, text}]
   let liste = speicher.lesen('liste', []);         // Rezepte direkt auf der Einkaufsliste [{uid, id, personen}]
@@ -54,8 +56,34 @@
    * Zum Weiterverwenden (Favoriten, Statistik): RezeptApp.gekocht.{merken, vergessen, daten, zuletzt, alle}.
    */
   const GEKOCHT_MAX = 100;
+  const PLAN_GEKOCHT_TAGE = 14;   // gekochte Plan-Einträge bleiben so lange sichtbar (ausgegraut)
   let gekocht = speicher.lesen('gekocht', {});
-  const heuteISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+  // Kalendertage als 'JJJJ-MM-TT' (lokale Zeit); gerechnet wird mittags, damit Sommer-/Winterzeit nicht stört
+  const ISO_TAG = /^\d{4}-\d\d-\d\d$/;
+  const isoVon = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const heuteISO = () => isoVon(new Date());
+  const datumVon = (iso) => new Date(iso + 'T12:00');
+  const tagePlus = (iso, n) => { const d = datumVon(iso); d.setDate(d.getDate() + n); return isoVon(d); };
+  /** Wochentag (Index Mo = 0) und Montag der Woche eines Tages */
+  const wtIndex = (iso) => (datumVon(iso).getDay() + 6) % 7;
+  const wochenStart = (iso) => tagePlus(iso, -wtIndex(iso));
+  const wocheTage = (montag) => TAGE.map((t, i) => tagePlus(montag, i));
+  /** Kalenderwoche nach ISO 8601 */
+  function kwVon(iso) {
+    const d = datumVon(tagePlus(iso, 3 - wtIndex(iso)));   // Donnerstag derselben Woche
+    const jan4 = new Date(d.getFullYear(), 0, 4, 12);
+    return 1 + Math.round((d - jan4) / 864e5 / 7 - (3 - (jan4.getDay() + 6) % 7) / 7);
+  }
+  const monatKurz = (d) => d.toLocaleDateString('de-DE', { month: 'short' });
+  /** „KW 46 · 9.–15. Nov.“ bzw. „KW 44 · 26. Okt.–1. Nov.“ */
+  function wocheText(montag) {
+    const a = datumVon(montag), b = datumVon(tagePlus(montag, 6));
+    const spanne = a.getMonth() === b.getMonth() ? a.getDate() + '.–' + b.getDate() + '. ' + monatKurz(b)
+      : a.getDate() + '. ' + monatKurz(a) + '–' + b.getDate() + '. ' + monatKurz(b);
+    return 'KW ' + kwVon(montag) + ' · ' + spanne;
+  }
+  /** „Montag, 9. Nov.“ (kurz: „Mo, 9. Nov.“) */
+  const tagText = (iso, kurz) => datumVon(iso).toLocaleDateString('de-DE', { weekday: kurz ? 'short' : 'long', day: 'numeric', month: 'short' });
   const gekochtHilfe = {
     /** Rezept als gekocht eintragen (Standard: heute) */
     merken(id, datum) {
@@ -139,11 +167,11 @@
   const portionen = (e) => { const w = werVon(e); return w.length ? w.reduce((n, p) => n + p.faktor, 0) : e.personen; };
   const portionText = (n) => Einheiten.zahlText(Math.round(n * 4) / 4);
   const standardWer = () => profile.filter((p) => p.standard).map((p) => p.uid);
-  /** Neuer Plan-Eintrag; ohne ausdrückliche Personenzahl isst der Standard-Haushalt mit */
-  function planEintrag(id, personen, tag) {
+  /** Neuer Plan-Eintrag (datum '' = ohne Tag); ohne ausdrückliche Personenzahl isst der Standard-Haushalt mit */
+  function planEintrag(id, personen, datum) {
     const r = nachId[id];
     const wer = personen || stueckRezept(r) ? [] : standardWer();   // Gebäck nach Stück: ohne Haushalt-Portionen
-    const e = { uid: uid(), id, personen: pFuer(r, personen || r.personen || STANDARD_PERSONEN), tag: tag || '' };
+    const e = { uid: uid(), id, personen: pFuer(r, personen || stdPersonen(r)), datum: datum || '' };
     if (wer.length) { e.wer = wer; e.personen = begrenzen(portionen(e)); }
     return e;
   }
@@ -170,6 +198,16 @@
   function mengeText(r, p, kurz) {
     if (stueckRezept(r)) return Einheiten.zahlText(stueckZahl(r, p)) + ' ' + r.ergibt.einheit;
     return p + ' ' + (kurz ? 'P.' : p === 1 ? 'Person' : 'Personen');
+  }
+
+  // Standard-Personenzahl (Mehr → Haushalt): gilt für neu geöffnete Rezepte, Wochenplan und Einkauf –
+  // nicht für Backrezepte nach Stück (die starten mit einem ganzen Rezept). Nicht gesetzt = wie im Rezept.
+  const personenEinstellung = () => { const n = Number(speicher.lesen('personen', 0)); return n >= 1 && n <= 30 ? Math.round(n) : 0; };
+  const stdPersonen = (r) => (stueckRezept(r) ? (r.personen || STANDARD_PERSONEN) : personenEinstellung() || (r && r.personen) || STANDARD_PERSONEN);
+  /** Vorlesetext der Stepper-Knöpfe: „Eine Person weniger“, „6 Muffins mehr“ */
+  function stepperText(r, richtung) {
+    if (stueckRezept(r)) return Einheiten.zahlText(stueckZahl(r, pSchritt(r))) + ' ' + r.ergibt.einheit + ' ' + richtung;
+    return 'Eine Person ' + richtung;
   }
 
   function dauer(min) {
@@ -227,31 +265,51 @@
       rezepte.sort((a, b) => a.titel.localeCompare(b.titel, 'de'));
       nachId = Object.fromEntries(rezepte.map((r) => [r.id, r]));
       formenSammeln();
-      datenPruefen();
+      if (datenPruefen()) speicher.schreiben('plan', plan);   // umgestellte Einträge sofort merken (sonst nächste Woche erneut)
     });
   }
 
-  /** Gespeicherte Daten bereinigen (alte Stände, gelöschte Rezepte/Profile) */
+  /** Gespeicherte Daten bereinigen (alte Stände, gelöschte Rezepte/Profile, beschädigte Werte). true = Plan umgestellt */
   function datenPruefen() {
+    let planNeu = false;
     if (!Array.isArray(profile)) profile = [];
-    profile = profile.filter((p) => p && p.uid).map((p) => Object.assign(p, { name: String(p.name || ''), faktor: faktorBegrenzen(p.faktor) }));
-    const ok = (e) => e && nachId[e.id];
+    profile = profile.filter((p) => istObjekt(p) && p.uid && typeof p.uid === 'string')
+      .map((p) => Object.assign(p, { name: String(p.name || ''), faktor: faktorBegrenzen(p.faktor), standard: !!p.standard }));
+    const ok = (e) => istObjekt(e) && typeof e.id === 'string' && nachId[e.id];
+    const montag = wochenStart(heuteISO());
     plan = (Array.isArray(plan) ? plan : []).filter(ok).map((e) => {
-      e.uid = e.uid || uid(); e.personen = begrenzen(e.personen); e.tag = TAGE.includes(e.tag) ? e.tag : '';
+      e.uid = typeof e.uid === 'string' && e.uid ? e.uid : uid(); e.personen = begrenzen(e.personen);
+      // alter Stand: nur Wochentag → Tag der laufenden Woche (Mo–So)
+      if (!(e.datum === '' || (typeof e.datum === 'string' && ISO_TAG.test(e.datum)))) {
+        e.datum = TAGE.includes(e.tag) ? tagePlus(montag, TAGE.indexOf(e.tag)) : '';
+        planNeu = true;
+      }
+      if ('tag' in e) { delete e.tag; planNeu = true; }
+      if (e.gekocht != null && !(typeof e.gekocht === 'string' && ISO_TAG.test(e.gekocht))) delete e.gekocht;
+      if (e.wer != null && !Array.isArray(e.wer)) delete e.wer;
       if (e.wer) e.wer = e.wer.filter((u) => profile.some((p) => p.uid === u));
       if (e.wer && !e.wer.length) delete e.wer;
       if (e.wer) e.personen = begrenzen(portionen(e));   // Rückfall, falls Profile später fehlen
       return e;
     });
-    liste = (Array.isArray(liste) ? liste : []).filter(ok).map((e) => Object.assign(e, { uid: e.uid || uid(), personen: begrenzen(e.personen) }));
+    // Gekochtes nach PLAN_GEKOCHT_TAGE aus dem Plan nehmen (die Koch-Historie „gekocht“ bleibt)
+    const vorher = plan.length;
+    plan = plan.filter((e) => !e.gekocht || tageSeit(e.datum > e.gekocht ? e.datum : e.gekocht) <= PLAN_GEKOCHT_TAGE);
+    if (plan.length !== vorher) planNeu = true;
+    liste = (Array.isArray(liste) ? liste : []).filter(ok).map((e) => Object.assign(e, { uid: typeof e.uid === 'string' && e.uid ? e.uid : uid(), personen: begrenzen(e.personen) }));
     if (ladenfolge && !Array.isArray(ladenfolge)) ladenfolge = null;
+    if (ladenfolge) ladenfolge = ladenfolge.filter((k) => typeof k === 'string');
     if (!istObjekt(gekocht)) gekocht = {};
     gekocht = Object.fromEntries(Object.entries(gekocht).filter(([, l]) => Array.isArray(l))
-      .map(([id, l]) => [id, l.filter((d) => /^\d{4}-\d\d-\d\d$/.test(d)).sort()]).filter(([, l]) => l.length));
+      .map(([id, l]) => [id, l.filter((d) => typeof d === 'string' && ISO_TAG.test(d)).sort()]).filter(([, l]) => l.length));
     if (!istObjekt(abgehakt)) abgehakt = {};
     if (!istObjekt(kochen)) kochen = {};
-    extras = (Array.isArray(extras) ? extras : []).filter((x) => x && typeof x.text === 'string');
-    zuhause = (Array.isArray(zuhause) ? zuhause : []).filter((x) => x && typeof x.name === 'string').map((x) => Object.assign(x, { uid: x.uid || uid() }));
+    kochen = Object.fromEntries(Object.entries(kochen).filter(([, st]) => istObjekt(st)).map(([id, st]) => [id, {
+      s: Math.max(1, Math.round(Number(st.s)) || 1), p: Math.max(0, Math.round(Number(st.p)) || 0),
+      haken: istObjekt(st.haken) ? st.haken : {}, zeit: Number(st.zeit) || 0 }]));
+    extras = (Array.isArray(extras) ? extras : []).filter((x) => istObjekt(x) && typeof x.text === 'string')
+      .map((x) => Object.assign(x, { uid: typeof x.uid === 'string' && x.uid ? x.uid : uid() }));
+    zuhause = (Array.isArray(zuhause) ? zuhause : []).filter((x) => istObjekt(x) && typeof x.name === 'string').map((x) => Object.assign(x, { uid: x.uid || uid() }));
     // Persönliches: nur gültige Werte; Einträge gelöschter Rezepte weg (nicht, solange eine Rezeptdatei fehlt)
     const gibts = (id) => typeof id === 'string' && (!!nachId[id] || ladefehler.length > 0);
     favoriten = [...new Set((Array.isArray(favoriten) ? favoriten : []).filter(gibts))];
@@ -259,6 +317,13 @@
       .map(([id, v]) => [id, wert(v)]).filter(([id, v]) => gibts(id) && v != null));
     bewertung = pruefen(bewertung, (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 5 ? n : null; });
     notizen = pruefen(notizen, (v) => (typeof v === 'string' && v.trim() ? v.slice(0, NOTIZ_MAX) : null));
+    // Wochenvorschlag: Wünsche und Verlauf (beschädigt → Standard)
+    const vs = speicher.lesen('vorschlag', null);
+    if (vs != null) {
+      const sauber = vsBereinigen(vs);
+      if (JSON.stringify(sauber) !== JSON.stringify(vs)) speicher.schreiben('vorschlag', sauber);
+    }
+    return planNeu;
   }
   const istObjekt = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
   /** Alles neu aus localStorage lesen (anderer Tab, Sicherung geladen) */
@@ -391,8 +456,9 @@
     if (teile[0] === 'rezept' && nachId[teile[1]]) {
       const r = nachId[teile[1]];
       if (obenStarten || reiterStand.id !== r.id) Object.assign(reiterStand, { id: r.id, reiter: 'zutaten' });   // neuer Besuch: Zutaten
-      seiteRezept(r, pFuer(r, q.get('p') || r.personen || STANDARD_PERSONEN), q.has('p'));
+      seiteRezept(r, pFuer(r, q.get('p') || stdPersonen(r)), q.has('p'));
     } else if (teile[0] === 'kochen' && nachId[teile[1]]) seiteKochen(nachId[teile[1]], q);
+    else if (teile[0] === 'rezept' || teile[0] === 'kochen') { document.body.dataset.seite = 'fehlt'; seiteNichtGefunden(teile[1]); }
     else if (teile[0] === 'plan') seitePlan();
     else if (teile[0] === 'einkauf') seiteEinkauf();
     else if (teile[0] === 'zuhause') seiteZuhause();
@@ -409,12 +475,35 @@
     kopfleisteBinden();
     abstaendeMessen();
     if (neueSeite) seiteEinblenden();
+    zuletztGezeichnet = { pfad: gezeichnet, hash: location.hash };
     if (nachDemZeichnen) { const f = nachDemZeichnen; nachDemZeichnen = null; f(); }
+    else vorwocheFragen();
+  }
+  let zuletztGezeichnet = { pfad: '', hash: '' };    // vorige Seite (Kochmodus: kam man vom Rezept?)
+
+  /** #/rezept/<unbekannt>: freundliche Seite statt stillem Sprung */
+  function seiteNichtGefunden(id) {
+    document.title = 'Rezept nicht gefunden – Rezepte';
+    app.innerHTML = `
+      <section class="nicht-gefunden">
+        <span class="ng-icon" aria-hidden="true">${svg('buch')}</span>
+        <h1>Rezept nicht gefunden</h1>
+        <p class="hinweis">${ladefehler.length ? 'Einige Rezeptdateien konnten nicht geladen werden – vielleicht fehlt die Verbindung. '
+          : 'Dieses Rezept gibt es (nicht mehr) – vielleicht wurde es umbenannt. '}${id ? `<span class="klein">(${esc(id)})</span>` : ''}</p>
+        <div class="ng-knoepfe">
+          <a class="knopf haupt" href="#/rezepte">${svg('buch')} <span>Alle Rezepte</span></a>
+          <a class="knopf" href="#/">Zur Startseite</a>
+        </div>
+      </section>`;
   }
   let nachDemZeichnen = null;   // einmalig nach dem nächsten Zeichnen (z. B. Dialog nach Seitenwechsel)
 
-  /** Alle Rezepte, deren Zutaten auf die Einkaufsliste kommen: Wochenplan (ohne schon gekochte) + direkt hinzugefügte */
-  const planOffen = () => plan.filter((e) => !e.gekocht);
+  /**
+   * Offene Plan-Einträge: nicht gekocht und ab heute geplant oder ohne Tag. Vergangene, nicht gekochte zählen nicht
+   * (weder Zähler noch Einkaufsliste) – das Blatt „Aus der Vorwoche“ fragt, ob sie übernommen werden.
+   */
+  const planOffen = () => { const h = heuteISO(); return plan.filter((e) => !e.gekocht && (!e.datum || e.datum >= h)); };
+  /** Alle Rezepte, deren Zutaten auf die Einkaufsliste kommen: offene Plan-Einträge + direkt hinzugefügte */
   const fuerEinkauf = () => [...planOffen(), ...liste];
   function zaehlerAktualisieren() {
     document.querySelectorAll('[data-zahl="plan"]').forEach((el) => { el.textContent = planOffen().length || ''; });
@@ -566,7 +655,7 @@
         <div class="filter">
           <div class="such-zeile">
             <label class="suchfeld">${svg('suche')}
-              <input id="suche" type="search" placeholder="Suchen: Titel, Zutat, Tag …" value="${esc(f.s)}" autocomplete="off" enterkeyhint="search" aria-label="Rezepte durchsuchen">
+              <input id="suche" type="search" placeholder="Rezept oder Zutat suchen" value="${esc(f.s)}" autocomplete="off" enterkeyhint="search" aria-label="Rezepte durchsuchen">
             </label>
             <button type="button" class="knopf filter-knopf" id="filter-auf" aria-haspopup="dialog" aria-label="Sortieren und filtern">${svg('filter')} <span>Filter</span><span class="zahl" id="filter-zahl"></span></button>
             <button type="button" class="knopf icon-knopf wuerfel-knopf" id="wuerfel" aria-label="Was koche ich heute? Zufallsrezept" title="Was koche ich heute?">${svg('wuerfel')}</button>
@@ -705,12 +794,10 @@
   }
   /** Nächste geplante (offene) Gerichte nach heute, höchstens n; danach solche ohne Tag */
   function naechsteGeplant(n) {
-    const i = TAGE.indexOf(heuteTag()), l = [];
-    for (let d = 1; d < 7; d++) {
-      const tag = TAGE[(i + d) % 7];
-      planOffen().filter((e) => e.tag === tag).forEach((e) => l.push({ e, wann: d === 1 ? 'Morgen' : tag }));
-    }
-    planOffen().filter((e) => !e.tag).forEach((e) => l.push({ e, wann: 'Ohne Tag' }));
+    const h = heuteISO(), morgen = tagePlus(h, 1);
+    const wann = (d) => (d === morgen ? 'Morgen' : tageSeit(d) > -7 ? TAGE[wtIndex(d)] : tagText(d, true));
+    const l = planOffen().filter((e) => e.datum > h).sort((a, b) => a.datum.localeCompare(b.datum)).map((e) => ({ e, wann: wann(e.datum) }));
+    planOffen().filter((e) => !e.datum).forEach((e) => l.push({ e, wann: 'Ohne Tag' }));
     return l.slice(0, n);
   }
   /** Offene Posten auf der Einkaufsliste (wie „offen“ auf der Einkaufsseite) */
@@ -749,9 +836,9 @@
     const jetzt = new Date(), std = jetzt.getHours();
     const gruss = std < 5 ? 'Hallo' : std < 11 ? 'Guten Morgen' : std < 18 ? 'Guten Tag' : 'Guten Abend';
     const datum = jetzt.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-    const heute = heuteTag();
-    const geplant = plan.filter((e) => e.tag === heute && !e.gekocht);
-    const erledigt = plan.filter((e) => e.tag === heute && e.gekocht);
+    const heute = heuteISO();
+    const geplant = plan.filter((e) => e.datum === heute && !e.gekocht);
+    const erledigt = plan.filter((e) => e.datum === heute && e.gekocht);
     const naechste = naechsteGeplant(3);
     const weiter = laufendesKochen();
     const offen = einkaufOffen();
@@ -762,7 +849,7 @@
       const st = kochStand(r.id), fortsetzen = kochFrisch(st) && st.s > 1;
       return `
         <article class="heute-gericht" data-uid="${e.uid}">
-          ${r.bild ? `<a class="hg-bild" href="#/rezept/${esc(r.id)}?p=${p}" tabindex="-1" aria-hidden="true">${bildHTML(r, 'auswahl', 'sizes="(min-width: 721px) 520px, 100vw"')}</a>` : ''}
+          ${r.bild ? `<a class="hg-bild" href="#/rezept/${esc(r.id)}?p=${p}" tabindex="-1" aria-hidden="true">${bildHTML(r, 'auswahl', 'sizes="(min-width: 721px) and (min-height: 501px) 520px, 100vw"')}</a>` : ''}
           <div class="hg-text">
             <span class="karte-kat">${esc(r.kategorie || '')}</span>
             <h3><a href="#/rezept/${esc(r.id)}?p=${p}">${esc(r.titel)}</a></h3>
@@ -781,6 +868,7 @@
           <p class="heute-gruss">${gruss}</p>
           <h1>${esc(datum)}</h1>
         </header>
+        <button type="button" class="suchfeld heute-suche" id="heute-suche">${svg('suche')}<span>Rezept oder Zutat suchen</span></button>
         ${ladefehler.length ? `<p class="hinweis fehler">Nicht geladen: ${ladefehler.map(esc).join(', ')} – Datei in /rezepte prüfen.</p>` : ''}
 
         ${weiter ? `
@@ -823,13 +911,14 @@
 
         ${reihen.map((x) => `
         <section class="heute-abschnitt reihe reihe-${x.id}" aria-labelledby="h-${x.id}">
-          <div class="reihe-kopf"><h2 id="h-${x.id}">${esc(x.titel)}</h2><a class="reihe-alle" href="${esc(x.alle)}" aria-label="Alle: ${esc(x.titel)}">Alle</a></div>
-          <ul class="reihe-liste">${x.liste.slice(0, REIHE_MAX).map((r) => miniKarte(r, x.info(r))).join('')}</ul>
+          <div class="reihe-kopf"><h2 id="h-${x.id}">${esc(x.titel)}</h2>
+            <span class="reihe-pfeile" aria-hidden="true"><button type="button" class="knopf leise icon-knopf" data-reihe="-1" tabindex="-1" title="Zurück">${svg('zurueck')}</button><button type="button" class="knopf leise icon-knopf" data-reihe="1" tabindex="-1" title="Weiter">${svg('vor')}</button></span>
+            <a class="reihe-alle" href="${esc(x.alle)}" aria-label="Alle: ${esc(x.titel)}">Alle</a></div>
+          <div class="reihe-rahmen"><ul class="reihe-liste">${x.liste.slice(0, REIHE_MAX).map((r) => miniKarte(r, x.info(r))).join('')}</ul></div>
         </section>`).join('')}
         ${!favoriten.length && !Object.keys(gekocht).length ? `<p class="klein heute-tipp">Tipp: Mit ${svg('herz')} im Rezept merkst du dir Favoriten – sie erscheinen dann hier.</p>` : ''}
 
         <section class="heute-abschnitt heute-suchen">
-          <button type="button" class="suchfeld heute-suche" id="heute-suche">${svg('suche')}<span>Suchen: Titel, Zutat, Tag …</span></button>
           <a class="knopf heute-alle" href="#/rezepte">${svg('buch')} <span>Alle Rezepte (${rezepte.length})</span>${svg('vor')}</a>
         </section>
       </section>`;
@@ -840,11 +929,44 @@
       const e = plan.find((x) => x.uid === k.dataset.gekochtUid);
       if (e) kochenAbschliessen(nachId[e.id], e);
     }));
+    reihenBinden();
     // Suche: Liste im selben Tipp öffnen und fokussieren (sonst öffnet iOS die Tastatur nicht)
     document.getElementById('heute-suche').addEventListener('click', () => {
       sofortOeffnen('#/rezepte');
       const s = document.getElementById('suche');
       if (s) s.focus();
+    });
+  }
+
+  /**
+   * Wischbare Reihen am PC: Pfeil-Knöpfe ‹ ›, Verlauf am Rand (CSS: .reihe-rahmen.links/.rechts) und Mausrad
+   * (senkrecht → waagerecht, nur solange die Reihe in diese Richtung noch scrollen kann).
+   */
+  function reihenBinden() {
+    app.querySelectorAll('.reihe').forEach((abschnitt) => {
+      const l = abschnitt.querySelector('.reihe-liste'), rahmen = abschnitt.querySelector('.reihe-rahmen');
+      const knoepfe = abschnitt.querySelectorAll('[data-reihe]');
+      const stand = () => {
+        const max = l.scrollWidth - l.clientWidth - 2;
+        rahmen.classList.toggle('links', l.scrollLeft > 2);
+        rahmen.classList.toggle('rechts', l.scrollLeft < max);
+        knoepfe[0].disabled = l.scrollLeft <= 2;
+        knoepfe[1].disabled = l.scrollLeft >= max;
+        abschnitt.classList.toggle('scrollbar', max > 0);
+      };
+      knoepfe.forEach((k) => k.addEventListener('click', () => {
+        l.scrollBy({ left: Number(k.dataset.reihe) * Math.max(160, l.clientWidth * 0.8), behavior: wenigBewegung() ? 'auto' : 'smooth' });
+      }));
+      l.addEventListener('scroll', stand, { passive: true });
+      l.addEventListener('wheel', (e) => {
+        if (e.ctrlKey || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;   // waagerecht/Trackpad: Browser macht das selbst
+        const max = l.scrollWidth - l.clientWidth;
+        if ((e.deltaY > 0 && l.scrollLeft >= max - 1) || (e.deltaY < 0 && l.scrollLeft <= 0)) return;   // am Ende: Seite scrollt weiter
+        e.preventDefault();
+        l.scrollLeft += e.deltaY * (e.deltaMode === 1 ? 32 : 1);
+      }, { passive: false });
+      stand();
+      requestAnimationFrame(stand);   // nach dem Laden der Bildgrößen
     });
   }
 
@@ -940,7 +1062,7 @@
     const b = blattAuf('Was koche ich heute?', { klasse: 'wf-blatt' });
     function zeigen() {
       const treffer = trefferHolen(), r = wuerfeln(treffer), z = gesamtzeit(r.zeit), t = tageSeitGekocht(r.id);
-      const personen = stueckRezept(r) ? r.personen : begrenzen(standardWer().length ? portionen({ wer: standardWer() }) : r.personen || STANDARD_PERSONEN);
+      const personen = stueckRezept(r) ? r.personen : begrenzen(standardWer().length ? portionen({ wer: standardWer() }) : stdPersonen(r));
       const info = [z ? svg('uhr') + ' ' + dauer(z) : '', kcalText(r),
         zuhause.length ? (fehlend(r) ? 'fehlt: ' + fehlend(r) : 'alles da') : ''].filter(Boolean);
       const ich = [istFavorit(r.id) ? svg('herz', 'voll') + ' Favorit' : '', sterneVon(r.id) ? '★ ' + sterneVon(r.id) : '',
@@ -1009,6 +1131,7 @@
               ${interaktiv ? favKnopfHTML(r) : ''}
             </div>
             <h1>${esc(r.titel)}</h1>
+            ${interaktiv ? nwKurzHTML(r) : ''}
             ${r.beschreibung ? `<p class="r-beschreibung">${esc(r.beschreibung)}</p>` : ''}
             ${interaktiv ? sterneHTML(r) : ''}
             ${interaktiv ? kochKnopfHTML(r, personen) : ''}
@@ -1021,9 +1144,9 @@
             ${svg('personen')}
             ${interaktiv ? `
               <span class="stepper nur-bildschirm">
-                <button type="button" data-p="${personen - sch}" aria-label="Weniger" ${personen <= sch ? 'disabled' : ''}>${svg('minus')}</button>
+                <button type="button" data-p="${personen - sch}" aria-label="${esc(stepperText(r, 'weniger'))}" ${personen <= sch ? 'disabled' : ''}>${svg('minus')}</button>
                 <strong>${anzahl}</strong>
-                <button type="button" data-p="${personen + sch}" aria-label="Mehr" ${personen + sch > 30 ? 'disabled' : ''}>${svg('plus')}</button>
+                <button type="button" data-p="${personen + sch}" aria-label="${esc(stepperText(r, 'mehr'))}" ${personen + sch > 30 ? 'disabled' : ''}>${svg('plus')}</button>
               </span>
               <span class="nur-druck"><strong>${anzahl}</strong></span>` : `<strong>${anzahl}</strong>`}
             <span>${einheitWort}</span>
@@ -1036,7 +1159,6 @@
         </div>
 
         ${naehrwertHTML(r, personen)}
-        ${interaktiv ? nwKurzHTML(r) : ''}
         ${merkmalHTML(r)}
         ${interaktiv ? reiterHTML() : ''}
 
@@ -1069,10 +1191,10 @@
       ${REITER.map(([id, name]) => `<button type="button" role="tab" class="r-reiter-knopf" data-reiter-knopf="${id}" aria-selected="false">${name}</button>`).join('')}
       <span class="r-reiter-strich" aria-hidden="true"></span>
     </nav>`;
-  /** Nährwerte in einer Zeile für den Kopf am Handy (Details im Reiter „Zutaten“) */
+  /** Nährwerte in einer Zeile unter Titel/Beschreibung am Handy: kcal · E · KH · F (Details im Reiter „Zutaten“) */
   function nwKurzHTML(r) {
     const p = nwp(r);
-    return `<p class="r-nw-kurz nur-bildschirm"><strong>${nwZahl(p.kcal, 'kcal')}</strong><span>${nwZahl(p.eiweiss, 'g')} Eiweiß</span><span>${nwZahl(p.kh, 'g')} KH</span><span>${nwZahl(p.fett, 'g')} Fett</span><small>${proText(r)}</small></p>`;
+    return `<p class="r-nw-kurz nur-bildschirm"><strong>${nwZahl(p.kcal, 'kcal')}</strong><span><span aria-hidden="true">E </span><span class="nur-sr">Eiweiß </span>${nwZahl(p.eiweiss, 'g')}</span><span><span aria-hidden="true">KH </span><span class="nur-sr">Kohlenhydrate </span>${nwZahl(p.kh, 'g')}</span><span><span aria-hidden="true">F </span><span class="nur-sr">Fett </span>${nwZahl(p.fett, 'g')}</span><small>${proText(r)}</small></p>`;
   }
   /** „Zuletzt gekocht“ und „Gekocht“-Knopf im Reiter „Notizen“ (am PC stehen sie im Kopf) */
   function verlaufHTML(r) {
@@ -1204,7 +1326,7 @@
     }, { passive: true });
 
     app.querySelectorAll('.stepper button').forEach((b) => b.addEventListener('click', () => {
-      notizenJetzt();
+      if (verlassen) { verlassen(); verlassen = null; }   // Notizen speichern, Scroll-Beobachter der alten Leiste lösen
       adresseSetzen('#/rezept/' + r.id + '?p=' + pFuer(r, b.dataset.p));
       seiteRezept(r, pFuer(r, b.dataset.p), true);
       Timer.markieren();
@@ -1238,7 +1360,8 @@
       notizFeld.closest('.r-notizen').classList.toggle('ohne-notiz', !text);
       notizFeld.parentElement.querySelector('.r-notiz-text').textContent = notizFeld.value;
     });
-    verlassen = notizenJetzt;
+    const aktionAus = aktionsleisteBinden();
+    verlassen = () => { notizenJetzt(); aktionAus(); };
     document.getElementById('zum-plan').addEventListener('click', (e) => {
       // Personenzahl selbst gewählt → so übernehmen, sonst isst der Standard-Haushalt mit (falls angelegt)
       const k = e.currentTarget;
@@ -1247,6 +1370,34 @@
     app.querySelectorAll('[data-zur-liste]').forEach((k) => k.addEventListener('click', () => {
       aufListe(r, personen, () => app.querySelectorAll('[data-zur-liste]').forEach((x) => { x.innerHTML = svg('haken') + ' <span>Auf der Liste</span>'; }));
     }));
+  }
+
+  /**
+   * Feste Aktionsleiste am Handy (Jetzt kochen / Einkaufsliste): beim Herunterscrollen ausblenden, beim Hochscrollen
+   * und am Seitenende wieder zeigen. --aktion-h folgt (Meldungen rücken nach), --aktion-platz bleibt (kein Springen
+   * der Seitenhöhe). Mit „Bewegung reduzieren“ ohne Animation (CSS). Rückgabe: Aufräumen beim Verlassen.
+   */
+  function aktionsleisteBinden() {
+    const leiste = app.querySelector('.r-aktion');
+    if (!leiste) return () => {};
+    let letzteY = window.scrollY, weg = 0, hoch = 0;
+    const setzen = (aus) => {
+      if (leiste.classList.contains('weg') === aus) return;
+      leiste.classList.toggle('weg', aus);
+      leiste.toggleAttribute('inert', aus);
+      document.documentElement.style.setProperty('--aktion-h', (aus ? 0 : leiste.getBoundingClientRect().height) + 'px');
+    };
+    const scroll = () => {
+      if (!leiste.isConnected || blatt || getComputedStyle(leiste).display === 'none') return;
+      const y = window.scrollY, d = y - letzteY;
+      letzteY = y;
+      const amEnde = y + innerHeight >= document.documentElement.scrollHeight - 64;
+      if (y < 120 || amEnde) { weg = hoch = 0; setzen(false); return; }
+      if (d > 0) { weg += d; hoch = 0; if (weg > 32) setzen(true); }
+      else if (d < 0) { hoch -= d; weg = 0; if (hoch > 24) setzen(false); }
+    };
+    window.addEventListener('scroll', scroll, { passive: true });
+    return () => { window.removeEventListener('scroll', scroll); };
   }
 
   // ---------------------------------------------------------------- Kein doppeltes Hinzufügen
@@ -1281,37 +1432,27 @@
     });
   }
   /**
-   * Rezept in den Wochenplan (tag '' = ohne Tag). Steht es dort am selben Tag schon offen: Rückfrage mit Tageswahl
+   * Rezept in den Wochenplan (datum '' = ohne Tag). Steht es dort am selben Tag schon offen: Rückfrage mit Tageswahl
    * (an anderen Tagen ist dasselbe Rezept erlaubt). fertig(eintrag) nach dem Einplanen; still = ohne Meldung.
    */
-  function einplanen(id, personen, tag, fertig, still) {
+  function einplanen(id, personen, datum, fertig, still) {
     const r = nachId[id];
-    const amTag = (t) => plan.filter((e) => e.id === id && !e.gekocht && (e.tag || '') === t);
-    const hinzu = (t) => {
-      const e = planEintrag(id, personen, t);
+    datum = datum || '';
+    const amTag = (d) => plan.filter((e) => e.id === id && !e.gekocht && (e.datum || '') === d);
+    const hinzu = (d) => {
+      const e = planEintrag(id, personen, d);
       plan.push(e);
       sichern(); zaehlerAktualisieren();
       if (fertig) fertig(e);
-      if (!still) melden(r.titel + ' für ' + portionenHTML(e, true).replace(/<[^>]+>/g, '') + ' eingeplant' + (t ? ' (' + t + ')' : ''), '#/plan', 'Plan');
+      if (!still) melden(r.titel + ' für ' + portionenHTML(e, true).replace(/<[^>]+>/g, '') + ' eingeplant' + (d ? ' (' + tagText(d, true) + ')' : ''), '#/plan', 'Plan');
     };
-    if (!amTag(tag || '').length) { hinzu(tag || ''); return; }
-    const daten = wocheDaten(), heute = heuteTag();
-    const schon = amTag(tag || '')[0];
-    const b = blattAuf('Schon im Wochenplan', { klasse: 'tag-blatt' });
-    b.zeigen(`
-      <p class="klein"><strong>${esc(r.titel)}</strong> steht schon im Plan (${esc(tag || 'ohne Tag')}, ${portionenHTML(schon, true)}).
-        An welchem Tag zusätzlich einplanen?</p>
-      <div class="tag-wahl">${[...TAGE, ''].map((t, i) => {
-        const n = amTag(t).length;
-        const unter = [t ? daten[i].toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }) : 'noch offen', t === heute ? 'heute' : '', n ? 'schon geplant' : ''].filter(Boolean).join(' · ');
-        return `<button type="button" class="knopf tag-knopf${n ? ' schon' : ''}" data-tag-wahl="${t}"><strong>${t || 'Ohne Tag'}</strong><small>${esc(unter)}</small></button>`;
-      }).join('')}</div>`,
-    '<button type="button" class="knopf leise" data-blatt-zu>Abbrechen</button>');
-    b.el.addEventListener('click', (ev) => {
-      const k = ev.target.closest('[data-tag-wahl]');
-      if (!k) return;
-      b.schliessen();
-      hinzu(k.dataset.tagWahl);
+    if (!amTag(datum).length) { hinzu(datum); return; }
+    const schon = amTag(datum)[0];
+    tagBlatt({
+      titel: 'Schon im Wochenplan', woche: datum ? wochenStart(datum) : angezeigteWoche(),
+      text: `<p class="klein"><strong>${esc(r.titel)}</strong> steht schon im Plan (${esc(datum ? tagText(datum) : 'ohne Tag')}, ${portionenHTML(schon, true)}).
+        An welchem Tag zusätzlich einplanen?</p>`,
+      zaehlen: (d) => amTag(d).length, schon: 'schon geplant', waehlen: hinzu,
     });
   }
 
@@ -1392,6 +1533,21 @@
     html: () => `<button type="button" class="knopf">${profile.length ? 'Ändern' : 'Anlegen'}</button>`,
     binden: (zeile) => zeile.querySelector('button').addEventListener('click', haushaltBlatt),
   });
+  mehrEintrag('haushalt', {
+    id: 'personen', titel: 'Standard-Personenzahl', icon: 'personen',
+    text: 'Für neu geöffnete Rezepte, Wochenplan und Einkauf (Backrezepte nach Stück ausgenommen)',
+    html: () => { const n = personenEinstellung() || STANDARD_PERSONEN; return stepperHTML('std-personen', n, n > 1, n < 12, 'Standard-Personenzahl'); },
+    binden: (zeile) => zeile.addEventListener('click', (e) => {
+      const k = e.target.closest('[data-stepper] button');
+      if (!k) return;
+      const n = Math.min(12, Math.max(1, (personenEinstellung() || STANDARD_PERSONEN) + Number(k.dataset.d)));
+      speicher.schreiben('personen', n);
+      const steuer = zeile.querySelector('.mehr-steuer');
+      steuer.innerHTML = stepperHTML('std-personen', n, n > 1, n < 12, 'Standard-Personenzahl');
+      const neu = steuer.querySelector(`[data-d="${k.dataset.d}"]`);
+      (neu && !neu.disabled ? neu : steuer.querySelector('button:not(:disabled)')).focus();
+    }),
+  });
 
   // ---------------------------------------------------------------- Darstellung (hell / dunkel)
   // speicher 'darstellung' = 'auto' | 'hell' | 'dunkel'; angewendet vom kleinen Script im <head> (index.html)
@@ -1413,7 +1569,7 @@
   // Sicherung = JSON mit allen localStorage-Schlüsseln 'rezepte.*' (ohne laufende Timer und das Sicherungsdatum).
   // speicher 'sicherung' = {zuletzt: 'JJJJ-MM-TT' | undefined, seit: erster Start mit dieser Funktion}
   const SICHERUNG_VERSION = 1;
-  const NICHT_SICHERN = ['rezepte.timer', 'rezepte.sicherung'];
+  const NICHT_SICHERN = ['rezepte.timer', 'rezepte.sicherung', 'rezepte.planHinweis'];
   const SICHERUNG_ERINNERN_TAGE = 30;
   const sicherungStand = () => { const v = speicher.lesen('sicherung', {}); return istObjekt(v) ? v : {}; };
   if (!sicherungStand().seit) speicher.schreiben('sicherung', Object.assign(sicherungStand(), { seit: heuteISO() }));
@@ -1457,7 +1613,7 @@
 
   /** Text einer Sicherungsdatei prüfen → {daten, erstellt, verworfen}; wirft Error mit verständlicher Meldung */
   const SICHERUNG_TYPEN = { plan: 'liste', liste: 'liste', extras: 'liste', zuhause: 'liste', profile: 'liste', favoriten: 'liste',
-    abgehakt: 'objekt', gekocht: 'objekt', bewertung: 'objekt', notizen: 'objekt', kochen: 'objekt', vorschlag: 'objekt' };
+    abgehakt: 'objekt', gekocht: 'objekt', bewertung: 'objekt', notizen: 'objekt', kochen: 'objekt', vorschlag: 'objekt', personen: 'zahl' };
   function sicherungPruefen(text) {
     let j;
     try { j = JSON.parse(text); } catch (e) { throw new Error('Die Datei lässt sich nicht lesen – ist es wirklich eine Sicherung (.json) dieser App?'); }
@@ -1468,7 +1624,7 @@
     for (const [k, v] of Object.entries(j.daten)) {
       if (!k.startsWith('rezepte.') || NICHT_SICHERN.includes(k)) continue;
       const typ = SICHERUNG_TYPEN[k.slice(8)];
-      if ((typ === 'liste' && !Array.isArray(v)) || (typ === 'objekt' && !istObjekt(v))) { verworfen++; continue; }
+      if ((typ === 'liste' && !Array.isArray(v)) || (typ === 'objekt' && !istObjekt(v)) || (typ === 'zahl' && typeof v !== 'number')) { verworfen++; continue; }
       daten[k] = v;
     }
     if (!Object.keys(daten).length) throw new Error('Die Sicherung enthält keine Daten.');
@@ -1482,7 +1638,7 @@
       ['Zuhause', n('zuhause')], ['Favoriten', n('favoriten')], ['Bewertungen', n('bewertung')], ['Notizen', n('notizen')],
       ['gekocht', gk, '×'], ['Haushalt', n('profile'), n('profile') === 1 ? ' Person' : ' Personen']]
       .filter((t) => t[1]).map(([name, zahl, einheit]) => name + ' ' + zahl + (einheit || ''));
-    if (d['rezepte.ladenfolge'] || d['rezepte.darstellung']) teile.push('Einstellungen');
+    if (d['rezepte.ladenfolge'] || d['rezepte.darstellung'] || d['rezepte.personen']) teile.push('Einstellungen');
     return teile.length ? teile : ['keine eigenen Daten'];
   }
 
@@ -1494,7 +1650,8 @@
   };
   const ergaenzen = (a, b) => Object.assign({}, istObjekt(b) ? b : {}, istObjekt(a) ? a : {});
   const ZUSAMMEN = {
-    plan: (a, b) => vereinigen(a, b, (e) => e && e.uid, (e) => e && [e.id, e.tag, e.gekocht || ''].join('|')),
+    // alte Sicherungen kennen nur den Wochentag: zum Vergleichen wie in datenPruefen auf ein Datum der laufenden Woche legen
+    plan: (a, b) => vereinigen(a, b, (e) => e && e.uid, (e) => e && [e.id, planDatum(e), e.gekocht || ''].join('|')),
     liste: (a, b) => vereinigen(a, b, (e) => e && e.uid, (e) => e && e.id + '|' + e.personen),
     extras: (a, b) => vereinigen(a, b, (x) => x && x.uid, (x) => x && Zutaten.normal(x.text)),
     zuhause: (a, b) => vereinigen(a, b, (x) => x && Zutaten.normal(x.name)),
@@ -1518,9 +1675,14 @@
     vorschlag: (a, b) => {
       a = istObjekt(a) ? a : {}; b = istObjekt(b) ? b : {};
       const verlauf = vereinigen(a.verlauf, b.verlauf, (x) => x && x.id + '|' + x.datum).sort((x, y) => String(x.datum).localeCompare(String(y.datum)));
-      return { wuensche: a.wuensche || b.wuensche || {}, verlauf: verlauf.slice(-VS_VERLAUF_MAX) };
+      return vsBereinigen({ wuensche: istObjekt(a.wuensche) ? a.wuensche : b.wuensche, verlauf: verlauf.slice(-VS_VERLAUF_MAX) });
     },
   };
+  /** Datum eines Plan-Eintrags, auch aus altem Stand (tag: 'Montag' → Tag der laufenden Woche) */
+  function planDatum(e) {
+    if (e.datum === '' || (typeof e.datum === 'string' && ISO_TAG.test(e.datum))) return e.datum;
+    return TAGE.includes(e.tag) ? tagePlus(wochenStart(heuteISO()), TAGE.indexOf(e.tag)) : '';
+  }
   function zusammenfuehren(alt, neu) {
     const d = Object.assign({}, alt);
     for (const [k, v] of Object.entries(neu)) {
@@ -1769,10 +1931,10 @@
     return `
       <div class="koch-zeile nur-bildschirm">
         <a class="knopf haupt koch-knopf" href="${k.href}">${svg('topf')} <span>${k.weiter ? 'Weiterkochen' : 'Jetzt kochen'}</span></a>
-        <span class="klein">${k.weiter ? `bei Schritt ${k.s} von ${k.n}` : `Schritt für Schritt · ${k.n} Schritte · Bildschirm bleibt an`}</span>
-        <span class="koch-gekocht">
+        <button type="button" class="knopf koch-gekocht-knopf" data-gekocht-knopf title="Als gekocht merken, Verbrauchtes aus „Zuhause“ nehmen">${svg('haken')} Gekocht</button>
+        <span class="koch-info">
+          <span class="klein">${k.weiter ? `bei Schritt ${k.s} von ${k.n}` : `Schritt für Schritt · ${k.n} Schritte · Bildschirm bleibt an`}</span>
           ${zuletzt ? `<button type="button" class="link-knopf klein gekocht-verlauf" data-gekocht-verlauf title="Koch-Verlauf ansehen">Zuletzt gekocht: ${vorText(tageSeit(zuletzt))} · ${oft}× gekocht</button>` : ''}
-          <button type="button" class="knopf leise" data-gekocht-knopf title="Als gekocht merken, Verbrauchtes aus „Zuhause“ nehmen">${svg('haken')} Gekocht</button>
         </span>
       </div>`;
   }
@@ -1791,7 +1953,7 @@
     const alt = kochStand(r.id);
     const frisch = kochFrisch(alt);
     const stand = {
-      p: pFuer(r, q.get('p') || (frisch && alt.p) || r.personen || STANDARD_PERSONEN),
+      p: pFuer(r, q.get('p') || (frisch && alt.p) || stdPersonen(r)),
       s: Math.min(schritte.length, Math.max(1, Math.round(Number(q.get('s'))) || (frisch && alt.s) || 1)),
       haken: frisch ? alt.haken || {} : {},
     };
@@ -1799,6 +1961,9 @@
     const zutatenAlle = (r.zutaten || []).map((z, i) => ({ z, i }));
     const anzahlZutaten = zutatenAlle.filter((x) => !x.z.abschnitt).length;
     const zurueck = () => '#/rezept/' + r.id + '?p=' + stand.p;
+    // Kam man vom Rezept (Link „Jetzt kochen“), führt Schließen/Fertig per history.back() dorthin zurück – sonst ersetzt
+    // das Rezept den Kochmodus im Verlauf. So landet Browser-Zurück danach nie wieder im Kochmodus.
+    const vomRezept = zuletztGezeichnet.pfad === '#/rezept/' + r.id;
     document.title = 'Kochen: ' + r.titel + ' – Rezepte';
 
     app.innerHTML = `
@@ -1834,12 +1999,14 @@
       const zut = zuSchritt[stand.s - 1];
       $('km-buehne').innerHTML = `
         <div class="km-schritt${richtung ? ' km-' + richtung : ''}" ${timerZiel(r, sch.nr, stand.p)}>
-          <div class="km-ort"><span class="km-abschnitt">${esc(sch.abschnitt)}</span><span class="km-zaehler">${sch.nr} / ${schritte.length}</span></div>
-          ${stand.s === 1 && notizVon(r.id) ? `<button type="button" class="km-notiz" data-notiz-auf>${svg('notiz')}<span><strong>Meine Notiz</strong>${esc(notizVon(r.id))}</span></button>` : ''}
-          <p class="km-text">${Timer.chips(fett(sch.text))}</p>
+          <div class="km-haupt">
+            <div class="km-ort"><span class="km-abschnitt">${esc(sch.abschnitt)}</span><span class="km-zaehler">${sch.nr} / ${schritte.length}</span></div>
+            ${stand.s === 1 && notizVon(r.id) ? `<button type="button" class="km-notiz" data-notiz-auf>${svg('notiz')}<span><strong>Meine Notiz</strong>${esc(notizVon(r.id))}</span></button>` : ''}
+            <p class="km-text">${Timer.chips(fett(sch.text))}</p>
+          </div>
           ${zut.length ? `<div class="km-dafuer"><h3>Dafür</h3><ul>${zut.map((i) => `<li>${zutatKnopf(i, 'km-z')}</li>`).join('')}</ul></div>` : ''}
         </div>`;
-      if (richtung) $('km-buehne').scrollTop = 0;
+      if (richtung) app.querySelectorAll('#km-buehne, .km-haupt, .km-dafuer').forEach((el) => { el.scrollTop = 0; });
       $('km-balken').style.width = (stand.s / schritte.length * 100) + '%';
       $('km-zurueck').disabled = stand.s <= 1;
       const letzter = stand.s >= schritte.length;
@@ -1861,11 +2028,29 @@
       stand.s = neu;
       zeigen(d > 0 ? 'vor' : 'rueck');
     }
+    /** Zurück zum Rezept, ohne neuen Verlaufseintrag; danach (optional) nachher() */
+    function verlassenZumRezept(nachher) {
+      const ziel = zurueck();
+      const ankommen = () => {
+        if (location.hash !== ziel) { history.replaceState(null, '', ziel); nachDemZeichnen = nachher || null; zeichnen(); }
+        else if (nachher) nachher();
+      };
+      if (vomRezept && history.length > 1) {
+        let fertigGezeichnet = false;
+        nachDemZeichnen = () => { fertigGezeichnet = true; ankommen(); };
+        history.back();
+        // falls kein popstate kommt (Verlauf anders als gedacht): selbst ersetzen
+        setTimeout(() => { if (!fertigGezeichnet && route().teile[0] === 'kochen') { nachDemZeichnen = null; history.replaceState(null, '', ziel); nachDemZeichnen = nachher || null; zeichnen(); } }, 600);
+      } else {
+        history.replaceState(null, '', ziel);
+        nachDemZeichnen = nachher || null;
+        zeichnen();
+      }
+    }
     function fertig() {
       delete kochen[r.id];
       speicher.schreiben('kochen', kochen);
-      nachDemZeichnen = () => kochenAbschliessen(r, null, 'Guten Appetit!');
-      location.hash = zurueck();
+      verlassenZumRezept(() => kochenAbschliessen(r, null, 'Guten Appetit!'));
     }
 
     // Gesamt-Zutatenliste zum Abhaken („schon im Topf“), mit Personenzahl
@@ -1874,9 +2059,9 @@
         <div class="km-zl-kopf">
           <h2>Zutaten</h2>
           <span class="stepper">
-            <button type="button" data-kp="-1" aria-label="Weniger" ${stand.p <= pSchritt(r) ? 'disabled' : ''}>${svg('minus')}</button>
+            <button type="button" data-kp="-1" aria-label="${esc(stepperText(r, 'weniger'))}" ${stand.p <= pSchritt(r) ? 'disabled' : ''}>${svg('minus')}</button>
             <strong>${stueckRezept(r) ? Einheiten.zahlText(stueckZahl(r, stand.p)) : stand.p}</strong>
-            <button type="button" data-kp="1" aria-label="Mehr" ${stand.p + pSchritt(r) > 30 ? 'disabled' : ''}>${svg('plus')}</button>
+            <button type="button" data-kp="1" aria-label="${esc(stepperText(r, 'mehr'))}" ${stand.p + pSchritt(r) > 30 ? 'disabled' : ''}>${svg('plus')}</button>
           </span>
           <span class="klein">${stueckRezept(r) ? esc(r.ergibt.einheit) : stand.p === 1 ? 'Person' : 'Personen'}</span>
           <span class="abstand"></span>
@@ -1897,6 +2082,7 @@
     $('km-zurueck').addEventListener('click', () => blaettern(-1));
     $('km-weiter').addEventListener('click', () => (stand.s >= schritte.length ? fertig() : blaettern(1)));
     $('km-zut-auf').addEventListener('click', () => listeAuf($('km-zutaten').hidden));
+    $('km-zu').addEventListener('click', (e) => { e.preventDefault(); verlassenZumRezept(); });
     let offen = true;              // false nach dem Verlassen (Blatt schließt evtl. erst danach)
     const notizAuf = () => notizBlatt(r, () => { if (offen) zeigen(); });
     $('km-notiz').addEventListener('click', notizAuf);
@@ -1934,7 +2120,7 @@
       if (blatt || e.target.closest('input, select, textarea') || e.altKey || e.ctrlKey || e.metaKey) return;
       if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); blaettern(1); }
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); blaettern(-1); }
-      else if (e.key === 'Escape') { if (!$('km-zutaten').hidden) listeAuf(false); else location.hash = zurueck(); }
+      else if (e.key === 'Escape') { if (!$('km-zutaten').hidden) listeAuf(false); else verlassenZumRezept(); }
     };
     document.addEventListener('keydown', tasten);
     wach.starten();
@@ -1955,10 +2141,13 @@
 
   // ---------------------------------------------------------------- Gekocht → Verbrauch aus „Zuhause“
   const gleicherName = (a, b) => { a = Zutaten.normal(a); b = Zutaten.normal(b); return a.startsWith(b) || b.startsWith(a); };
-  /** Plan-Eintrag, der beim Kochen abgehakt wird: offener Eintrag des Rezepts, bevorzugt von heute */
+  /** Plan-Eintrag, der beim Kochen abgehakt wird: offener Eintrag des Rezepts – heute, sonst zuletzt verpasst, ohne Tag, nächster */
   function planFuerGekocht(id) {
     const offen = plan.filter((e) => e.id === id && !e.gekocht);
-    return offen.find((e) => e.tag === heuteTag()) || offen.find((e) => !e.tag) || offen[0] || null;
+    const h = heuteISO();
+    const vorbei = offen.filter((e) => e.datum && e.datum < h).sort((a, b) => b.datum.localeCompare(a.datum));
+    const kommt = offen.filter((e) => e.datum > h).sort((a, b) => a.datum.localeCompare(b.datum));
+    return offen.find((e) => e.datum === h) || vorbei[0] || offen.find((e) => !e.datum) || kommt[0] || null;
   }
   /** Rezept als gekocht merken, im Plan abhaken (eintrag = bestimmter Plan-Eintrag) und nach Verbrauchtem fragen */
   function kochenAbschliessen(r, eintrag, gruss) {
@@ -2030,7 +2219,6 @@
   }
 
   // ---------------------------------------------------------------- Wochenplan
-  const heuteTag = () => TAGE[(new Date().getDay() + 6) % 7];
   /** „3½ Portionen (Anna, Ben)“ bzw. „4 Personen“ */
   function portionenHTML(e, kurz) {
     const w = werVon(e);
@@ -2041,97 +2229,198 @@
   /** Chips „Wer isst mit“ (nur mit Profilen) */
   const werChipsHTML = (gewaehlt) => profile.map((p) => `<button type="button" class="chip wer-chip${gewaehlt.includes(p.uid) ? ' aktiv' : ''}" data-wer="${p.uid}" data-f="wer${p.uid}" aria-pressed="${gewaehlt.includes(p.uid)}">${esc(p.name || 'ohne Namen')} <span class="klein">${portionText(p.faktor)}</span></button>`).join('');
 
-  // Kalenderstreifen: Mo–So der laufenden Woche (der Plan selbst kennt nur Wochentage + „Ohne Tag“).
+  // Kalenderstreifen: Mo–So der angezeigten Woche, ‹ › (oder Wischen) blättert, „Heute“ springt zurück.
   // Antippen eines Tages zeigt nur dessen Einträge; nochmal antippen oder „Ganze Woche“ zeigt alle.
-  let planAuswahl = '';                    // '' = ganze Woche, sonst Tag aus TAGE oder 'ohne'
-  /** Datum je Wochentag der laufenden Woche (Mo zuerst) */
-  const wocheDaten = () => {
-    const d = new Date(), wt = (d.getDay() + 6) % 7;
-    return TAGE.map((t, i) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - wt + i));
-  };
-  const tagSchluessel = (tag) => tag || 'ohne';
-  const tagName = (s) => (s === 'ohne' ? 'Ohne Tag' : s);
+  // „Ohne Tag“ gehört zu keiner Woche und steht immer dabei.
+  let planWoche = '';                      // Montag der angezeigten Woche ('' = laufende Woche)
+  let planAuswahl = '';                    // '' = ganze Woche, sonst Tag 'JJJJ-MM-TT' oder 'ohne'
+  const angezeigteWoche = () => planWoche || wochenStart(heuteISO());
+  function wocheWechseln(d) {
+    const heute = wochenStart(heuteISO());
+    planWoche = d === 0 ? '' : tagePlus(angezeigteWoche(), 7 * d);
+    if (planWoche === heute) planWoche = '';
+    if (planAuswahl !== 'ohne') planAuswahl = '';
+    zeichnen();
+  }
+  /** „Diese Woche“, „Nächste Woche“, „Letzte Woche“ oder '' */
+  function wocheName(montag) {
+    const d = Math.round((datumVon(montag) - datumVon(wochenStart(heuteISO()))) / (7 * 864e5));
+    return { '-1': 'Letzte Woche', 0: 'Diese Woche', 1: 'Nächste Woche' }[d] || '';
+  }
 
   function kalenderHTML() {
-    const daten = wocheDaten(), heute = heuteTag();
+    const montag = angezeigteWoche(), tage = wocheTage(montag), heute = heuteISO();
     const bildchen = (e) => {
       const r = nachId[e.id];
       return `<span class="kal-bild${e.gekocht ? ' gekocht' : ''}">${r.bild ? bildHTML(r, 'klein', 'loading="lazy"') : esc(r.titel.slice(0, 1))}</span>`;
     };
-    const ohne = plan.filter((e) => !e.tag);
-    const von = daten[0].toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
-    const bis = daten[6].toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+    const ohne = plan.filter((e) => !e.datum);
+    const frueher = plan.filter((e) => e.datum && e.datum < montag).length;
+    const spaeter = plan.filter((e) => e.datum > tage[6]).length;
+    const name = wocheName(montag);
     return `
       <div class="kal nur-bildschirm">
-        <div class="kal-streifen" role="group" aria-label="Diese Woche">
-          ${TAGE.map((t, i) => {
-            const es = plan.filter((e) => e.tag === t), offen = es.filter((e) => !e.gekocht).length;
-            return `<button type="button" class="kal-tag${t === heute ? ' heute' : ''}${planAuswahl === t ? ' aktiv' : ''}${es.length ? ' belegt' : ''}" data-kal="${t}" aria-pressed="${planAuswahl === t}"
-              aria-label="${t}${t === heute ? ' (heute)' : ''}: ${es.length ? es.length + (es.length === 1 ? ' Gericht' : ' Gerichte') + (offen < es.length ? ', ' + (es.length - offen) + ' gekocht' : '') : 'nichts geplant'}">
-              <span class="kal-name">${t.slice(0, 2)}</span>
-              <span class="kal-datum">${daten[i].getDate()}</span>
+        <div class="kal-kopf">
+          <button type="button" class="knopf leise icon-knopf kal-pfeil${frueher ? ' mit' : ''}" data-woche="-1" aria-label="Vorige Woche${frueher ? ' – ' + frueher + ' geplant' : ''}" title="Vorige Woche">${svg('zurueck')}</button>
+          <h2 class="kal-titel" id="kal-titel"><span>${esc(wocheText(montag))}</span>${name ? `<small>${name}</small>` : ''}</h2>
+          <button type="button" class="knopf leise icon-knopf kal-pfeil${spaeter ? ' mit' : ''}" data-woche="1" aria-label="Nächste Woche${spaeter ? ' – ' + spaeter + ' geplant' : ''}" title="Nächste Woche">${svg('vor')}</button>
+          ${montag !== wochenStart(heute) ? '<button type="button" class="chip kal-heute" data-woche="0">Heute</button>' : ''}
+        </div>
+        <div class="kal-streifen" role="group" aria-labelledby="kal-titel">
+          ${tage.map((d) => {
+            const es = plan.filter((e) => e.datum === d), offen = es.filter((e) => !e.gekocht).length;
+            return `<button type="button" class="kal-tag${d === heute ? ' heute' : ''}${d < heute ? ' vorbei' : ''}${planAuswahl === d ? ' aktiv' : ''}${es.length ? ' belegt' : ''}" data-kal="${d}" aria-pressed="${planAuswahl === d}"
+              aria-label="${esc(tagText(d))}${d === heute ? ' (heute)' : ''}: ${es.length ? es.length + (es.length === 1 ? ' Gericht' : ' Gerichte') + (offen < es.length ? ', ' + (es.length - offen) + ' gekocht' : '') : 'nichts geplant'}">
+              <span class="kal-name">${TAGE[wtIndex(d)].slice(0, 2)}</span>
+              <span class="kal-datum">${datumVon(d).getDate()}</span>
               <span class="kal-bilder">${es.slice(0, 2).map(bildchen).join('')}${es.length > 2 ? `<span class="kal-mehr">+${es.length - 2}</span>` : ''}</span>
             </button>`;
           }).join('')}
         </div>
         <div class="kal-unter">
-          <span class="klein kal-woche">${planAuswahl ? esc(tagName(planAuswahl)) : 'Woche ' + esc(von) + ' – ' + esc(bis)}</span>
+          <span class="klein kal-woche">${planAuswahl === 'ohne' ? 'Ohne Tag' : planAuswahl ? esc(tagText(planAuswahl)) : 'Ganze Woche'}</span>
           ${ohne.length ? `<button type="button" class="chip${planAuswahl === 'ohne' ? ' aktiv' : ''}" data-kal="ohne" aria-pressed="${planAuswahl === 'ohne'}">Ohne Tag · ${ohne.length}</button>` : ''}
           ${planAuswahl ? '<button type="button" class="chip" data-kal="">Ganze Woche</button>' : ''}
         </div>
       </div>`;
   }
 
+  /**
+   * Tageswahl-Blatt (Verschieben, „Schon im Wochenplan“): Tage einer Woche (‹ › blättert, z. B. in die nächste Woche),
+   * dazu „Ohne Tag“. Vergangene Tage sind gesperrt. opt: { titel, text, woche, aktuell, zaehlen(d), schon, waehlen(d) }
+   */
+  function tagBlatt(opt) {
+    let montag = opt.woche || angezeigteWoche();
+    const heute = heuteISO();
+    const b = blattAuf(opt.titel, { klasse: 'tag-blatt' });
+    const zeigen = () => {
+      const knopf = (d) => {
+        const n = opt.zaehlen(d), an = opt.aktuell != null && opt.aktuell === d, vorbei = d && d < heute && !an;
+        const unter = [d ? (d === heute ? 'heute' : datumVon(d).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })) : 'noch offen',
+          vorbei ? 'vorbei' : '', n ? opt.schon || n + ' geplant' : ''].filter(Boolean).join(' · ');
+        return `<button type="button" class="knopf tag-knopf${an ? ' an' : ''}${n && opt.schon ? ' schon' : ''}" data-tag-wahl="${d}" data-f="t${d}" aria-pressed="${an}" ${vorbei ? 'disabled' : ''}><strong>${d ? TAGE[wtIndex(d)] : 'Ohne Tag'}</strong><small>${esc(unter)}</small></button>`;
+      };
+      const name = wocheName(montag);
+      b.zeigen(`
+        ${opt.text}
+        <div class="tb-woche">
+          <button type="button" class="knopf leise icon-knopf" data-tb-woche="-1" data-f="tb-" aria-label="Vorige Woche">${svg('zurueck')}</button>
+          <strong>${esc(wocheText(montag))}${name ? `<small>${name}</small>` : ''}</strong>
+          <button type="button" class="knopf leise icon-knopf" data-tb-woche="1" data-f="tb+" aria-label="Nächste Woche">${svg('vor')}</button>
+        </div>
+        <div class="tag-wahl">${wocheTage(montag).map(knopf).join('')}${knopf('')}</div>`,
+      `<button type="button" class="knopf leise" data-blatt-zu>Abbrechen</button>
+       ${montag === wochenStart(heute) ? `<button type="button" class="knopf" data-tb-woche="1" data-f="tbn">Nächste Woche ${svg('vor')}</button>` : ''}`);
+    };
+    b.el.addEventListener('click', (ev) => {
+      const w = ev.target.closest('[data-tb-woche]');
+      if (w) { montag = tagePlus(montag, 7 * Number(w.dataset.tbWoche)); zeigen(); return; }
+      const k = ev.target.closest('[data-tag-wahl]');
+      if (!k || k.disabled) return;
+      b.schliessen();
+      opt.waehlen(k.dataset.tagWahl);
+    });
+    zeigen();
+  }
+
   /** Blatt: Eintrag einem anderen Tag zuordnen */
   function verschiebenBlatt(e) {
-    const r = nachId[e.id], daten = wocheDaten(), heute = heuteTag();
-    const b = blattAuf('Verschieben', { klasse: 'tag-blatt' });
+    const r = nachId[e.id];
+    tagBlatt({
+      titel: 'Verschieben', aktuell: e.datum || '', woche: angezeigteWoche(),
+      text: `<p class="klein">${esc(r.titel)} – an welchem Tag?</p>`,
+      zaehlen: (d) => plan.filter((x) => x !== e && (x.datum || '') === d && !x.gekocht).length,
+      waehlen: (neu) => {
+        if ((e.datum || '') === neu) return;
+        e.datum = neu;
+        sichern(); zeichnen();
+        melden(r.titel + (neu ? ' → ' + tagText(neu, true) : ' → ohne Tag'));
+      },
+    });
+  }
+
+  // Nicht gekochte Gerichte aus früheren Wochen: einmal am Tag fragen (Startseite, Plan, Einkauf), was damit passiert.
+  // „Später“ (oder Schließen) fragt erst am nächsten Tag wieder. speicher 'planHinweis' = Tag der letzten Frage.
+  const vorwocheOffen = () => { const m = wochenStart(heuteISO()); return plan.filter((e) => !e.gekocht && e.datum && e.datum < m); };
+  function vorwocheFragen() {
+    if (blatt || !['start', 'plan', 'einkauf'].includes(document.body.dataset.seite)) return;
+    const offen = vorwocheOffen();
+    if (!offen.length || speicher.lesen('planHinweis', '') === heuteISO()) return;
+    vorwocheBlatt(offen);
+  }
+  function vorwocheBlatt(offen) {
+    offen = offen.slice().sort((a, b) => a.datum.localeCompare(b.datum));
+    const heute = heuteISO(), montag = wochenStart(heute), n = offen.length;
+    const ausVorwoche = offen.every((e) => e.datum >= tagePlus(montag, -7));
+    const vergangen = offen.some((e) => tagePlus(montag, wtIndex(e.datum)) < heute);
+    const b = blattAuf(n === 1 ? 'Ein Gericht nicht gekocht' : n + ' Gerichte nicht gekocht', {
+      klasse: 'vw-blatt', zu: () => speicher.schreiben('planHinweis', heuteISO()) });
     b.zeigen(`
-      <p class="klein">${esc(r.titel)} – an welchem Tag?</p>
-      <div class="tag-wahl">${[...TAGE, ''].map((t, i) => {
-        const n = plan.filter((x) => x !== e && (x.tag || '') === t && !x.gekocht).length;
-        const unter = [t ? daten[i].toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }) : 'noch offen', t === heute ? 'heute' : '', n ? n + ' geplant' : ''].filter(Boolean).join(' · ');
-        const an = (e.tag || '') === t;
-        return `<button type="button" class="knopf tag-knopf${an ? ' an' : ''}" data-tag-wahl="${t}" aria-pressed="${an}"><strong>${t || 'Ohne Tag'}</strong><small>${esc(unter)}</small></button>`;
-      }).join('')}</div>`,
-    '<button type="button" class="knopf leise" data-blatt-zu>Abbrechen</button>');
+      <p class="klein">${n === 1 ? 'Ein Gericht' : n + ' Gerichte'} aus ${ausVorwoche ? 'der Vorwoche' : 'früheren Wochen'} ${n === 1 ? 'wurde' : 'wurden'} nicht gekocht.
+        Sie stehen nicht auf der Einkaufsliste, solange sie in der Vergangenheit liegen.</p>
+      <div class="sg-wahl">
+        <button type="button" class="knopf wahl-knopf" data-vw="uebernehmen">${svg('kalender')}<span><strong>Auf diese Woche übernehmen</strong>
+          <small>Gleiche Wochentage${vergangen ? ' – ist der Tag schon vorbei, ab heute' : ''}</small></span></button>
+        <button type="button" class="knopf wahl-knopf" data-vw="ohne">${svg('verschieben')}<span><strong>Auf „Ohne Tag“ legen</strong>
+          <small>Bleibt im Plan und auf der Einkaufsliste, ohne festen Tag</small></span></button>
+        <button type="button" class="knopf wahl-knopf" data-vw="weg">${svg('muell')}<span><strong>Entfernen</strong>
+          <small>Aus dem Wochenplan nehmen</small></span></button>
+      </div>
+      <ul class="vw-liste" aria-label="Betroffene Gerichte">${offen.map((e) => `<li><span>${esc(nachId[e.id].titel)}</span><small>${esc(tagText(e.datum, true))}</small></li>`).join('')}</ul>`,
+    '<button type="button" class="knopf leise" data-blatt-zu>Später</button>');
     b.el.addEventListener('click', (ev) => {
-      const k = ev.target.closest('[data-tag-wahl]');
+      const k = ev.target.closest('[data-vw]');
       if (!k) return;
-      const neu = k.dataset.tagWahl;
+      const art = k.dataset.vw;
+      if (art === 'weg') plan = plan.filter((e) => !offen.includes(e));
+      else if (art === 'ohne') offen.forEach((e) => { e.datum = ''; });
+      else {
+        // gleicher Wochentag in dieser Woche; schon vorbei → nächster freier Tag ab heute
+        const belegt = new Set(plan.filter((e) => e.datum >= heute && !offen.includes(e)).map((e) => e.datum));
+        for (const e of offen) {
+          let d = tagePlus(montag, wtIndex(e.datum));
+          if (d < heute) { d = heute; for (let i = 0; i < 14 && belegt.has(d); i++) d = tagePlus(d, 1); }
+          belegt.add(d);
+          e.datum = d;
+        }
+      }
+      sichern();
       b.schliessen();
-      if ((e.tag || '') === neu) return;
-      e.tag = neu;
-      sichern(); zeichnen();
-      melden(r.titel + (neu ? ' → ' + neu : ' → ohne Tag'));
+      zeichnen();
+      melden(art === 'weg' ? (n === 1 ? 'Gericht entfernt' : n + ' Gerichte entfernt')
+        : (n === 1 ? 'Ein Gericht' : n + ' Gerichte') + (art === 'ohne' ? ' auf „Ohne Tag“ gelegt' : ' in diese Woche übernommen'), '#/plan', 'Plan');
     });
   }
 
   function seitePlan() {
     document.title = 'Wochenplan – Rezepte';
-    if (planAuswahl === 'ohne' && !plan.some((e) => !e.tag)) planAuswahl = '';
-    const gruppen = [...TAGE, ''].map((tag) => ({ tag, eintraege: plan.filter((e) => (e.tag || '') === tag) }))
+    const montag = angezeigteWoche(), tage = wocheTage(montag), heute = heuteISO();
+    if (planAuswahl === 'ohne' ? !plan.some((e) => !e.datum) : planAuswahl && !tage.includes(planAuswahl)) planAuswahl = '';
+    const gruppen = [...tage, ''].map((d) => ({ d, eintraege: plan.filter((e) => (e.datum || '') === d) }))
       .filter((g) => g.eintraege.length);
-    const ausgewaehlt = planAuswahl && gruppen.find((g) => tagSchluessel(g.tag) === planAuswahl);
+    const schluessel = (d) => d || 'ohne';
+    const ausgewaehlt = planAuswahl && gruppen.find((g) => schluessel(g.d) === planAuswahl);
+    const spaeter = plan.filter((e) => e.datum > tage[6]).sort((a, b) => a.datum.localeCompare(b.datum))[0];
 
     const zeile = (e) => {
       const r = nachId[e.id];
       const w = werVon(e);
+      const vorbei = !e.gekocht && e.datum && e.datum < heute;
       return `
-        <li class="plan-eintrag${e.gekocht ? ' gekocht' : ''}" data-uid="${e.uid}">
+        <li class="plan-eintrag${e.gekocht ? ' gekocht' : ''}${vorbei ? ' vorbei' : ''}" data-uid="${e.uid}">
           <div class="pe-kopf">
             <button type="button" class="pe-haken nur-bildschirm" data-gekocht aria-pressed="${!!e.gekocht}" aria-label="${e.gekocht ? 'Doch nicht gekocht' : 'Als gekocht abhaken'}" title="${e.gekocht ? 'Doch nicht gekocht' : 'Gekocht'}"><span class="box">${svg('haken')}</span></button>
             ${r.bild ? bildHTML(r, 'klein', 'class="pe-bild nur-bildschirm" loading="lazy"') : ''}
-            <a href="#/rezept/${esc(r.id)}?p=${begrenzen(portionen(e))}"><span class="pe-titel">${esc(r.titel)}</span>${e.gekocht ? `<small>gekocht am ${datumText(e.gekocht)}</small>` : ''}</a>
+            <a href="#/rezept/${esc(r.id)}?p=${begrenzen(portionen(e))}"><span class="pe-titel">${esc(r.titel)}</span>${e.gekocht ? `<small>gekocht am ${datumText(e.gekocht)}</small>` : vorbei ? '<small class="pe-vorbei nur-bildschirm">Nicht gekocht · nicht im Einkauf</small>' : ''}</a>
             <button type="button" class="knopf leise icon-knopf pe-weg nur-bildschirm" data-weg aria-label="Entfernen" title="Aus dem Plan nehmen">${svg('muell')}</button>
           </div>
           <div class="pe-steuer">
-            <button type="button" class="knopf leise pe-verschieben nur-bildschirm" data-verschieben aria-label="Verschieben – jetzt: ${e.tag || 'ohne Tag'}" title="Anderem Tag zuordnen">${svg('verschieben')} <span>${e.tag ? 'Verschieben' : 'Tag wählen'}</span></button>
+            <button type="button" class="knopf leise pe-verschieben nur-bildschirm" data-verschieben aria-label="Verschieben – jetzt: ${esc(e.datum ? tagText(e.datum) : 'ohne Tag')}" title="Anderem Tag zuordnen">${svg('verschieben')} <span>${e.datum ? 'Verschieben' : 'Tag wählen'}</span></button>
             ${w.length && !stueckRezept(r) ? `<span class="pe-portionen">${portionenHTML(e)}</span>` : `
             <span class="stepper">
-              <button type="button" data-schritt="-1" aria-label="Weniger" ${e.personen <= pSchritt(r) ? 'disabled' : ''}>${svg('minus')}</button>
+              <button type="button" data-schritt="-1" aria-label="${esc(stepperText(r, 'weniger'))}" ${e.personen <= pSchritt(r) ? 'disabled' : ''}>${svg('minus')}</button>
               <strong>${stueckRezept(r) ? Einheiten.zahlText(stueckZahl(r, e.personen)) : e.personen}</strong>
-              <button type="button" data-schritt="1" aria-label="Mehr" ${e.personen + pSchritt(r) > 30 ? 'disabled' : ''}>${svg('plus')}</button>
+              <button type="button" data-schritt="1" aria-label="${esc(stepperText(r, 'mehr'))}" ${e.personen + pSchritt(r) > 30 ? 'disabled' : ''}>${svg('plus')}</button>
             </span>
             <span class="klein">${stueckRezept(r) ? esc(r.ergibt.einheit) : 'Pers.'}</span>`}
           </div>
@@ -2148,20 +2437,23 @@
         <button class="knopf nur-bildschirm" onclick="window.print()">${svg('drucker')} Drucken</button>
         <a class="knopf haupt nur-bildschirm" href="#/einkauf">${svg('korb')} Einkaufsliste</a>` : ''}
       </div>
+      <p class="nur-druck plan-druck-woche">${esc(wocheText(montag))}</p>
       ${kalenderHTML()}
       <div class="nur-bildschirm plan-neu">
         <select id="plan-rezept" aria-label="Rezept wählen">
-          <option value="">${neuFuer ? 'Rezept für ' + neuFuer + ' hinzufügen …' : 'Rezept hinzufügen …'}</option>
+          <option value="">${neuFuer ? 'Rezept für ' + esc(tagText(neuFuer, true)) + ' hinzufügen …' : 'Rezept hinzufügen …'}</option>
           ${rezepte.map((r) => `<option value="${esc(r.id)}">${esc(r.titel)}</option>`).join('')}
         </select>
         <button type="button" class="knopf${plan.length ? '' : ' haupt'}" id="plan-vorschlag">${svg('funke')} Woche vorschlagen</button>
       </div>
-      ${planAuswahl && !ausgewaehlt ? `<p class="leer plan-tag-leer nur-bildschirm">${planAuswahl === heuteTag() ? 'Für heute' : 'Für ' + esc(tagName(planAuswahl))} ist noch nichts geplant – oben ein Rezept auswählen oder <button type="button" class="link-knopf" data-kal="">ganze Woche zeigen</button>.</p>` : ''}
+      ${planAuswahl && !ausgewaehlt ? `<p class="leer plan-tag-leer nur-bildschirm">${planAuswahl === heute ? 'Für heute' : 'Für ' + esc(planAuswahl === 'ohne' ? 'Ohne Tag' : tagText(planAuswahl))} ist noch nichts geplant – oben ein Rezept auswählen oder <button type="button" class="link-knopf" data-kal="">ganze Woche zeigen</button>.</p>` : ''}
       ${gruppen.length ? gruppen.map((g) => `
-        <section class="plan-tag${planAuswahl && tagSchluessel(g.tag) !== planAuswahl ? ' ausgeblendet' : ''}" data-tag="${tagSchluessel(g.tag)}">
-          <h2>${g.tag || 'Ohne Tag'}${g.tag === heuteTag() ? ' <span class="klein nur-bildschirm">· heute</span>' : ''}</h2>
+        <section class="plan-tag${planAuswahl && schluessel(g.d) !== planAuswahl ? ' ausgeblendet' : ''}" data-tag="${schluessel(g.d)}">
+          <h2>${g.d ? esc(tagText(g.d)) : 'Ohne Tag'}${g.d === heute ? ' <span class="klein nur-bildschirm">· heute</span>' : ''}</h2>
           <ul>${g.eintraege.map(zeile).join('')}</ul>
-        </section>`).join('') : '<p class="leer">Noch nichts geplant. Rezept oben auswählen, „Woche vorschlagen“ antippen oder in einem Rezept auf „Zum Wochenplan“ tippen.</p>'}
+        </section>`).join('') : plan.length
+        ? `<p class="leer">In dieser Woche ist noch nichts geplant.${spaeter ? ` <button type="button" class="link-knopf" data-springen="${spaeter.datum}">Zur nächsten geplanten Woche</button>` : ''}</p>`
+        : '<p class="leer">Noch nichts geplant. Rezept oben auswählen, „Woche vorschlagen“ antippen oder in einem Rezept auf „Zum Wochenplan“ tippen.</p>'}
       ${profile.length || !plan.length ? '' : '<p class="klein nur-bildschirm">Tipp: Unter <a href="#/mehr">Mehr → Haushalt</a> Personen mit Portionsgröße anlegen (z. B. Kind ½) – dann hier wählen, wer mitisst.</p>'}`;
 
     const finde = (el) => plan.find((e) => e.uid === el.closest('[data-uid]').dataset.uid);
@@ -2170,6 +2462,20 @@
       planAuswahl = planAuswahl === t ? '' : t;
       zeichnen();
     }));
+    app.querySelectorAll('[data-woche]').forEach((k) => k.addEventListener('click', () => wocheWechseln(Number(k.dataset.woche))));
+    app.querySelectorAll('[data-springen]').forEach((k) => k.addEventListener('click', () => {
+      planWoche = wochenStart(k.dataset.springen); planAuswahl = ''; zeichnen();
+    }));
+    // Wischen über den Kalenderstreifen: Woche wechseln
+    const streifen = app.querySelector('.kal-streifen');
+    let start = null;
+    streifen.addEventListener('touchstart', (e) => { start = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null; }, { passive: true });
+    streifen.addEventListener('touchend', (e) => {
+      if (!start) return;
+      const t = e.changedTouches[0], dx = t.clientX - start.x, dy = t.clientY - start.y;
+      start = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) { e.preventDefault(); wocheWechseln(dx < 0 ? 1 : -1); }
+    });
     app.querySelectorAll('[data-verschieben]').forEach((b) => b.addEventListener('click', () => verschiebenBlatt(finde(b))));
     app.querySelectorAll('[data-schritt]').forEach((b) => b.addEventListener('click', () => {
       const e = finde(b), r = nachId[e.id];
@@ -2199,7 +2505,7 @@
     document.getElementById('plan-vorschlag').addEventListener('click', vorschlagBlatt);
     const leeren = document.getElementById('plan-leeren');
     if (leeren) leeren.addEventListener('click', () => {
-      if (confirm('Wochenplan wirklich leeren?')) { plan = []; abgehakt = {}; sichern(); zeichnen(); }
+      if (confirm('Wochenplan leeren? Alle geplanten Gerichte (auch anderer Wochen) werden entfernt.')) { plan = []; abgehakt = {}; sichern(); zeichnen(); }
     });
   }
 
@@ -2208,10 +2514,21 @@
   const VS_KATEGORIEN = ['Hauptgericht', 'Suppe', 'Salat'];       // Frühstück, Backen, Beilage … nur auf Wunsch
   const VS_ZEITEN = [0, 30, 45, 60];
   const VS_VERLAUF_MAX = 40;
-  const vsSpeicher = () => {
-    const v = speicher.lesen('vorschlag', {});
-    return { wuensche: v.wuensche || {}, verlauf: Array.isArray(v.verlauf) ? v.verlauf : [] };
-  };
+  /** Gespeicherte Wünsche/Verlauf prüfen: falsche Typen fallen auf den Standard zurück (blockiert sonst „Woche vorschlagen“) */
+  function vsBereinigen(v) {
+    v = istObjekt(v) ? v : {};
+    const w = istObjekt(v.wuensche) ? v.wuensche : {}, x = {};
+    const zahl = (k, min, max) => { const n = Math.round(Number(w[k])); if (w[k] != null && Number.isFinite(n)) x[k] = Math.min(max, Math.max(min, n)); };
+    zahl('anzahl', 1, 7); zahl('personen', 1, 30); zahl('veg', 0, 7); zahl('fisch', 0, 7);
+    if (VS_ZEITEN.includes(Number(w.zeit))) x.zeit = Number(w.zeit);
+    if (Array.isArray(w.ohne)) x.ohne = w.ohne.filter((o) => o === 'fleisch' || o === 'fisch');
+    if (Array.isArray(w.kat)) x.kat = w.kat.filter((k) => typeof k === 'string');
+    if (Array.isArray(w.wer)) x.wer = w.wer.filter((u) => typeof u === 'string');
+    const verlauf = (Array.isArray(v.verlauf) ? v.verlauf : [])
+      .filter((e) => istObjekt(e) && typeof e.id === 'string' && typeof e.datum === 'string' && ISO_TAG.test(e.datum)).slice(-VS_VERLAUF_MAX);
+    return { wuensche: x, verlauf };
+  }
+  const vsSpeicher = () => vsBereinigen(speicher.lesen('vorschlag', {}));
   const istVeg = (r) => ['vegan', 'vegetarisch'].includes(ernaehrungVon(r).id);
   const istFisch = (r) => ernaehrungVon(r).fisch;
   /** Rollen eines Platzes: welche Rezepte dort passen */
@@ -2247,19 +2564,25 @@
     const ersatz = bewertet(frei);
     return ersatz ? { r: ersatz.r, rolle, fehl: true } : null;
   }
-  /** Nächste freie Tage ab heute (am Wochenende: ab Montag); ohne freien Tag „kein Tag“ */
+  /** Nächste freie Tage ab heute (Tage mit Plan-Eintrag sind belegt); reichen 4 Wochen nicht: „kein Tag“ */
   function freieTage(n) {
-    const heute = (new Date().getDay() + 6) % 7;
-    const start = heute >= 5 ? 0 : heute;
-    const belegt = new Set(planOffen().map((e) => e.tag).filter(Boolean));
-    const frei = TAGE.map((t, i) => TAGE[(start + i) % 7]).filter((t) => !belegt.has(t));
-    return Array.from({ length: n }, (x, i) => frei[i] || '');
+    const belegt = new Set(plan.map((e) => e.datum).filter(Boolean));
+    const l = [];
+    for (let d = heuteISO(), i = 0; l.length < n && i < 28; i++, d = tagePlus(d, 1)) if (!belegt.has(d)) l.push(d);
+    while (l.length < n) l.push('');
+    return l;
+  }
+  /** Auswahl der Tage im Vorschlag: die nächsten 14 Tage ab heute (und ein schon gewählter, falls später) */
+  function tagOptionen(gewaehlt) {
+    const h = heuteISO(), tage = Array.from({ length: 14 }, (x, i) => tagePlus(h, i));
+    if (gewaehlt && !tage.includes(gewaehlt)) tage.push(gewaehlt);
+    return tage.map((d) => `<option value="${d}" ${d === gewaehlt ? 'selected' : ''}>${d === h ? 'Heute' : d === tagePlus(h, 1) ? 'Morgen' : esc(tagText(d, true))}</option>`).join('');
   }
 
   function vorschlagBlatt() {
     const sp = vsSpeicher();
     const kats = [...new Set(rezepte.map((r) => r.kategorie).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
-    const w = Object.assign({ anzahl: 5, personen: STANDARD_PERSONEN, wer: null, veg: 0, fisch: 0, ohne: [], zeit: 0, kat: VS_KATEGORIEN.slice() }, sp.wuensche);
+    const w = Object.assign({ anzahl: 5, personen: personenEinstellung() || STANDARD_PERSONEN, wer: null, veg: 0, fisch: 0, ohne: [], zeit: 0, kat: VS_KATEGORIEN.slice() }, sp.wuensche);
     w.wer = (w.wer || standardWer()).filter((u) => profile.some((p) => p.uid === u));
     w.kat = w.kat.filter((k) => kats.includes(k));
     if (!w.kat.length) w.kat = VS_KATEGORIEN.filter((k) => kats.includes(k));
@@ -2313,7 +2636,7 @@
         auswahl.push(Object.assign(v, { gezeigt: new Set([v.r.id]) }));
       }
       // Tage in Plan-Reihenfolge vergeben, Rezepte dabei mischen (Fisch nicht immer am Montag)
-      auswahl.sort(() => Math.random() - 0.5).forEach((v, i) => { v.tag = tage[i]; });
+      auswahl.sort(() => Math.random() - 0.5).forEach((v, i) => { v.datum = tage[i]; });
       vorschauZeigen(true);
     }
     function wuerfeln(i) {
@@ -2344,7 +2667,7 @@
           <li class="vs-zeile">
             <select class="vs-tag" data-tag="${i}" aria-label="Tag für ${esc(r.titel)}">
               <option value="">– kein Tag –</option>
-              ${TAGE.map((t) => `<option ${t === v.tag ? 'selected' : ''}>${t}</option>`).join('')}
+              ${tagOptionen(v.datum)}
             </select>
             <div class="vs-text"><strong>${esc(r.titel)}</strong>
               <small>${[r.kategorie, z ? dauer(z) : '', ern, zuhause.length ? (f ? 'fehlt: ' + f : 'alles da') : ''].filter(Boolean).map(esc).join(' · ')}</small></div>
@@ -2357,7 +2680,7 @@
     function uebernehmen() {
       const heute = heuteISO();
       for (const v of auswahl) {
-        const e = { uid: uid(), id: v.r.id, personen: begrenzen(w.personen), tag: v.tag || '' };
+        const e = { uid: uid(), id: v.r.id, personen: begrenzen(w.personen), datum: v.datum || '' };
         if (stueckRezept(v.r)) e.personen = pFuer(v.r, v.r.personen);   // Gebäck: ein ganzes Rezept
         else if (wer().length) { e.wer = w.wer.slice(); e.personen = begrenzen(portionen(e)); }
         plan.push(e);
@@ -2399,7 +2722,7 @@
     });
     b.el.addEventListener('change', (e) => {
       const s = e.target.closest('[data-tag]');
-      if (s) auswahl[Number(s.dataset.tag)].tag = s.value;
+      if (s) auswahl[Number(s.dataset.tag)].datum = s.value;
     });
     formZeigen();
   }
@@ -2603,7 +2926,7 @@
         <button type="button" class="knopf haupt" id="ek-erledigt">${svg('haus')} <span>Einkauf erledigt</span></button>
         <span class="klein" id="ek-erledigt-text"></span>
       </div>
-      <p class="nur-bildschirm klein"><span id="ek-offen"></span> · Antippen zum Abhaken · <a href="#" id="ek-zuruecksetzen">Haken zurücksetzen</a>${liste.length || extras.length ? ' · <a href="#" id="ek-leeren">Liste leeren</a>' : ''}</p>`}`;
+      <p class="nur-bildschirm klein ek-aktionen"><span id="ek-offen"></span> · Antippen zum Abhaken · <a href="#" id="ek-zuruecksetzen">Haken zurücksetzen</a>${liste.length || extras.length ? ' · <a href="#" id="ek-leeren">Liste leeren</a>' : ''}</p>`}`;
 
     // Zähler „offen“ und Knopf „Einkauf erledigt“ ohne Neuzeichnen aktuell halten
     const zaehlen = () => {
@@ -2942,9 +3265,9 @@
   /** Stepper-HTML für Blätter: data-stepper = Feldname, Wert als Text */
   const stepperHTML = (feld, text, minus, plus, label) => `
     <span class="stepper" data-stepper="${feld}" role="group" aria-label="${esc(label)}">
-      <button type="button" data-d="-1" data-f="${feld}-" aria-label="Weniger" ${minus ? '' : 'disabled'}>${svg('minus')}</button>
+      <button type="button" data-d="-1" data-f="${feld}-" aria-label="${esc(label)}: weniger" ${minus ? '' : 'disabled'}>${svg('minus')}</button>
       <strong>${text}</strong>
-      <button type="button" data-d="1" data-f="${feld}+" aria-label="Mehr" ${plus ? '' : 'disabled'}>${svg('plus')}</button>
+      <button type="button" data-d="1" data-f="${feld}+" aria-label="${esc(label)}: mehr" ${plus ? '' : 'disabled'}>${svg('plus')}</button>
     </span>`;
 
   // ---------------------------------------------------------------- Druck
@@ -3028,7 +3351,9 @@
     document.documentElement.style.setProperty('--tabs-h', h('.tabs') + 'px');
     const t = h('#timer-leiste.sichtbar');
     document.documentElement.style.setProperty('--timer-h', (t ? t + 8 : 0) + 'px');   // + Abstand der schwebenden Leiste
-    document.documentElement.style.setProperty('--aktion-h', h('#app .r-aktion') + 'px');   // fester „Jetzt kochen“-Knopf (Rezept, Handy)
+    const aktion = h('#app .r-aktion');   // fester „Jetzt kochen“-Knopf (Rezept, Handy); --aktion-h = 0, solange eingeklappt
+    document.documentElement.style.setProperty('--aktion-platz', aktion + 'px');
+    document.documentElement.style.setProperty('--aktion-h', (document.querySelector('#app .r-aktion.weg') ? 0 : aktion) + 'px');
     document.documentElement.style.setProperty('--kopf-h', kopfHoehe() + 'px');   // kompakte Kopfleiste oben (Handy)
     document.documentElement.style.setProperty('--fuss-h', h('#app .km-fuss') + 'px');   // Zurück/Weiter im Kochmodus
   }
