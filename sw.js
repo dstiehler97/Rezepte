@@ -11,16 +11,16 @@
  */
 'use strict';
 // <automatisch> von tools/pruefen.js – nicht von Hand bearbeiten
-const VERSION = "59f7f35b5a80";
+const VERSION = "0fbf396f308f";
 const DATEIEN = [
   ["./","77cd73de6db1"],
   ["manifest.json","1df84bcab53b"],
-  ["assets/app.js","5e8a4bf80ebd"],
+  ["assets/app.js","2e5c68d793e5"],
   ["assets/einheiten.js","cb08bff8d674"],
   ["assets/icons.js","f068fc307ec8"],
   ["assets/naehrwerte.js","330f1eb6fc10"],
-  ["assets/style.css","fb371fdbdfb9"],
-  ["assets/timer.js","fa9190f4a80c"],
+  ["assets/style.css","4b23811f287f"],
+  ["assets/timer.js","c771db408d36"],
   ["assets/zutaten.js","df5b8fe0080e"],
   ["rezepte/apfel-bananen-muffins.js","ad7ada067ab0"],
   ["rezepte/chinesische-pilzpfanne-mit-austernsauce-reis.js","d4a1f01bbd21"],
@@ -76,7 +76,7 @@ const DATEIEN = [
   ["bilder/klein/thai-kokos-suesskartoffelsuppe.jpg","944f23736cf7"],
   ["bilder/klein/tofu-scramble-mit-gemuese.jpg","2558b384b677"],
   ["bilder/klein/wuerziger-couscous-one-pot.jpg","e69df802bd58"],
-  ["rezepte/liste.js","8d930792e53a"],
+  ["rezepte/liste.js","c10030ae35ae"],
 ];
 const BILDER = [
   ["bilder/apfel-bananen-muffins.jpg","8691047efc18"],
