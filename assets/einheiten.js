@@ -30,7 +30,7 @@
     'Scheibe':   { schritt: 1,   min: 1,   mz: 'Scheiben' },
     'Blatt':     { schritt: 1,   min: 1,   mz: 'Blätter' },
     'Zweig':     { schritt: 1,   min: 1,   mz: 'Zweige' },
-    'Stange':    { schritt: 1,   min: 1,   mz: 'Stangen' },
+    'Stange':    { schritt: 0.5, min: 0.5, mz: 'Stangen' },
     'Handvoll':  { schritt: 0.5, min: 0.5, mz: 'Handvoll' },
     'Würfel':    { schritt: 0.5, min: 0.5, mz: 'Würfel' },
   };

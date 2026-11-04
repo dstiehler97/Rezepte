@@ -112,6 +112,7 @@ fall(4, undefined, 1.25, '5', { ganz: true });
 fall(2, 'Zehe', 0.25, '1 Zehe');
 fall(2, 'Zehe', 1.5, '3 Zehen');
 fall(1, 'Dose', 1.5, '1½ Dosen');
+fall(2, 'Stange', 0.75, '1½ Stangen');
 fall(2, undefined, 0.75, '2', { aufrunden: true });
 fall(2, undefined, 0.5, '1', { aufrunden: true });
 console.log('Rundungstests ' + (fehler ? 'mit Fehlern' : 'ok'));
