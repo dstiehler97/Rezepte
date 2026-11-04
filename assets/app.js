@@ -142,11 +142,11 @@
   const SORTIERUNGEN = [
     ['name', 'Name', null, 'auf', 'A–Z', 'Z–A'],
     ['schwierigkeit', 'Schwierigkeit', (r) => SCHWIERIGKEIT[r.schwierigkeit] || 1, 'auf', 'einfach zuerst', 'schwer zuerst'],
-    ['zeit', 'Zeit', (r) => gesamtzeit(r.zeit), 'auf', 'schnellste zuerst', 'längste zuerst'],
-    ['kcal', 'Kalorien', (r) => nwp(r).kcal, 'auf', 'wenigste zuerst', 'meiste zuerst', 'nw'],
-    ['eiweiss', 'Eiweiß', (r) => nwp(r).eiweiss, 'ab', 'wenigstes zuerst', 'meistes zuerst', 'nw'],
-    ['fett', 'Fett', (r) => nwp(r).fett, 'auf', 'wenigstes zuerst', 'meistes zuerst', 'nw'],
-    ['kh', 'Kohlenhydrate', (r) => nwp(r).kh, 'auf', 'wenigste zuerst', 'meiste zuerst', 'nw'],
+    ['zeit', 'Zeit', (r) => gesamtzeit(r.zeit), 'auf', 'schnell zuerst', 'lang zuerst'],
+    ['kcal', 'Kalorien', (r) => nwp(r).kcal, 'auf', 'wenig zuerst', 'viel zuerst', 'nw'],
+    ['eiweiss', 'Eiweiß', (r) => nwp(r).eiweiss, 'ab', 'wenig zuerst', 'viel zuerst', 'nw'],
+    ['fett', 'Fett', (r) => nwp(r).fett, 'auf', 'wenig zuerst', 'viel zuerst', 'nw'],
+    ['kh', 'Kohlenhydrate', (r) => nwp(r).kh, 'auf', 'wenig zuerst', 'viel zuerst', 'nw'],
     ['zuhause', 'Am meisten zuhause', (r) => fehlend(r), 'auf'],
   ];
   const sortierung = (o) => SORTIERUNGEN.find((x) => x[0] === o) || SORTIERUNGEN[0];

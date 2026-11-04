@@ -73,6 +73,10 @@
     'zucker':        { k: BA, icon: 'zucker', vorrat: true },
     'mehl':          { k: BA, icon: 'mehl', vorrat: true },
     'backpulver':    { k: BA, icon: 'mehl', vorrat: true },
+    'natron':        { k: BA, icon: 'mehl', vorrat: true },
+    'dinkelmehl':    { k: BA, icon: 'mehl' },
+    'kokosblütenzucker': { k: BA, icon: 'zucker' },
+    'kokosöl':       { k: GW, icon: 'oel' },
     'speisestärke':  { k: BA, icon: 'mehl', vorrat: true },
     'vanillezucker': { k: BA, icon: 'zucker' },
     'erdnüsse':      { k: BA, icon: 'nuss' },
@@ -143,6 +147,7 @@
     'grüne bohnen':  { k: OG },
     'brechbohnen':   { k: OG },
     'apfel':         { k: OG },
+    'banane':        { k: OG },
     'ingwer':        { k: OG },
 
     // Kräuter (frisch)
@@ -202,6 +207,7 @@
     'geschälte tomaten': { k: KO, icon: 'tomate' },
     'getrocknete tomaten': { k: KO, icon: 'tomate' },
     'kokosmilch':        { k: KO, icon: 'milch' },
+    'pflanzlicher drink': { k: KU, icon: 'milch' },
     'preiselbeeren':     { k: KO },
     'kichererbsen':      { k: KO },
     'mais':              { k: KO },

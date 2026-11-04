@@ -111,7 +111,7 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
 .ern-chips .e-vegan::before { background: #3d8a34; }
 .ern-chips .e-vegetarisch::before { background: #8fbf6a; }
 .ern-chips .e-fisch::before { background: #3a78b5; }
-.ern-chips .e-fleisch::before { background: #b5523a; }
+.ern-chips .e-fleisch::before { background: #a8435f; }
 .merkmale { display: flex; flex-wrap: wrap; gap: .3rem; }
 .karte .merkmale { margin-top: .15rem; }
 .merkmal { font-size: .72rem; font-weight: 600; padding: .12rem .5rem; border-radius: 999px; background: var(--papier); color: var(--leise); border: 1px solid var(--linie); white-space: nowrap; }
@@ -119,7 +119,7 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
 .m-vegan, .m-vegetarisch { background: #e8f3e6; border-color: #c8e1c3; color: #3d6b34; }
 .m-vegan { background: #dcefd8; border-color: #b5d9ad; color: #2f5f27; }
 .m-fisch { background: #e3eef8; border-color: #bfd6ec; color: #2b5d8a; }
-.m-fleisch { background: #f8e8e3; border-color: #ecc9bf; color: #8e3f2a; }
+.m-fleisch { background: #f5e6eb; border-color: #e5c7d1; color: #8a3550; }
 .m-leicht, .m-fettarm, .m-lowcarb { background: #eef5ec; border-color: #d3e6cf; color: #4a6f43; }
 .m-ballast { background: #f3efe3; border-color: #e1d8bf; color: #6d5f33; }
 .m-fettreich { background: #fbeee6; border-color: #efd2c2; color: #93492a; }
@@ -353,9 +353,14 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
   .ek-posten { grid-template-columns: 1.5rem 1.3rem 5rem minmax(0, 1fr) auto; padding: .7rem 0; }
   .ek-posten .box { width: 1.35rem; height: 1.35rem; border-radius: 4px; }
 }
-@media screen and (max-width: 400px) {
+@media screen and (max-width: 720px) {
+  .chips.ern-chips { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; gap: .35rem; }
+  .ern-chips .chip { padding: .3rem .8rem; font-size: .85rem; }
   .sortieren { flex: 1 1 100%; }
   .sortieren select { flex: 1; }
+}
+@media screen and (max-width: 400px) {
+  .sortieren label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 }
 
 /* ============================================================ Druck (A4) */

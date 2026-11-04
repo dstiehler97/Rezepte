@@ -1,5 +1,6 @@
 // Automatisch erzeugt von tools/pruefen.js – nicht von Hand bearbeiten.
 window.REZEPT_DATEIEN = [
+  "apfel-bananen-muffins",
   "chinesische-pilzpfanne-mit-austernsauce-reis",
   "cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen",
   "crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree",

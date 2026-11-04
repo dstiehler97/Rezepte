@@ -49,6 +49,10 @@
     'vanillezucker': N(400, 0, 100, 100, 0, 0, { paeckchen: 8, dichte: 0.85 }),
     'mehl': N(348, 10, 72, 0.5, 1, 4, { dichte: 0.6 }),
     'backpulver': N(100, 0, 25, 0, 0, 0, { paeckchen: 15, dichte: 0.9 }),
+    'natron': N(0, 0, 0, 0, 0, 0, { paeckchen: 5, dichte: 1 }),
+    'dinkelmehl': N(340, 12, 70, 1, 1.5, 4, { dichte: 0.6 }),
+    'kokosblütenzucker': N(380, 1, 92, 88, 0.5, 0, { dichte: 0.8 }),
+    'kokosöl': N(880, 0, 0, 0, 99, 0, { dichte: 0.92 }),
     'speisestärke': N(350, 0.3, 86, 0, 0.1, 0, { dichte: 0.6 }),
     'erdnüsse': N(585, 25, 12, 4, 50, 8, { handvoll: 30 }),
     'nüsse': N(650, 15, 10, 4, 62, 7, { handvoll: 30 }),
@@ -119,6 +123,7 @@
     'grüne bohnen': N(33, 2.4, 5, 1.4, 0.2, 1.9),
     'brechbohnen': N(33, 2.4, 5, 1.4, 0.2, 1.9),
     'apfel': N(54, 0.3, 14, 10, 0.2, 2, { stueck: 150 }),
+    'banane': N(93, 1.2, 20, 17, 0.2, 2, { stueck: 120 }),
     'ingwer': N(80, 1.8, 16, 1.7, 0.8, 2, { stueck: 20 }),
 
     // Kräuter
@@ -171,6 +176,7 @@
     'geschälte tomaten': N(20, 1, 3, 3, 0.2, 1, { dose: 400 }),
     'getrocknete tomaten': N(210, 5, 23, 15, 12, 6, { glas: 280 }), // in Öl, abgetropft
     'kokosmilch': N(195, 1.8, 3, 2, 19, 0.5, { dose: 400 }),
+    'pflanzlicher drink': N(45, 0.5, 7, 4, 1.5, 0.8),   // z. B. Haferdrink
     'preiselbeeren': N(180, 0.3, 43, 40, 0.3, 2, { glas: 400, dichte: 1.2 }),
     'kichererbsen': N(120, 7, 16, 1, 2.6, 5, { dose: 240 }),     // abgetropft
     'mais': N(80, 3, 14, 4, 1.2, 3, { dose: 285 }),
