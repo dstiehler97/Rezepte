@@ -258,7 +258,7 @@ body.druck .r-meta { margin: 4mm 0 5mm; padding: 2.5mm 0; border-color: #000; ga
 body.druck .meta-feld > .icon { color: #000; }
 body.druck .muetzen .an { color: #000; }
 body.druck .muetzen .aus { color: #ccc; }
-body.druck .r-inhalt { grid-template-columns: 62mm minmax(0, 1fr); gap: 9mm; }
+body.druck .r-inhalt { grid-template-columns: 62mm minmax(0, 1fr); gap: 9mm; align-items: start; }
 body.druck .r-inhalt h2, body.druck .r-tipps h2 { font-size: 12pt; border-bottom: 1.5pt solid #000; }
 body.druck .zutat { grid-template-columns: 5mm 20mm minmax(0, 1fr); gap: 2mm; padding: .7mm 0; break-inside: avoid; }
 body.druck .zutat .icon { color: #444; }

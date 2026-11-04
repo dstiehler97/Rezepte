@@ -548,6 +548,12 @@
     document.body.classList.add('druck');
     document.querySelectorAll('.rezept').forEach((el) => {
       el.style.zoom = ''; el.style.width = ''; el.classList.remove('zweiseitig');
+      // Tipps in die kürzere Spalte (meist unter die Zubereitung, wenn die Zutatenliste lang ist)
+      const tipps = el.querySelector('.r-tipps'), links = el.querySelector('.r-links'), rechts = el.querySelector('.r-schritte');
+      if (tipps && links && rechts) {
+        links.appendChild(tipps);
+        if (links.getBoundingClientRect().height > rechts.getBoundingClientRect().height + tipps.getBoundingClientRect().height) rechts.appendChild(tipps);
+      }
       let zoom = 1;
       for (let i = 0; i < 4; i++) {
         // Im echten Druck bricht Text minimal anders um -> 5 % Reserve
@@ -565,7 +571,11 @@
   }
   function druckEnde() {
     document.body.classList.remove('druck');
-    document.querySelectorAll('.rezept').forEach((el) => { el.style.zoom = ''; el.style.width = ''; el.classList.remove('zweiseitig'); });
+    document.querySelectorAll('.rezept').forEach((el) => {
+      el.style.zoom = ''; el.style.width = ''; el.classList.remove('zweiseitig');
+      const tipps = el.querySelector('.r-tipps'), links = el.querySelector('.r-links');
+      if (tipps && links) links.appendChild(tipps);
+    });
   }
   window.addEventListener('beforeprint', druckVorbereiten);
   window.addEventListener('afterprint', druckEnde);

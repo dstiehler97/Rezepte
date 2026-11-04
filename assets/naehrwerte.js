@@ -24,7 +24,7 @@
     'salz': N(0, 0, 0, 0, 0, 0, { dichte: 1.2 }),
     'pfeffer': N(255, 11, 39, 1, 3.3, 25, { dichte: 0.5 }),
     'paprikapulver': GEWUERZ, 'chiliflocken': GEWUERZ, 'muskat': GEWUERZ, 'muskatnuss': GEWUERZ,
-    'zimt': GEWUERZ, 'kreuzkümmel': GEWUERZ, 'currypulver': GEWUERZ, 'kurkuma': GEWUERZ, 'oregano': GEWUERZ,
+    'zimt': GEWUERZ, 'kreuzkümmel': GEWUERZ, 'currypulver': GEWUERZ, 'kurkuma': GEWUERZ, 'piment': GEWUERZ, 'oregano': GEWUERZ,
     'lorbeerblatt': N(310, 8, 48, 0, 8, 26, { stueck: 0.2, blatt: 0.2 }),
     'lorbeer': N(310, 8, 48, 0, 8, 26, { stueck: 0.2, blatt: 0.2 }),
     'öl': N(884, 0, 0, 0, 100, 0, { dichte: 0.92 }),
@@ -149,12 +149,14 @@
     'stückige tomaten': N(21, 1.1, 3.5, 3, 0.2, 1, { dose: 400, packung: 400 }),
     'passierte tomaten': N(30, 1.4, 5, 4, 0.2, 1, { packung: 500, glas: 500 }),
     'kokosmilch': N(195, 1.8, 3, 2, 19, 0.5, { dose: 400 }),
+    'preiselbeeren': N(180, 0.3, 43, 40, 0.3, 2, { glas: 400, dichte: 1.2 }),
     'kichererbsen': N(120, 7, 16, 1, 2.6, 5, { dose: 240 }),     // abgetropft
     'mais': N(80, 3, 14, 4, 1.2, 3, { dose: 285 }),
 
     // Brot
     'brot': N(220, 6.5, 43, 2, 1.2, 5, { scheibe: 45 }),
     'brötchen': N(275, 9, 54, 2, 1.5, 3, { stueck: 60 }),
+    'knödelbrot': N(375, 11, 74, 3, 2, 4),
     'semmelbrösel': N(365, 10, 73, 3, 2, 5, { dichte: 0.45 }),
 
     // Getränke

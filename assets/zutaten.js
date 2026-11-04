@@ -45,6 +45,7 @@
     'kreuzkümmel':   { k: GW, icon: 'gewuerz', vorrat: true },
     'currypulver':   { k: GW, icon: 'gewuerz', vorrat: true },
     'kurkuma':       { k: GW, icon: 'gewuerz', vorrat: true },
+    'piment':        { k: GW, icon: 'gewuerz', vorrat: true },
     'ghee':          { k: KU, icon: 'butter' },
     'oregano':       { k: GW, icon: 'kraeuter', vorrat: true },
     'lorbeerblatt':  { k: GW, icon: 'kraeuter', vorrat: true },
@@ -176,12 +177,14 @@
     'stückige tomaten':  { k: KO, icon: 'tomate' },
     'passierte tomaten': { k: KO, icon: 'tomate' },
     'kokosmilch':        { k: KO, icon: 'milch' },
+    'preiselbeeren':     { k: KO },
     'kichererbsen':      { k: KO },
     'mais':              { k: KO },
 
     // Brot
     'brot':          { k: BR },
     'brötchen':      { k: BR },
+    'knödelbrot':    { k: BR },
     'semmelbrösel':  { k: BR, icon: 'mehl', vorrat: true },
 
     // Getränke
