@@ -1,0 +1,261 @@
+/* ============================================================ Grundlagen */
+:root {
+  --papier: #fbf8f3;
+  --flaeche: #ffffff;
+  --text: #2a2522;
+  --leise: #6f665f;
+  --linie: #e6dfd5;
+  --akzent: #a8432a;
+  --akzent-hell: #f6e7e1;
+  --radius: 10px;
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--papier);
+  color: var(--text);
+  font: 16px/1.5 var(--sans);
+}
+a { color: var(--akzent); }
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.2; margin: 0; }
+h1 { font-size: 2rem; }
+h2 { font-size: 1.25rem; }
+.icon { width: 1.2em; height: 1.2em; flex: none; vertical-align: -0.22em; }
+.klein { font-size: .85rem; color: var(--leise); }
+.leer { color: var(--leise); padding: 2rem 0; }
+.hinweis { color: var(--leise); }
+.hinweis.fehler { color: var(--akzent); }
+.nur-druck { display: none; }
+main { max-width: 1040px; margin: 0 auto; padding: 1.25rem 16px 4rem; }
+
+/* ============================================================ Kopfleiste */
+.leiste {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  padding: .6rem 16px;
+  background: var(--flaeche);
+  border-bottom: 1px solid var(--linie);
+}
+.marke { font: 600 1.3rem var(--serif); color: var(--text); text-decoration: none; }
+.nav { display: flex; gap: .25rem; flex-wrap: wrap; margin-left: auto; }
+.nav a {
+  padding: .4rem .7rem; border-radius: 999px;
+  color: var(--text); text-decoration: none; font-size: .95rem;
+}
+.nav a:hover { background: var(--papier); }
+.nav a.aktiv { background: var(--akzent-hell); color: var(--akzent); font-weight: 600; }
+.zahl:not(:empty) {
+  display: inline-block; min-width: 1.3em; padding: 0 .35em; margin-left: .2em;
+  border-radius: 999px; background: var(--akzent); color: #fff;
+  font-size: .75rem; text-align: center; line-height: 1.5;
+}
+
+/* ============================================================ Knöpfe */
+.werkzeuge { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.abstand { flex: 1; }
+.knopf {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .5rem .85rem; border-radius: 8px;
+  border: 1px solid var(--linie); background: var(--flaeche); color: var(--text);
+  font: inherit; font-size: .95rem; text-decoration: none; cursor: pointer;
+}
+.knopf:hover { border-color: var(--leise); }
+.knopf.haupt { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+.knopf.leise { background: transparent; border-color: transparent; }
+.knopf.leise:hover { background: var(--flaeche); border-color: var(--linie); }
+.icon-knopf { padding: .4rem; }
+input, select {
+  font: inherit; padding: .5rem .7rem; border-radius: 8px;
+  border: 1px solid var(--linie); background: var(--flaeche); color: var(--text);
+}
+label.inline { display: inline-flex; align-items: center; gap: .4rem; }
+label.inline input { width: 4.5rem; }
+
+/* ============================================================ Übersicht */
+.kopf-seite { margin-bottom: 1.25rem; }
+.kopf-seite h1 { margin-bottom: .75rem; }
+.filter { display: flex; flex-direction: column; gap: .75rem; }
+.suchfeld {
+  display: flex; align-items: center; gap: .5rem; padding: 0 .75rem;
+  background: var(--flaeche); border: 1px solid var(--linie); border-radius: 999px; max-width: 480px;
+}
+.suchfeld input { border: 0; flex: 1; padding: .6rem 0; background: transparent; outline: none; }
+.chips { display: flex; gap: .4rem; flex-wrap: wrap; }
+.chip {
+  padding: .3rem .8rem; border-radius: 999px; border: 1px solid var(--linie);
+  background: var(--flaeche); color: var(--text); text-decoration: none; font-size: .9rem;
+}
+.chip.aktiv { background: var(--text); border-color: var(--text); color: var(--papier); }
+.karten { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+.karte {
+  display: flex; flex-direction: column; gap: .35rem; padding: 1.1rem 1.2rem;
+  background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius);
+  color: var(--text); text-decoration: none; transition: border-color .15s, transform .15s;
+}
+.karte:hover { border-color: var(--akzent); transform: translateY(-1px); }
+.karte img { width: calc(100% + 2.4rem); margin: -1.1rem -1.2rem .4rem; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--radius) var(--radius) 0 0; }
+.karte-kat, .r-kat { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--akzent); font-weight: 600; }
+.karte p { margin: 0; color: var(--leise); font-size: .95rem; }
+.karte-meta { display: flex; gap: 1rem; margin-top: auto; padding-top: .5rem; color: var(--leise); font-size: .85rem; }
+
+/* ============================================================ Rezept */
+.rezept {
+  background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius);
+  padding: 2rem 2.25rem; margin-bottom: 1.5rem;
+}
+.r-kopf { display: flex; gap: 1.5rem; align-items: flex-start; }
+.r-titelblock { flex: 1; }
+.r-kopf h1 { font-size: 2.3rem; margin: .2rem 0 .4rem; }
+.r-beschreibung { margin: 0; color: var(--leise); font-size: 1.05rem; }
+.r-bild { width: 34%; aspect-ratio: 4/3; object-fit: cover; border-radius: 8px; }
+.r-meta {
+  display: flex; flex-wrap: wrap; gap: .5rem 2rem; margin: 1.25rem 0 1.5rem; padding: .8rem 0;
+  border-top: 1px solid var(--linie); border-bottom: 1px solid var(--linie);
+}
+.meta-feld { display: flex; align-items: center; gap: .5rem; }
+.meta-feld > .icon { color: var(--akzent); width: 1.4em; height: 1.4em; }
+.meta-feld small { display: block; color: var(--leise); font-size: .8rem; }
+.muetzen { display: inline-flex; }
+.muetzen .icon { width: 1.3em; height: 1.3em; }
+.muetzen .an { color: var(--akzent); }
+.muetzen .aus { color: var(--linie); }
+.stepper { display: inline-flex; align-items: center; gap: .35rem; }
+.stepper button {
+  display: inline-grid; place-items: center; width: 1.9rem; height: 1.9rem; padding: 0;
+  border: 1px solid var(--linie); border-radius: 50%; background: var(--flaeche); color: var(--text); cursor: pointer;
+}
+.stepper button:disabled { opacity: .4; cursor: default; }
+.stepper strong { min-width: 1.4em; text-align: center; font-size: 1.1rem; }
+
+.r-inhalt { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: 2.5rem; }
+.r-inhalt h2, .r-tipps h2 { font-size: 1.15rem; margin-bottom: .75rem; padding-bottom: .35rem; border-bottom: 2px solid var(--akzent); display: inline-block; }
+.r-zutaten ul { list-style: none; margin: 0; padding: 0; }
+.zutat {
+  display: grid; grid-template-columns: 1.4rem 5.4rem minmax(0, 1fr); gap: .5rem; align-items: baseline;
+  padding: .32rem 0; border-bottom: 1px dotted var(--linie);
+}
+.zutat .icon { color: var(--leise); vertical-align: -0.3em; }
+.z-menge { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.z-name small { display: block; color: var(--leise); font-size: .82rem; line-height: 1.3; }
+.z-name em { color: var(--leise); font-style: normal; font-size: .85rem; }
+.abschnitt { font-weight: 600; font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--leise); padding: .9rem 0 .2rem; }
+.abschnitt:first-child { padding-top: 0; }
+.schritt { display: flex; gap: .9rem; margin-bottom: 1rem; break-inside: avoid; }
+.schritt .nr {
+  flex: none; display: grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 50%;
+  background: var(--akzent-hell); color: var(--akzent); font-weight: 700; font-size: .9rem;
+}
+.schritt p { margin: .15rem 0 0; }
+.schritt-abschnitt { font-size: 1rem; margin: 1.2rem 0 .6rem; }
+.r-tipps { margin-top: 1.75rem; padding: 1rem 1.25rem; background: var(--papier); border-radius: 8px; break-inside: avoid; }
+.r-tipps h2 { border: 0; padding: 0; margin-bottom: .4rem; }
+.r-tipps ul { margin: 0; padding-left: 1.2rem; }
+.r-quelle { margin: 1rem 0 0; font-size: .85rem; color: var(--leise); }
+
+/* ============================================================ Wochenplan */
+.plan-neu { margin-bottom: 1.5rem; }
+.plan-neu select { min-width: min(100%, 320px); }
+.plan-tag { margin-bottom: 1.25rem; }
+.plan-tag h2 { font-size: 1.05rem; margin-bottom: .5rem; }
+.plan-tag ul { list-style: none; margin: 0; padding: 0; }
+.plan-eintrag {
+  display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+  padding: .6rem .8rem; margin-bottom: .4rem;
+  background: var(--flaeche); border: 1px solid var(--linie); border-radius: 8px;
+}
+.plan-eintrag a { flex: 1 1 180px; font-weight: 600; color: var(--text); text-decoration: none; }
+.plan-eintrag select { padding: .3rem .5rem; }
+
+/* ============================================================ Einkaufsliste */
+.ek-fuer { color: var(--leise); margin: -.5rem 0 1rem; }
+.ek-neu { display: flex; gap: .5rem; margin-bottom: 1.25rem; max-width: 520px; }
+.ek-neu input { flex: 1; min-width: 0; }
+.ek-gruppen { columns: 2 300px; column-gap: 2rem; }
+.ek-gruppe { break-inside: avoid; margin-bottom: 1.25rem; }
+.ek-gruppe h2 { font-size: 1rem; margin-bottom: .35rem; padding-bottom: .25rem; border-bottom: 2px solid var(--akzent); }
+.ek-gruppe.vorrat h2 { border-color: var(--linie); color: var(--leise); }
+.ek-gruppe ul { list-style: none; margin: 0; padding: 0; }
+.ek-posten {
+  display: grid; grid-template-columns: 1.2rem 1.3rem 5.6rem minmax(0, 1fr) auto; gap: .5rem; align-items: center;
+  padding: .35rem 0; border-bottom: 1px dotted var(--linie); cursor: pointer; user-select: none;
+}
+.ek-posten .box {
+  display: grid; place-items: center; width: 1.1rem; height: 1.1rem;
+  border: 1.5px solid var(--leise); border-radius: 3px; color: transparent;
+}
+.ek-posten .box .icon { width: .9rem; height: .9rem; }
+.ek-posten.erledigt .box { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+.ek-posten.erledigt .ek-name, .ek-posten.erledigt .ek-menge { text-decoration: line-through; color: var(--leise); }
+.ek-icon { color: var(--leise); display: grid; }
+.ek-menge { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ek-name em { color: var(--leise); font-style: normal; font-size: .85rem; }
+
+/* ============================================================ Meldung */
+#meldung {
+  position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 1rem);
+  padding: .6rem 1rem; border-radius: 8px; background: var(--text); color: var(--papier);
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+}
+#meldung.sichtbar { opacity: 1; transform: translate(-50%, 0); }
+
+/* ============================================================ Handy */
+@media (max-width: 720px) {
+  h1 { font-size: 1.6rem; }
+  .leiste { gap: .4rem; }
+  .nav { margin-left: 0; width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+  .nav a { white-space: nowrap; }
+  .rezept { padding: 1.25rem 1rem; }
+  .r-kopf { flex-direction: column; }
+  .r-kopf h1 { font-size: 1.8rem; }
+  .r-bild { width: 100%; }
+  .r-inhalt { grid-template-columns: 1fr; gap: 1.5rem; }
+  .ek-posten { grid-template-columns: 1.2rem 1.3rem 5.2rem minmax(0, 1fr) auto; }
+}
+
+/* ============================================================ Druck (A4) */
+@page { size: A4; margin: 15mm 15mm 14mm; }
+@media print {
+  :root { --akzent: #000; --akzent-hell: #fff; --linie: #bbb; --leise: #555; }
+  body { background: #fff; font-size: 10.5pt; line-height: 1.45; color: #000; }
+  .nur-bildschirm, .leiste, #meldung { display: none !important; }
+  .nur-druck { display: inline; }
+  main { max-width: none; padding: 0; }
+  a { color: inherit; text-decoration: none; }
+  .werkzeuge { margin-bottom: 4mm; }
+  .werkzeuge h1 { font-size: 18pt; }
+
+  /* Rezeptseite: jedes Rezept auf eigener Seite, gleiches Raster */
+  .rezept { border: 0; border-radius: 0; padding: 0; margin: 0; break-after: page; }
+  .rezept:last-child { break-after: auto; }
+  .r-kat { font-size: 8pt; color: #555; }
+  .r-kopf h1 { font-size: 24pt; margin: 1mm 0 2mm; }
+  .r-beschreibung { font-size: 11pt; color: #333; }
+  .r-bild { width: 55mm; }
+  .r-meta { margin: 5mm 0 6mm; padding: 2.5mm 0; border-color: #000; gap: 2mm 10mm; }
+  .meta-feld > .icon { color: #000; }
+  .muetzen .an { color: #000; }
+  .muetzen .aus { color: #ccc; }
+  .r-inhalt { grid-template-columns: 62mm minmax(0, 1fr); gap: 9mm; }
+  .r-inhalt h2, .r-tipps h2 { font-size: 12pt; border-bottom: 1.5pt solid #000; }
+  .zutat { grid-template-columns: 5mm 20mm minmax(0, 1fr); gap: 2mm; padding: 1.2mm 0; break-inside: avoid; }
+  .zutat .icon { color: #444; }
+  .schritt { gap: 3mm; margin-bottom: 3.5mm; }
+  .schritt .nr { width: 6mm; height: 6mm; border: 1pt solid #000; font-size: 9pt; background: none; color: #000; }
+  .r-tipps { background: none; border: 1pt solid #bbb; padding: 3mm 4mm; margin-top: 6mm; }
+
+  /* Einkaufsliste kompakt */
+  .ek-fuer { margin: 0 0 4mm; color: #333; }
+  .ek-gruppen { columns: 2; column-gap: 10mm; }
+  .ek-gruppe { margin-bottom: 4mm; }
+  .ek-gruppe h2 { font-size: 10.5pt; border-bottom: 1pt solid #000; }
+  .ek-posten { grid-template-columns: 4mm 4.5mm 20mm minmax(0, 1fr); gap: 1.5mm; padding: .9mm 0; }
+  .ek-posten .box { width: 3.4mm; height: 3.4mm; border: .8pt solid #000; }
+  .ek-posten.erledigt { display: none; }
+
+  /* Wochenplan */
+  .plan-eintrag { border: 0; border-bottom: .5pt solid #bbb; border-radius: 0; padding: 1.5mm 0; }
+  .plan-eintrag select, .plan-eintrag .stepper button, .icon-knopf { display: none; }
+}
