@@ -5,6 +5,7 @@ window.REZEPT_DATEIEN = [
   "koettbullar",
   "one-pot-hackfleisch-porree-nudeln",
   "pfannkuchen",
+  "pfifferlinge-mit-spinatknoedeln-in-salbeibutter",
   "semmelknoedel",
   "spaghetti-bolognese",
   "suesskartoffelragout-mit-bulgur-cashewkernen",

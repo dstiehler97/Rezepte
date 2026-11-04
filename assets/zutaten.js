@@ -72,6 +72,7 @@
     'cashewkerne':   { k: BA, icon: 'nuss' },
     'walnüsse':      { k: BA, icon: 'nuss' },
     'haselnüsse':    { k: BA, icon: 'nuss' },
+    'walnusskerne':  { k: BA, icon: 'nuss' },
     'rosinen':       { k: BA },
     'haselnusskerne': { k: BA, icon: 'nuss' },
 
@@ -114,6 +115,7 @@
     'zucchini':      { k: OG },
     'aubergine':     { k: OG },
     'champignon':    { k: OG },
+    'pfifferlinge':  { k: OG },
     'pilze':         { k: OG },
     'lauch':         { k: OG, icon: 'lauch' },
     'porree':        { k: OG, icon: 'lauch' },
@@ -134,6 +136,7 @@
     'koriander':     { k: KR, icon: 'kraeuter' },
     'dill':          { k: KR, icon: 'kraeuter' },
     'minze':         { k: KR, icon: 'kraeuter' },
+    'salbei':        { k: KR, icon: 'kraeuter' },
 
     // Fleisch & Fisch
     'hackfleisch':   { k: FF, icon: 'fleisch' },

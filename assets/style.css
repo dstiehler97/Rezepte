@@ -290,6 +290,5 @@ body.druck .plan-eintrag select, body.druck .plan-eintrag .stepper button, body.
 @media print {
   .nur-bildschirm, .leiste, #meldung { display: none !important; }
   body { background: #fff; }
-  main { width: auto !important; }
 }
 

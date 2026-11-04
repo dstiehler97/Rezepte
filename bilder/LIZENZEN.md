@@ -9,3 +9,4 @@
 | one-pot-hackfleisch-porree-nudeln.jpg | KptnCook | urheberrechtlich geschützt (privat) |
 | cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen.jpg | KptnCook | urheberrechtlich geschützt (privat) |
 | suesskartoffelragout-mit-bulgur-cashewkernen.jpg | KptnCook | urheberrechtlich geschützt (privat) |
+| pfifferlinge-mit-spinatknoedeln-in-salbeibutter.jpg | KptnCook | urheberrechtlich geschützt (privat) |

@@ -48,6 +48,7 @@
     'mandeln': N(580, 21, 6, 4, 52, 12, { handvoll: 30 }),
     'cashewkerne': N(575, 18, 30, 6, 46, 3, { handvoll: 30 }),
     'walnüsse': N(665, 15, 7, 3, 65, 6, { handvoll: 30 }),
+    'walnusskerne': N(665, 15, 7, 3, 65, 6, { handvoll: 30 }),
     'haselnüsse': N(645, 15, 11, 4, 61, 8, { handvoll: 30 }),
     'rosinen': N(300, 2.5, 66, 66, 0.5, 3.5, { handvoll: 30, dichte: 0.65 }),
     'ghee': N(880, 0.3, 0, 0, 99.5, 0, { dichte: 0.9 }),
@@ -93,6 +94,7 @@
     'aubergine': N(25, 1.2, 2.5, 2.5, 0.2, 2.8, { stueck: 300 }),
     'champignon': N(22, 3.1, 0.6, 0.2, 0.3, 2, { stueck: 20, packung: 250 }),
     'pilze': N(22, 3.1, 0.6, 0.2, 0.3, 2, { packung: 250 }),
+    'pfifferlinge': N(20, 1.5, 0.2, 0.2, 0.5, 5.6),
     'lauch': N(29, 2.2, 3.3, 2, 0.3, 2.3, { stange: 200 }),
     'porree': N(29, 2.2, 3.3, 2, 0.3, 2.3, { stange: 200 }),
     'spinat': N(23, 2.9, 0.6, 0.4, 0.4, 2.6, { handvoll: 30 }),
@@ -105,7 +107,7 @@
 
     // Kräuter
     'petersilie': KRAEUTER, 'basilikum': KRAEUTER, 'schnittlauch': KRAEUTER, 'thymian': KRAEUTER,
-    'rosmarin': KRAEUTER, 'koriander': KRAEUTER, 'dill': KRAEUTER, 'minze': KRAEUTER,
+    'rosmarin': KRAEUTER, 'salbei': KRAEUTER, 'koriander': KRAEUTER, 'dill': KRAEUTER, 'minze': KRAEUTER,
 
     // Fleisch & Fisch (roh)
     'hackfleisch': N(260, 18, 0, 0, 21, 0),                 // gemischt
