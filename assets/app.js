@@ -313,10 +313,51 @@
     if (a.closest('.tabs, .nav, .marke, .nav-mehr') || a.hasAttribute('data-zurueck')) {
       // aktiver Tab auf seiner Startseite: nach oben
       if (a.getAttribute('href') === (location.hash || '#/') || (a.getAttribute('href') === '#/' && !location.hash)) {
-        e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' });
+        e.preventDefault(); window.scrollTo({ top: 0, behavior: wenigBewegung() ? 'auto' : 'smooth' });
       } else if (a.classList.contains('aktiv')) obenStarten = true;
     } else obenStarten = true;
   });
+
+  // ---------------------------------------------------------------- Kopfleiste & Übergänge (nur Bildschirm)
+  // Großer Seitentitel (erstes <h1> in #app); ist er nach oben weggescrollt, blendet die schmale, klebende
+  // Kopfleiste (#kopfleiste, Milchglas) den Titel klein ein – im Rezept mit Zurück-Knopf. Am PC per CSS aus.
+  const wenigBewegung = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const kopfleiste = document.getElementById('kopfleiste');
+  const kopfHoehe = () => (kopfleiste && getComputedStyle(kopfleiste).display !== 'none' ? kopfleiste.offsetHeight : 0);
+  let kopfBeobachter = null;
+  function kopfleisteBinden() {
+    if (!kopfleiste) return;
+    if (kopfBeobachter) { kopfBeobachter.disconnect(); kopfBeobachter = null; }
+    const seite = document.body.dataset.seite;
+    const h1 = seite === 'kochen' ? null : app.querySelector('h1');
+    kopfleiste.classList.remove('sichtbar');
+    kopfleiste.classList.toggle('aus', !h1);
+    if (!h1) return;
+    const rezept = seite === 'rezept';
+    kopfleiste.querySelector('.kl-titel').textContent = seite === 'start' ? 'Heute' : h1.textContent.trim();
+    const z = kopfleiste.querySelector('.kl-zurueck');
+    z.hidden = !rezept;
+    if (rezept) {
+      const text = /^#\/(rezepte|\?)/.test(letzteUebersicht) ? 'Alle Rezepte' : 'Heute';
+      z.setAttribute('href', letzteUebersicht);
+      z.setAttribute('aria-label', 'Zurück: ' + text);
+      z.querySelector('.kl-text').textContent = text;
+    }
+    if (!('IntersectionObserver' in window)) { kopfleiste.classList.add('sichtbar'); return; }
+    const h = kopfHoehe();
+    kopfBeobachter = new IntersectionObserver(([e]) => {
+      kopfleiste.classList.toggle('sichtbar', !e.isIntersecting && e.boundingClientRect.top < h);
+    }, { rootMargin: `-${h}px 0px 0px 0px` });
+    kopfBeobachter.observe(h1);
+  }
+  /** Neuer Inhalt blendet kurz ein (nur Opacity/Transform – Scrollstand und Messungen bleiben unberührt) */
+  function seiteEinblenden() {
+    if (wenigBewegung()) return;
+    app.classList.remove('rein');
+    void app.offsetWidth;   // Animation neu starten
+    app.classList.add('rein');
+  }
+  app.addEventListener('animationend', (e) => { if (e.target.parentElement === app) app.classList.remove('rein'); });
 
   let verlassen = null;         // Aufräumen der aktuellen Seite (z. B. Kochmodus: Wake Lock freigeben)
   function zeichnen() {
@@ -340,11 +381,14 @@
     else if (teile[0] === 'rezepte' || (!teile[0] && LISTEN_PARAMETER.some((k) => q.has(k)))) { document.body.dataset.seite = 'rezepte'; seiteUebersicht(q); }
     else { document.body.dataset.seite = 'start'; seiteHeute(); }
     angezeigt = location.hash;
+    const neueSeite = gezeichnet !== pfadVon(location.hash);
     gezeichnet = pfadVon(location.hash);
     window.scrollTo(0, obenStarten ? 0 : scrollStand[gezeichnet] || 0);
     obenStarten = false;
     Timer.markieren();
+    kopfleisteBinden();
     abstaendeMessen();
+    if (neueSeite) seiteEinblenden();
     if (nachDemZeichnen) { const f = nachDemZeichnen; nachDemZeichnen = null; f(); }
   }
   let nachDemZeichnen = null;   // einmalig nach dem nächsten Zeichnen (z. B. Dialog nach Seitenwechsel)
@@ -670,7 +714,7 @@
   }
   const miniKarte = (r, info) => `
     <li><a class="mini-karte" href="#/rezept/${esc(r.id)}">
-      <span class="mini-bild">${r.bild ? `<img src="${esc(r.bild)}" alt="" loading="lazy">` : svg('topf')}</span>
+      <span class="mini-bild">${bildFlaeche(r)}</span>
       <strong>${esc(r.titel)}</strong>
       ${info ? `<small>${esc(info)}</small>` : ''}
     </a></li>`;
@@ -779,37 +823,44 @@
     });
   }
 
-  /** Sortierter Wert auf der Karte hervorheben (o = Sortierung) */
+  /** Bildfläche einer Karte: Foto oder Platzhalter (Farbfläche mit Initiale), Ton aus der id */
+  function bildFlaeche(r) {
+    if (r.bild) return `<img src="${esc(r.bild)}" alt="" loading="lazy" decoding="async">`;
+    let h = 0;
+    for (const c of String(r.id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return `<span class="platzhalter ton-${h % 4}" aria-hidden="true"><span class="ph-initiale">${esc((r.titel || '?').trim().charAt(0).toUpperCase())}</span>${svg('topf')}</span>`;
+  }
+  /** Ernährungsform als dezentes Abzeichen auf Karten – nur vegan/vegetarisch */
+  function kartenAbzeichen(r) {
+    const e = ernaehrungVon(r);
+    if (e.id !== 'vegan' && e.id !== 'vegetarisch') return '';
+    return `<span class="karte-ern e-${e.id}">${e.id === 'vegan' ? 'Vegan' : 'Vegetarisch'}</span>`;
+  }
+  /** Bildkarte der Liste: Bild (Herz/Sterne darauf), Titel, eine Zeile Meta; der sortierte Wert steht hervorgehoben vorne */
   function karte(r, o) {
-    const z = gesamtzeit(r.zeit);
-    const an = (id) => (o === id ? ' class="sortwert"' : '');
-    const nw = { eiweiss: 'Eiweiß', fett: 'Fett', kh: 'Kohlenhydrate' }[o];
+    const z = gesamtzeit(r.zeit), sterne = sterneVon(r.id), t = tageSeitGekocht(r.id), n = gekochtHilfe.daten(r.id).length;
+    const nw = { eiweiss: 'Eiweiß', fett: 'Fett', kh: 'KH' }[o];
+    const hervor = nw ? nwZahl(nwp(r)[o], 'g') + ' ' + nw
+      : o === 'schwierigkeit' ? r.schwierigkeit || ''
+      : o === 'zuhause' ? (fehlend(r) ? 'fehlt: ' + fehlend(r) : 'alles da')
+      : o === 'bewertung' ? (sterne ? '★ ' + sterne : 'unbewertet')
+      : o === 'zuletzt' || o === 'laengst' ? (t === Infinity ? 'noch nie gekocht' : 'gekocht ' + vorText(t))
+      : o === 'haeufig' ? (n ? n + '× gekocht' : 'noch nie gekocht') : '';
+    const teile = [
+      hervor ? `<span class="sortwert">${esc(hervor)}</span>` : '',
+      z ? `<span${o === 'zeit' ? ' class="sortwert"' : ''}>${dauer(z)}</span>` : '',
+      !hervor || o === 'kcal' ? `<span${o === 'kcal' ? ' class="sortwert"' : ''}>${nwZahl(nwp(r).kcal, 'kcal')}</span>` : '',
+    ].filter(Boolean);
     return `
       <a class="karte" href="#/rezept/${esc(r.id)}">
-        ${r.bild ? `<img src="${esc(r.bild)}" alt="" loading="lazy">` : ''}
-        <span class="karte-kat">${esc(r.kategorie || '')}</span>
-        <h2>${esc(r.titel)}</h2>
-        ${r.beschreibung ? `<p>${esc(r.beschreibung)}</p>` : ''}
-        <span class="karte-meta">
-          ${z ? `<span${an('zeit')}>${svg('uhr')} ${dauer(z)}</span>` : ''}
-          <span${an('schwierigkeit')}>${svg('muetze')} ${esc(r.schwierigkeit || '')}</span>
-          <span${an('kcal')}>${nwZahl(nwp(r).kcal, 'kcal')}</span>
-          ${nw ? `<span class="sortwert">${nwZahl(nwp(r)[o], 'g')} ${nw}</span>` : ''}
-          ${zuhause.length ? `<span class="fehlt">${fehlend(r) ? 'fehlt: ' + fehlend(r) : 'alles da'}</span>` : ''}
-          ${persoenlichMeta(r, o)}
+        <span class="karte-bild">
+          ${bildFlaeche(r)}
+          ${istFavorit(r.id) || sterne ? `<span class="karte-marken">${sterne ? `<span class="karte-sterne" title="${sterne} von 5 Sternen">${svg('stern', 'voll')}${sterne}<span class="nur-sr"> von 5 Sternen</span></span>` : ''}${istFavorit(r.id) ? `<span class="karte-fav" title="Favorit">${svg('herz', 'voll')}<span class="nur-sr">Favorit</span></span>` : ''}</span>` : ''}
+          ${kartenAbzeichen(r)}
         </span>
-        ${merkmalHTML(r)}
+        <h2 class="karte-titel">${esc(r.titel)}</h2>
+        <span class="karte-meta">${teile.join('<span class="punkt" aria-hidden="true"> · </span>')}</span>
       </a>`;
-  }
-  /** Favorit, Sterne und (bei passender Sortierung) „gekocht“ auf der Karte */
-  function persoenlichMeta(r, o) {
-    const sterne = sterneVon(r.id), t = tageSeitGekocht(r.id), n = gekochtHilfe.daten(r.id).length;
-    const teile = [];
-    if (istFavorit(r.id)) teile.push(`<span class="karte-fav" title="Favorit">${svg('herz', 'voll')}<span class="nur-sr">Favorit</span></span>`);
-    if (sterne) teile.push(`<span class="karte-sterne${o === 'bewertung' ? ' sortwert' : ''}" title="${sterne} von 5 Sternen">★ ${sterne}</span>`);
-    if (o === 'zuletzt' || o === 'laengst') teile.push(`<span class="sortwert">${t === Infinity ? 'noch nie gekocht' : 'gekocht ' + vorText(t)}</span>`);
-    if (o === 'haeufig') teile.push(`<span class="sortwert">${n ? n + '× gekocht' : 'noch nie gekocht'}</span>`);
-    return teile.join('');
   }
   function merkmalHTML(r) {
     return `<span class="merkmale">${ernaehrungHTML(r)}${merkmaleVon(r).map((x) => `<span class="merkmal m-${x.id}">${esc(x.name)}</span>`).join('')}</span>`;
@@ -969,6 +1020,7 @@
     <span class="r-reiter-anker" aria-hidden="true"></span>
     <nav class="r-reiter nur-bildschirm" role="tablist" aria-label="Rezeptteile">
       ${REITER.map(([id, name]) => `<button type="button" role="tab" class="r-reiter-knopf" data-reiter-knopf="${id}" aria-selected="false">${name}</button>`).join('')}
+      <span class="r-reiter-strich" aria-hidden="true"></span>
     </nav>`;
   /** Nährwerte in einer Zeile für den Kopf am Handy (Details im Reiter „Zutaten“) */
   function nwKurzHTML(r) {
@@ -1045,7 +1097,7 @@
     document.title = r.titel + ' – Rezepte';
     const zurueckText = /^#\/(rezepte|\?)/.test(letzteUebersicht) ? 'Alle Rezepte' : 'Heute';
     app.innerHTML = `
-      <div class="werkzeuge r-werkzeuge nur-bildschirm">
+      <div class="werkzeuge r-werkzeuge nur-bildschirm${r.bild ? ' ueber-bild' : ''}">
         <a class="knopf leise zurueck" href="${esc(letzteUebersicht)}" data-zurueck aria-label="Zurück: ${zurueckText}">${svg('zurueck')} <span>${zurueckText}</span></a>
         <span class="abstand"></span>
         <button class="knopf haupt" id="zur-liste" data-zur-liste>${svg('korb')} <span>Auf Einkaufsliste</span></button>
@@ -1070,10 +1122,14 @@
         k.tabIndex = an ? 0 : -1;
         if (an && fokus) k.focus({ preventScroll: true });
       });
+      if (vorher && vorher !== neu && !wenigBewegung()) {
+        const ri = artikel.querySelector('.r-inhalt');
+        ri.classList.remove('rein'); void ri.offsetWidth; ri.classList.add('rein');
+      }
       if (neu === 'notizen' && notizFeld) { notizFeld.style.height = 'auto'; notizFeld.style.height = notizFeld.scrollHeight + 2 + 'px'; }
       // schon unter die Reiter gescrollt: neuen Reiter von oben zeigen (Leiste bleibt kleben)
       if (vorher && vorher !== neu && anker) {
-        const y = anker.getBoundingClientRect().top + window.scrollY;
+        const y = anker.getBoundingClientRect().top + window.scrollY - kopfHoehe();   // unter der kompakten Kopfleiste
         if (window.scrollY > y) window.scrollTo(0, y);
       }
     }
@@ -1105,6 +1161,7 @@
       adresseSetzen('#/rezept/' + r.id + '?p=' + begrenzen(b.dataset.p));
       seiteRezept(r, begrenzen(b.dataset.p), true);
       Timer.markieren();
+      kopfleisteBinden();
       abstaendeMessen();
     }));
     app.querySelectorAll('[data-gekocht-knopf]').forEach((k) => k.addEventListener('click', () => kochenAbschliessen(r)));
@@ -2721,6 +2778,7 @@
     const t = h('#timer-leiste.sichtbar');
     document.documentElement.style.setProperty('--timer-h', (t ? t + 8 : 0) + 'px');   // + Abstand der schwebenden Leiste
     document.documentElement.style.setProperty('--aktion-h', h('#app .r-aktion') + 'px');   // fester „Jetzt kochen“-Knopf (Rezept, Handy)
+    document.documentElement.style.setProperty('--kopf-h', kopfHoehe() + 'px');   // kompakte Kopfleiste oben (Handy)
   }
   window.addEventListener('resize', abstaendeMessen);
   window.addEventListener('timerleiste', abstaendeMessen);
