@@ -32,6 +32,7 @@
     'brühe': N(5, 0.2, 0.5, 0.4, 0.2, 0),               // zubereitet
     'senf': N(85, 6, 5, 3, 4.5, 2, { dichte: 1.05 }),
     'sojasauce': N(55, 8, 5, 1, 0.1, 0.8, { dichte: 1.15 }),
+    'mirin': N(240, 0.3, 43, 40, 0, 0, { dichte: 1.15 }),
     'chilisauce': N(95, 1.9, 19, 15, 0.9, 2.2, { dichte: 1.1 }),
     'austernsauce': N(110, 2.5, 22, 15, 0.3, 0.3, { dichte: 1.2 }),
     'gewürzmischung': N(300, 12, 35, 5, 10, 30, { dichte: 0.5 }),
@@ -55,6 +56,8 @@
     'rosinen': N(300, 2.5, 66, 66, 0.5, 3.5, { handvoll: 30, dichte: 0.65 }),
     'ghee': N(880, 0.3, 0, 0, 99.5, 0, { dichte: 0.9 }),
     'haselnusskerne': N(645, 15, 11, 4, 61, 8, { handvoll: 30 }),
+    'sesamsaat': N(575, 18, 10, 0.3, 50, 12, { dichte: 0.6 }),
+    'sesam': N(575, 18, 10, 0.3, 50, 12, { dichte: 0.6 }),
 
     // Kühlregal
     'butter': N(741, 0.7, 0.6, 0.6, 83, 0, { dichte: 0.9 }),
@@ -143,6 +146,8 @@
     'basmatireis': N(349, 7, 78, 0.2, 0.6, 1.4),
     'jasminreis': N(349, 7, 78, 0.2, 0.6, 1.4),
     'risottoreis': N(349, 7, 78, 0.2, 0.6, 1.4),
+    'sushireis': N(349, 7, 78, 0.2, 0.6, 1.4),
+    'sojagranulat': N(340, 50, 14, 7, 1.5, 15, { dichte: 0.35 }),
     'couscous': N(356, 12, 72, 0, 1.5, 5),
     'bulgur': N(342, 12, 69, 0.4, 1.3, 9),
     'quinoa': N(368, 14, 64, 0, 6, 7),

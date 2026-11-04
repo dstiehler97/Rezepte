@@ -7,6 +7,7 @@ window.REZEPT_DATEIEN = [
   "one-pot-hackfleisch-porree-nudeln",
   "pfannkuchen",
   "pfifferlinge-mit-spinatknoedeln-in-salbeibutter",
+  "sanshoku-don-vegetarische-drei-farben-reisschale",
   "semmelknoedel",
   "spaghetti-bolognese",
   "suesskartoffelragout-mit-bulgur-cashewkernen",

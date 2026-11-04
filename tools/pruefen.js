@@ -53,7 +53,7 @@ for (const datei of dateien) {
     if (!z.name) { melde(datei, 'Zutat ohne name: ' + JSON.stringify(z)); continue; }
     try { Einheiten.skalieren(z, 1); } catch (e) { melde(datei, e.message); }
     if (z.menge != null && typeof z.menge !== 'number') melde(datei, `menge bei ${z.name} muss eine Zahl sein`);
-    if (Zutaten.info(z).kategorie === 'Sonstiges' && !z.einkauf) ohneKategorie.add(z.name);
+    if (Zutaten.info(z).kategorie === 'Sonstiges' && !z.einkauf && !Zutaten.info(z).nie) ohneKategorie.add(z.name);
     if (Zutaten.info(z).trocken && z.menge != null && !['g', 'kg'].includes(z.einheit)) melde(datei, `${z.name}: Nudeln/Reis/Getreide immer als Trockengewicht in g angeben`);
   }
   const nw = Naehrwerte.berechnen(r);
