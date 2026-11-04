@@ -7,6 +7,7 @@
   const STANDARD_PERSONEN = 4;
   const TAGE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
   const SCHWIERIGKEIT = { einfach: 1, mittel: 2, anspruchsvoll: 3 };
+  const APP_STAND = '2026-11-04';   // bei Änderungen an der App anpassen (steht unter „Mehr“)
 
   const app = document.getElementById('app');
   let rezepte = [];
@@ -108,22 +109,73 @@
     return { teile, q };
   }
 
+  // Bereiche = Tabs. Jeder Tab merkt sich seine letzte Adresse (wie in Handy-Apps):
+  // Übersicht → Rezept → Kochmodus → Einkauf → Tab „Rezepte“ führt zurück zum Kochmodus.
+  // Tippen auf den schon aktiven Tab führt zu dessen Startseite.
+  const BEREICH = { '': 'rezepte', rezept: 'rezepte', kochen: 'rezepte', plan: 'plan', einkauf: 'einkauf', zuhause: 'zuhause', mehr: 'mehr', kochbuch: 'mehr' };
+  const START = { rezepte: '#/', plan: '#/plan', einkauf: '#/einkauf', zuhause: '#/zuhause', mehr: '#/mehr' };
+  const tabStand = {};          // Bereich -> letzte Adresse
+  let letzteUebersicht = '#/';  // mit Filtern, für „Alle Rezepte“
+  const bereichVon = (seite) => BEREICH[seite || ''] || 'rezepte';
+
+  /** Adresse ändern ohne neu zu zeichnen (Filter, Personen, Kochschritt) */
+  function adresseSetzen(hash) {
+    history.replaceState(null, '', hash);
+    navAktualisieren();
+  }
+  function navAktualisieren() {
+    const seite = route().teile[0] || '';
+    const b = bereichVon(seite);
+    tabStand[b] = location.hash || '#/';
+    if (!seite) letzteUebersicht = location.hash || '#/';
+    document.querySelectorAll('[data-bereich]').forEach((a) => {
+      const x = a.dataset.bereich;
+      a.classList.toggle('aktiv', x === b);
+      // Handy-Tabs mit Gedächtnis; PC-Kopfzeile: Rezepte = Übersicht mit letzten Filtern
+      const ziel = a.closest('.tabs') ? (x === b ? START[x] : tabStand[x] || START[x]) : (x === 'rezepte' && b !== 'rezepte' ? letzteUebersicht : START[x]);
+      a.setAttribute('href', ziel);
+    });
+  }
+
+  // Scrollposition je Seite merken: zurück (Tab, Zurück-Knopf, Browser) landet an derselben Stelle,
+  // ein neu geöffneter Link (Rezeptkarte, „Kochen“) beginnt oben.
+  const scrollStand = {};       // Pfad ohne ?… -> scrollY
+  let obenStarten = false;
+  const pfadVon = (hash) => (hash || '#/').split('?')[0] || '#/';
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.addEventListener('scroll', () => { scrollStand[pfadVon(location.hash)] = window.scrollY; }, { passive: true });
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || e.defaultPrevented) return;
+    if (a.closest('.tabs, .nav, .marke, .nav-mehr') || a.hasAttribute('data-zurueck')) {
+      // aktiver Tab auf seiner Startseite: nach oben
+      if (a.getAttribute('href') === (location.hash || '#/') || (a.getAttribute('href') === '#/' && !location.hash)) {
+        e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (a.classList.contains('aktiv')) obenStarten = true;
+    } else obenStarten = true;
+  });
+
+  let verlassen = null;         // Aufräumen der aktuellen Seite (z. B. Kochmodus: Wake Lock freigeben)
   function zeichnen() {
     const { teile, q } = route();
-    const ziel = '#/' + (teile[0] === 'rezept' ? '' : (teile[0] || ''));
-    document.querySelectorAll('.nav a, .tabs a').forEach((a) => a.classList.toggle('aktiv', ziel === a.getAttribute('href')));
+    if (verlassen) { verlassen(); verlassen = null; }
+    navAktualisieren();
     zaehlerAktualisieren();
     document.body.dataset.seite = teile[0] || 'start';
 
     if (teile[0] === 'rezept' && nachId[teile[1]]) {
       const r = nachId[teile[1]];
       seiteRezept(r, begrenzen(q.get('p') || r.personen || STANDARD_PERSONEN));
-    } else if (teile[0] === 'plan') seitePlan();
+    } else if (teile[0] === 'kochen' && nachId[teile[1]]) seiteKochen(nachId[teile[1]], q);
+    else if (teile[0] === 'plan') seitePlan();
     else if (teile[0] === 'einkauf') seiteEinkauf();
     else if (teile[0] === 'zuhause') seiteZuhause();
     else if (teile[0] === 'kochbuch') seiteKochbuch(q);
-    else seiteUebersicht(q);
-    window.scrollTo(0, 0);
+    else if (teile[0] === 'mehr') seiteMehr();
+    else { document.body.dataset.seite = 'start'; seiteUebersicht(q); }
+    window.scrollTo(0, obenStarten ? 0 : scrollStand[pfadVon(location.hash)] || 0);
+    obenStarten = false;
+    Timer.markieren();
   }
 
   /** Alle Rezepte, deren Zutaten auf die Einkaufsliste kommen: Wochenplan + direkt hinzugefügte */
@@ -284,7 +336,7 @@
       if (f.m.length) p.set('m', f.m.join(','));
       if (f.o !== 'name') p.set('o', f.o);
       if (f.d !== sortierung(f.o)[3]) p.set('d', f.d);
-      history.replaceState(null, '', '#/' + (p.toString() ? '?' + p.toString() : ''));
+      adresseSetzen('#/' + (p.toString() ? '?' + p.toString() : ''));
       const liste = filtern(f);
       $('karten').innerHTML = liste.map((r) => karte(r, f.o)).join('') || '<p class="leer">Keine Rezepte gefunden. Filter lockern?</p>';
       const aktiv = f.m.length + (f.z ? 1 : 0);
@@ -367,7 +419,8 @@
     const schritte = (r.schritte || []).map((s) => {
       if (typeof s === 'object' && s.abschnitt) return `<h3 class="schritt-abschnitt">${esc(s.abschnitt)}</h3>`;
       nr += 1;
-      return `<div class="schritt"><span class="nr">${nr}</span><p>${fett(s)}</p></div>`;
+      if (!interaktiv) return `<div class="schritt"><span class="nr">${nr}</span><p>${fett(s)}</p></div>`;
+      return `<div class="schritt" ${timerZiel(r, nr, personen)}><span class="nr">${nr}</span><p>${Timer.chips(fett(s))}</p></div>`;
     }).join('');
 
     const zeitDetail = Object.entries(r.zeit || {}).filter(([, v]) => v)
@@ -405,6 +458,7 @@
 
         ${naehrwertHTML(r, personen)}
         ${merkmalHTML(r)}
+        ${interaktiv ? kochKnopfHTML(r, personen) : ''}
 
         <div class="r-inhalt">
           <div class="r-links">
@@ -452,7 +506,7 @@
     document.title = r.titel + ' – Rezepte';
     app.innerHTML = `
       <div class="werkzeuge r-werkzeuge nur-bildschirm">
-        <a class="knopf leise zurueck" href="#/" aria-label="Alle Rezepte">${svg('zurueck')} <span>Alle Rezepte</span></a>
+        <a class="knopf leise zurueck" href="${esc(letzteUebersicht)}" data-zurueck aria-label="Alle Rezepte">${svg('zurueck')} <span>Alle Rezepte</span></a>
         <span class="abstand"></span>
         <button class="knopf haupt" id="zur-liste">${svg('korb')} <span>Auf Einkaufsliste</span></button>
         <button class="knopf" id="zum-plan" aria-label="Zum Wochenplan" title="Zum Wochenplan">${svg('kalender')} <span>Wochenplan</span></button>
@@ -461,8 +515,9 @@
       ${rezeptHTML(r, personen, true)}`;
 
     app.querySelectorAll('.stepper button').forEach((b) => b.addEventListener('click', () => {
-      history.replaceState(null, '', '#/rezept/' + r.id + '?p=' + begrenzen(b.dataset.p));
+      adresseSetzen('#/rezept/' + r.id + '?p=' + begrenzen(b.dataset.p));
       seiteRezept(r, begrenzen(b.dataset.p));
+      Timer.markieren();
     }));
     document.getElementById('zum-plan').addEventListener('click', (e) => {
       plan.push({ uid: uid(), id: r.id, personen, tag: '' });
