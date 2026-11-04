@@ -20,7 +20,7 @@ Rezept({
     { abschnitt: 'Für den Belag' },
     { menge: 2, name: 'Mozzarella', hinweis: 'à 125 g' },
     { menge: 3, einheit: 'EL', name: 'Pesto verde' },
-    { menge: 80, einheit: 'g', name: 'Cherrytomate', mehrzahl: 'Cherrytomaten' },
+    { menge: 250, einheit: 'g', name: 'Cherrytomate', mehrzahl: 'Cherrytomaten' },
     { abschnitt: 'Zum Servieren' },
     { menge: 10, einheit: 'g', name: 'Basilikum', hinweis: 'frisch' },
     { menge: 20, einheit: 'g', name: 'Parmesan' },
