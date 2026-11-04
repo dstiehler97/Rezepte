@@ -82,6 +82,8 @@
     'käse': N(355, 25, 0, 0, 28, 0, { scheibe: 20 }),
     'parmesan': N(392, 33, 0, 0, 28, 0),
     'mozzarella': N(250, 18, 1, 1, 19, 0, { stueck: 125, packung: 125 }),
+    'burrata': N(240, 15, 2, 1, 19, 0, { stueck: 125, packung: 125 }),
+    'kapern': N(23, 2.4, 4.9, 0.4, 0.9, 3.2, { glas: 60 }),
     'gouda': N(355, 25, 0, 0, 28, 0, { scheibe: 20 }),
     'feta': N(262, 17, 0.7, 0.7, 21, 0, { packung: 200, stueck: 200 }),
     'schafkäse': N(262, 17, 0.7, 0.7, 21, 0, { packung: 200, stueck: 200 }),

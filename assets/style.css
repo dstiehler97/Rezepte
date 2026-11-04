@@ -671,7 +671,7 @@ body.blatt-an { overflow: hidden; }
 /* Wochenplan: gekocht, wer isst mit */
 .plan-neu { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
 .pe-kopf { flex: 1 1 220px; display: flex; align-items: center; gap: .5rem; min-width: 0; }
-.pe-kopf a { flex: 1; min-width: 0; font-weight: 600; color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
+.pe-kopf a { flex: 1; min-width: 0; font-weight: 600; color: var(--text); text-decoration: none; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
 .pe-kopf a small { display: block; font-weight: 400; color: var(--gruen); font-size: .8rem; }
 .pe-haken { flex: none; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; margin: -.4rem -.3rem -.4rem -.6rem; padding: 0; border: 0; background: none; cursor: pointer; }
 .plan-eintrag.gekocht .pe-haken .box { background: var(--gruen); border-color: var(--gruen); color: var(--auf-akzent); }
@@ -974,6 +974,7 @@ body.blatt-an { overflow: hidden; }
 }
 @media screen and (max-width: 360px) {
   .ra-liste span { display: none; }
+  .pe-verschieben span { display: none; }
   .r-werkzeuge .zurueck span { display: none; }
 }
 
@@ -1010,6 +1011,7 @@ body.blatt-an { overflow: hidden; }
 .pe-bild { flex: none; width: 2.75rem; height: 2.75rem; border-radius: 8px; object-fit: cover; }
 .plan-eintrag.gekocht .pe-bild { opacity: .5; }
 .pe-verschieben { color: var(--akzent); }
+.pe-weg { flex: none; width: 2.75rem; height: 2.75rem; justify-content: center; margin: -.3rem -.4rem -.3rem 0; color: var(--leise); }
 .tag-wahl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
 .tag-knopf { flex-direction: column; align-items: flex-start; gap: 0; min-height: 3.4rem; padding: .5rem .8rem; text-align: left; line-height: 1.3; }
 .tag-knopf small { color: var(--leise); font-size: .8rem; }
@@ -1020,7 +1022,9 @@ body.blatt-an { overflow: hidden; }
   .kal-tag { border: 2px solid var(--papier); box-shadow: inset 0 0 0 1px var(--linie); border-radius: 14px; }
   .kal-tag.heute { border-color: var(--papier); box-shadow: inset 0 0 0 1.5px var(--akzent); }
   .kal-tag.aktiv { border-color: var(--papier); box-shadow: none; }
-  .pe-steuer .pe-verschieben { flex: 1 1 8rem; justify-content: center; min-height: 2.75rem; border-color: var(--linie); }
+  .pe-steuer .pe-verschieben { flex: 1 1 auto; min-width: 0; justify-content: center; min-height: 2.75rem; border-color: var(--linie); overflow: hidden; }
+  .pe-steuer:not(:has(.pe-portionen)) { flex-wrap: nowrap; }
+  .pe-steuer .stepper { flex: none; }
 }
 @media screen { body:not(.druck) .plan-tag.ausgeblendet { display: none; } }
 

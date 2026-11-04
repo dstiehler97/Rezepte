@@ -10,8 +10,7 @@ Rezept({
   bild: 'bilder/tartelettes-mit-feta-creme-geroesteten-cherrytomaten.jpg',
 
   zutaten: [
-    { abschnitt: 'Für Teig und Ofentomaten' },
-    { menge: 275, einheit: 'g', name: 'Blätterteig', hinweis: 'Kühlregal' },
+    { menge: 275, einheit: 'g', name: 'Blätterteig' },
     { menge: 300, einheit: 'g', name: 'Cherrytomate', mehrzahl: 'Cherrytomaten' },
     { menge: 2, einheit: 'Zehe', name: 'Knoblauch' },
     { menge: 2, einheit: 'EL', name: 'Aceto Balsamico' },
@@ -21,7 +20,6 @@ Rezept({
     { menge: 1, einheit: 'TL', name: 'Getrockneter Thymian' },
     { name: 'Salz' },
     { name: 'Pfeffer' },
-    { abschnitt: 'Für Creme und Topping' },
     { menge: 1, name: 'Zitrone', mehrzahl: 'Zitronen', hinweis: 'unbehandelt' },
     { menge: 10, einheit: 'g', name: 'Basilikum' },
     { menge: 10, einheit: 'g', name: 'Petersilie' },
@@ -39,16 +37,13 @@ Rezept({
     'Cherrytomaten waschen. Knoblauch schälen und in feine Scheiben schneiden. Balsamico, Honig, Olivenöl, Rosmarin und Thymian verrühren und mit Salz und Pfeffer würzen.',
     'Tomaten und Knoblauch mit der Marinade in eine Auflaufform geben und **15 Minuten** zum Blätterteig in den Ofen stellen.',
     { abschnitt: 'Feta-Creme (parallel)' },
-    'Zitrone heiß waschen, Schale abreiben und den Saft auspressen. Basilikum und Petersilie waschen und trocken schütteln.',
-    'Kräuter mit Feta, Zitronensaft und -abrieb im Mixer pürieren. In eine Schüssel geben, griechischen Joghurt unterheben und mit Salz und Pfeffer abschmecken.',
+    'Zitrone heiß waschen, Schale abreiben und Saft auspressen. Basilikum und Petersilie waschen und mit Feta, Zitronensaft und -abrieb im Mixer pürieren. Griechischen Joghurt unterheben, mit Salz und Pfeffer abschmecken.',
     'Pinienkerne in einer Pfanne **ohne Öl** goldbraun rösten.',
     { abschnitt: 'Fertigstellen' },
-    'Tartelettes aus dem Ofen nehmen, mittig mit einem Löffel eine Mulde eindrücken und die Feta-Creme gleichmäßig darauf verteilen.',
-    'Ofentomaten und Pinienkerne daraufgeben. Nach Belieben mit mehr Basilikum garnieren.',
+    'Tartelettes aus dem Ofen nehmen und mittig mit einem Löffel eine Mulde eindrücken. Feta-Creme gleichmäßig darauf verteilen, Ofentomaten und Pinienkerne daraufgeben und nach Belieben mit mehr Basilikum garnieren.',
   ],
 
   tipps: [
-    'Ergibt 6 Tartelettes; als Hauptgericht mit einem grünen Salat servieren.',
-    'Dazu passt ein trockener Riesling-Sekt.',
+    'Ergibt 6 Tartelettes. Dazu passt ein trockener Riesling-Sekt.',
   ],
 });

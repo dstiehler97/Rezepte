@@ -1916,6 +1916,7 @@
             <button type="button" class="pe-haken nur-bildschirm" data-gekocht aria-pressed="${!!e.gekocht}" aria-label="${e.gekocht ? 'Doch nicht gekocht' : 'Als gekocht abhaken'}" title="${e.gekocht ? 'Doch nicht gekocht' : 'Gekocht'}"><span class="box">${svg('haken')}</span></button>
             ${r.bild ? `<img class="pe-bild nur-bildschirm" src="${esc(r.bild)}" alt="" loading="lazy">` : ''}
             <a href="#/rezept/${esc(r.id)}?p=${begrenzen(portionen(e))}"><span class="pe-titel">${esc(r.titel)}</span>${e.gekocht ? `<small>gekocht am ${datumText(e.gekocht)}</small>` : ''}</a>
+            <button type="button" class="knopf leise icon-knopf pe-weg nur-bildschirm" data-weg aria-label="Entfernen" title="Aus dem Plan nehmen">${svg('muell')}</button>
           </div>
           <div class="pe-steuer">
             <button type="button" class="knopf leise pe-verschieben nur-bildschirm" data-verschieben aria-label="Verschieben – jetzt: ${e.tag || 'ohne Tag'}" title="Anderem Tag zuordnen">${svg('verschieben')} <span>${e.tag ? 'Verschieben' : 'Tag wählen'}</span></button>
@@ -1926,7 +1927,6 @@
               <button type="button" data-schritt="1" aria-label="Mehr">${svg('plus')}</button>
             </span>
             <span class="klein">Pers.</span>`}
-            <button type="button" class="knopf leise icon-knopf" data-weg aria-label="Entfernen">${svg('muell')}</button>
           </div>
           ${profile.length ? `<div class="chips pe-wer nur-bildschirm" aria-label="Wer isst mit">${werChipsHTML(e.wer || [])}</div>` : ''}
         </li>`;
