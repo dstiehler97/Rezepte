@@ -44,6 +44,8 @@
     'zimt':          { k: GW, icon: 'gewuerz', vorrat: true },
     'kreuzkümmel':   { k: GW, icon: 'gewuerz', vorrat: true },
     'currypulver':   { k: GW, icon: 'gewuerz', vorrat: true },
+    'kurkuma':       { k: GW, icon: 'gewuerz', vorrat: true },
+    'ghee':          { k: KU, icon: 'butter' },
     'oregano':       { k: GW, icon: 'kraeuter', vorrat: true },
     'lorbeerblatt':  { k: GW, icon: 'kraeuter', vorrat: true },
     'lorbeer':       { k: GW, icon: 'kraeuter', vorrat: true },
@@ -69,6 +71,7 @@
     'cashewkerne':   { k: BA, icon: 'nuss' },
     'walnüsse':      { k: BA, icon: 'nuss' },
     'haselnüsse':    { k: BA, icon: 'nuss' },
+    'rosinen':       { k: BA },
     'haselnusskerne': { k: BA, icon: 'nuss' },
 
     // Kühlregal

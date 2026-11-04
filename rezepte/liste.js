@@ -4,5 +4,6 @@ window.REZEPT_DATEIEN = [
   "one-pot-hackfleisch-porree-nudeln",
   "pfannkuchen",
   "spaghetti-bolognese",
+  "suesskartoffelragout-mit-bulgur-cashewkernen",
   "thai-kokos-suesskartoffelsuppe"
 ];

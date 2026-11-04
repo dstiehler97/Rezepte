@@ -57,7 +57,7 @@
     const info = Zutaten.info(z);
     const m = skalieren(z, faktor);
     if (!m) return { menge: '', name: z.name, info };
-    const f = format(m.wert, m.basis, { ganz: info.ganz, einheit: m.einheit });
+    const f = format(m.wert, m.basis, { ganz: info.ganz, einheit: m.einheit, exakt: faktor === 1 });
     const menge = f.zahl + (f.einheit ? ' ' + f.einheit : '');
     const plural = f.wert > 1 && !f.einheit && z.mehrzahl;
     return { menge, name: plural ? z.mehrzahl : z.name, info };

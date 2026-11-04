@@ -86,6 +86,10 @@ const fall = (menge, einheit, faktor, erwartet, opt) => {
   if (ist !== erwartet) melde('Rundung', `${menge} ${einheit || ''} × ${faktor} → "${ist}", erwartet "${erwartet}"`);
 };
 fall(500, 'g', 0.75, '375 g');
+fall(320, 'g', 1, '320 g', { exakt: true });
+fall(320, 'g', 1.25, '400 g');
+fall(1250, 'ml', 1, '1,25 l', { exakt: true });
+fall(330, 'g', 1, '330 g', { exakt: true });
 fall(250, 'g', 0.5, '125 g');
 fall(500, 'g', 1.5, '750 g');
 fall(500, 'g', 2.5, '1,25 kg');

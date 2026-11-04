@@ -24,7 +24,7 @@
     'salz': N(0, 0, 0, 0, 0, 0, { dichte: 1.2 }),
     'pfeffer': N(255, 11, 39, 1, 3.3, 25, { dichte: 0.5 }),
     'paprikapulver': GEWUERZ, 'chiliflocken': GEWUERZ, 'muskat': GEWUERZ, 'muskatnuss': GEWUERZ,
-    'zimt': GEWUERZ, 'kreuzkümmel': GEWUERZ, 'currypulver': GEWUERZ, 'oregano': GEWUERZ,
+    'zimt': GEWUERZ, 'kreuzkümmel': GEWUERZ, 'currypulver': GEWUERZ, 'kurkuma': GEWUERZ, 'oregano': GEWUERZ,
     'lorbeerblatt': N(310, 8, 48, 0, 8, 26, { stueck: 0.2, blatt: 0.2 }),
     'lorbeer': N(310, 8, 48, 0, 8, 26, { stueck: 0.2, blatt: 0.2 }),
     'öl': N(884, 0, 0, 0, 100, 0, { dichte: 0.92 }),
@@ -49,6 +49,8 @@
     'cashewkerne': N(575, 18, 30, 6, 46, 3, { handvoll: 30 }),
     'walnüsse': N(665, 15, 7, 3, 65, 6, { handvoll: 30 }),
     'haselnüsse': N(645, 15, 11, 4, 61, 8, { handvoll: 30 }),
+    'rosinen': N(300, 2.5, 66, 66, 0.5, 3.5, { handvoll: 30, dichte: 0.65 }),
+    'ghee': N(880, 0.3, 0, 0, 99.5, 0, { dichte: 0.9 }),
     'haselnusskerne': N(645, 15, 11, 4, 61, 8, { handvoll: 30 }),
 
     // Kühlregal

@@ -58,7 +58,13 @@
     return dezimal(n);
   }
 
-  function metrisch(wert, klein, gross) {
+  // exakt = Grundmenge des Rezepts: ganze Zahlen unverändert lassen (320 g bleibt 320 g)
+  function metrisch(wert, klein, gross, exakt) {
+    if (exakt && Number.isInteger(Math.round(wert * 1000) / 1000)) {
+      const w = Math.round(wert);
+      if (w >= 1000 && w % 10 === 0) return { zahl: dezimal(w / 1000), einheit: gross, wert: w };
+      return { zahl: String(w), einheit: klein, wert: w };
+    }
     if (wert >= 975) {
       const v = runden(wert, 50) / 1000;
       return { zahl: dezimal(v), einheit: gross, wert: v * 1000 };
@@ -96,8 +102,8 @@
    *  opt.aufrunden = Zähleinheiten auf ganze aufrunden (Einkaufsliste). */
   function format(wert, basis, opt) {
     opt = opt || {};
-    if (basis === 'g') return metrisch(wert, 'g', 'kg');
-    if (basis === 'ml') return metrisch(wert, 'ml', 'l');
+    if (basis === 'g') return metrisch(wert, 'g', 'kg', opt.exakt);
+    if (basis === 'ml') return metrisch(wert, 'ml', 'l', opt.exakt);
     if (basis === 'TL') return loeffel(wert, opt.einheit);
     const e = EINHEITEN[basis];
     if (opt.aufrunden) wert = Math.ceil(wert - 1e-6); // Einkauf: halbe Zwiebel gibt es nicht
