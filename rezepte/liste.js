@@ -8,6 +8,7 @@ window.REZEPT_DATEIEN = [
   "kaspressknoedel",
   "koettbullar",
   "low-carb-huehnchen-mit-mozzarella-tomaten-pesto",
+  "mediterraner-salat-mit-geroestetem-pesto-gemuese",
   "one-pot-hackfleisch-porree-nudeln",
   "pasta-mit-rotwein-sauce-steak-streifen",
   "pfannkuchen",

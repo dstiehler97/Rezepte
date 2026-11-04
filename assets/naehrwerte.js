@@ -25,6 +25,7 @@
     'pfeffer': N(255, 11, 39, 1, 3.3, 25, { dichte: 0.5 }),
     'paprikapulver': GEWUERZ, 'chiliflocken': GEWUERZ, 'muskat': GEWUERZ, 'muskatnuss': GEWUERZ,
     'zimt': GEWUERZ, 'kreuzkümmel': GEWUERZ, 'currypulver': GEWUERZ, 'kurkuma': GEWUERZ, 'piment': GEWUERZ, 'oregano': GEWUERZ,
+    'getrocknete minze': GEWUERZ,
     'lorbeerblatt': N(310, 8, 48, 0, 8, 26, { stueck: 0.2, blatt: 0.2 }),
     'lorbeer': N(310, 8, 48, 0, 8, 26, { stueck: 0.2, blatt: 0.2 }),
     'öl': N(884, 0, 0, 0, 100, 0, { dichte: 0.92 }),
@@ -81,6 +82,7 @@
     'mozzarella': N(250, 18, 1, 1, 19, 0, { stueck: 125, packung: 125 }),
     'gouda': N(355, 25, 0, 0, 28, 0, { scheibe: 20 }),
     'feta': N(262, 17, 0.7, 0.7, 21, 0, { packung: 200, stueck: 200 }),
+    'schafkäse': N(262, 17, 0.7, 0.7, 21, 0, { packung: 200, stueck: 200 }),
     'hefe': N(100, 12, 9, 0, 1, 7, { wuerfel: 42, paeckchen: 7 }),
     'gnocchi': N(155, 4, 32, 1, 0.6, 2, { packung: 400 }),         // Frischware, Kühlregal
     'pfannenkäse': N(300, 17, 12, 1, 21, 1, { stueck: 25 }),      // panierter Ofenkäse
@@ -119,6 +121,7 @@
     'grünkohl': N(49, 4.3, 2.5, 1.7, 0.9, 4.2),
     'salat': N(15, 1.2, 1.5, 1, 0.2, 1.5, { stueck: 300, handvoll: 25 }),
     'salat-mix': N(17, 1.5, 1.8, 1, 0.3, 1.8, { handvoll: 25, packung: 125 }),
+    'rucola': N(25, 2.6, 2.1, 2, 0.7, 1.6, { handvoll: 20, packung: 125 }),
     'gurke': N(12, 0.6, 1.8, 1.8, 0.2, 0.5, { stueck: 400 }),
     'grüne bohnen': N(33, 2.4, 5, 1.4, 0.2, 1.9),
     'brechbohnen': N(33, 2.4, 5, 1.4, 0.2, 1.9),
