@@ -31,6 +31,9 @@
   let zuhause = speicher.lesen('zuhause', []);     // Was man da hat [{uid, name}]
   let profile = speicher.lesen('profile', []);     // Haushalt [{uid, name, faktor, standard}] – leer = nur Personenzahl
   let ladenfolge = speicher.lesen('ladenfolge', null);   // eigene Reihenfolge der Kategorien [Name] oder null
+  let favoriten = speicher.lesen('favoriten', []);  // Rezept-ids mit ♥
+  let bewertung = speicher.lesen('bewertung', {});  // {rezeptId: 1–5}
+  let notizen = speicher.lesen('notizen', {});      // {rezeptId: 'nächstes Mal weniger Salz'}
   const sichern = () => {
     speicher.schreiben('zuhause', zuhause);
     speicher.schreiben('liste', liste);
@@ -39,6 +42,9 @@
     speicher.schreiben('extras', extras);
     speicher.schreiben('profile', profile);
     speicher.schreiben('ladenfolge', ladenfolge);
+    speicher.schreiben('favoriten', favoriten);
+    speicher.schreiben('bewertung', bewertung);
+    speicher.schreiben('notizen', notizen);
   };
   const uid = () => Math.random().toString(36).slice(2, 9);
 
@@ -73,12 +79,59 @@
     /** Ganzer Verlauf (Kopie) */
     alle: () => JSON.parse(JSON.stringify(gekocht)),
   };
+  /** Tage seit einem Datum 'JJJJ-MM-TT' (Infinity = keins) */
+  const tageSeit = (iso) => (iso ? Math.round((new Date(heuteISO() + 'T12:00') - new Date(iso + 'T12:00')) / 864e5) : Infinity);
   /** Tage seit dem letzten Kochen (Infinity = nie) */
-  const tageSeitGekocht = (id) => {
-    const z = gekochtHilfe.zuletzt(id);
-    return z ? Math.round((new Date(heuteISO() + 'T12:00') - new Date(z + 'T12:00')) / 864e5) : Infinity;
-  };
+  const tageSeitGekocht = (id) => tageSeit(gekochtHilfe.zuletzt(id));
   const datumText = (iso) => new Date(iso + 'T12:00').toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+  /** „heute“, „gestern“, „vor 3 Tagen“, „vor 2 Monaten“ */
+  function vorText(tage) {
+    if (tage <= 0) return 'heute';
+    if (tage === 1) return 'gestern';
+    if (tage < 45) return 'vor ' + tage + ' Tagen';
+    if (tage < 365) return 'vor ' + Math.round(tage / 30) + ' Monaten';
+    return 'vor über einem Jahr';
+  }
+
+  // ---------------------------------------------------------------- Persönlich: Favoriten, Bewertung, Notizen
+  const NOTIZ_MAX = 1000;
+  const istFavorit = (id) => favoriten.includes(id);
+  const sterneVon = (id) => bewertung[id] || 0;
+  const notizVon = (id) => notizen[id] || '';
+  function favoritUmschalten(id) {
+    favoriten = istFavorit(id) ? favoriten.filter((x) => x !== id) : [...favoriten, id];
+    speicher.schreiben('favoriten', favoriten);
+    return istFavorit(id);
+  }
+  /** 1–5 Sterne; 0 (oder dieselbe Zahl nochmal) = zurücksetzen */
+  function bewerten(id, n) {
+    if (!n || n === sterneVon(id)) delete bewertung[id]; else bewertung[id] = n;
+    speicher.schreiben('bewertung', bewertung);
+    return sterneVon(id);
+  }
+  // Notizen: sofort im Speicher, verzögert in localStorage (beim Seitenwechsel/Schließen sofort)
+  let notizTakt = 0;
+  function notizSetzen(id, text, fertig) {
+    text = String(text || '').slice(0, NOTIZ_MAX);
+    if (text.trim()) notizen[id] = text; else delete notizen[id];
+    clearTimeout(notizTakt);
+    notizTakt = setTimeout(() => { notizTakt = 0; speicher.schreiben('notizen', notizen); if (fertig) fertig(); }, 600);
+  }
+  function notizenJetzt() { if (notizTakt) { clearTimeout(notizTakt); notizTakt = 0; speicher.schreiben('notizen', notizen); } }
+  window.addEventListener('pagehide', notizenJetzt);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') notizenJetzt(); });
+  /** Textfeld für Notizen: speichert beim Tippen, zeigt „gespeichert“, wächst mit */
+  function notizFeldBinden(feld, status, id, nachher) {
+    const hoehe = () => { feld.style.height = 'auto'; feld.style.height = feld.scrollHeight + 2 + 'px'; };
+    feld.addEventListener('input', () => {
+      hoehe();
+      status.textContent = '';
+      notizSetzen(id, feld.value, () => { status.textContent = '✓ gespeichert'; });
+      if (nachher) nachher(feld.value.trim());
+    });
+    feld.addEventListener('blur', notizenJetzt);
+    hoehe();
+  }
 
   // ---------------------------------------------------------------- Haushalt (Portionen pro Person)
   /** Effektive Portionen eines Plan-/Listen-Eintrags: Summe der Profil-Faktoren, sonst Personenzahl */
@@ -172,7 +225,28 @@
     });
     liste = (Array.isArray(liste) ? liste : []).filter(ok).map((e) => Object.assign(e, { uid: e.uid || uid(), personen: begrenzen(e.personen) }));
     if (ladenfolge && !Array.isArray(ladenfolge)) ladenfolge = null;
-    if (!gekocht || typeof gekocht !== 'object' || Array.isArray(gekocht)) gekocht = {};
+    if (!istObjekt(gekocht)) gekocht = {};
+    gekocht = Object.fromEntries(Object.entries(gekocht).filter(([, l]) => Array.isArray(l))
+      .map(([id, l]) => [id, l.filter((d) => /^\d{4}-\d\d-\d\d$/.test(d)).sort()]).filter(([, l]) => l.length));
+    if (!istObjekt(abgehakt)) abgehakt = {};
+    if (!istObjekt(kochen)) kochen = {};
+    extras = (Array.isArray(extras) ? extras : []).filter((x) => x && typeof x.text === 'string');
+    zuhause = (Array.isArray(zuhause) ? zuhause : []).filter((x) => x && typeof x.name === 'string').map((x) => Object.assign(x, { uid: x.uid || uid() }));
+    // Persönliches: nur gültige Werte; Einträge gelöschter Rezepte weg (nicht, solange eine Rezeptdatei fehlt)
+    const gibts = (id) => typeof id === 'string' && (!!nachId[id] || ladefehler.length > 0);
+    favoriten = [...new Set((Array.isArray(favoriten) ? favoriten : []).filter(gibts))];
+    const pruefen = (o, wert) => Object.fromEntries(Object.entries(istObjekt(o) ? o : {})
+      .map(([id, v]) => [id, wert(v)]).filter(([id, v]) => gibts(id) && v != null));
+    bewertung = pruefen(bewertung, (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 5 ? n : null; });
+    notizen = pruefen(notizen, (v) => (typeof v === 'string' && v.trim() ? v.slice(0, NOTIZ_MAX) : null));
+  }
+  const istObjekt = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
+  /** Alles neu aus localStorage lesen (anderer Tab, Sicherung geladen) */
+  function zustandLesen() {
+    plan = speicher.lesen('plan', []); abgehakt = speicher.lesen('abgehakt', {}); extras = speicher.lesen('extras', []);
+    liste = speicher.lesen('liste', []); zuhause = speicher.lesen('zuhause', []); kochen = speicher.lesen('kochen', {});
+    profile = speicher.lesen('profile', []); ladenfolge = speicher.lesen('ladenfolge', null); gekocht = speicher.lesen('gekocht', {});
+    favoriten = speicher.lesen('favoriten', []); bewertung = speicher.lesen('bewertung', {}); notizen = speicher.lesen('notizen', {});
   }
   const faktorBegrenzen = (f) => Math.min(4, Math.max(0.25, Math.round((Number(f) || 1) * 4) / 4));
 
@@ -274,7 +348,7 @@
   // Filter: Kategorie, Ernährungsform, Merkmale (Nährwerte, Schnell), Suche, Zutaten; dazu Sortierung
   const SCHNELL_MIN = 30;
   const titelVergleich = (a, b) => a.titel.localeCompare(b.titel, 'de');
-  /** [id, Name, Wert, Standard-Richtung, Text aufsteigend, Text absteigend, Gruppe] */
+  /** [id, Name, Wert, Standard-Richtung, Text aufsteigend, Text absteigend, Gruppe]; Wert null = immer ans Ende */
   const SORTIERUNGEN = [
     ['name', 'Name', null, 'auf', 'A–Z', 'Z–A'],
     ['schwierigkeit', 'Schwierigkeit', (r) => SCHWIERIGKEIT[r.schwierigkeit] || 1, 'auf', 'einfach zuerst', 'schwer zuerst'],
@@ -284,14 +358,23 @@
     ['fett', 'Fett', (r) => nwp(r).fett, 'auf', 'wenig zuerst', 'viel zuerst', 'nw'],
     ['kh', 'Kohlenhydrate', (r) => nwp(r).kh, 'auf', 'wenig zuerst', 'viel zuerst', 'nw'],
     ['zuhause', 'Am meisten zuhause', (r) => fehlend(r), 'auf'],
+    ['bewertung', 'Beste Bewertung', (r) => sterneVon(r.id) || null, 'ab', 'schlechteste zuerst', 'beste zuerst', 'ich'],
+    ['zuletzt', 'Zuletzt gekocht', (r) => nullWennNie(tageSeitGekocht(r.id)), 'auf', 'kürzlich zuerst', 'länger her zuerst', 'ich'],
+    ['laengst', 'Am längsten nicht gekocht', (r) => Math.min(tageSeitGekocht(r.id), 1e6), 'ab', 'kürzlich zuerst', 'längst zuerst', 'ich'],
+    ['haeufig', 'Am häufigsten gekocht', (r) => gekochtHilfe.daten(r.id).length || null, 'ab', 'selten zuerst', 'oft zuerst', 'ich'],
   ];
+  const nullWennNie = (t) => (t === Infinity ? null : t);
   const sortierung = (o) => SORTIERUNGEN.find((x) => x[0] === o) || SORTIERUNGEN[0];
   /** Vergleich für Sortierung o in Richtung d ('auf' | 'ab'); bei Gleichstand nach Name */
   function vergleich(o, d) {
     const [, , wert] = sortierung(o);
     const r = d === 'ab' ? -1 : 1;
     if (!wert) return (a, b) => r * titelVergleich(a, b);
-    return (a, b) => r * (wert(a) - wert(b)) || (o === 'schwierigkeit' ? gesamtzeit(a.zeit) - gesamtzeit(b.zeit) : 0) || titelVergleich(a, b);
+    return (a, b) => {
+      const wa = wert(a), wb = wert(b);
+      if (wa == null || wb == null) return (wa == null) - (wb == null) || titelVergleich(a, b);
+      return r * (wa - wb) || (o === 'schwierigkeit' ? gesamtzeit(a.zeit) - gesamtzeit(b.zeit) : 0) || titelVergleich(a, b);
+    };
   }
   /** Anzahl Zutaten mit Menge, die nicht zuhause sind (Salz & Co. nach Geschmack zählen nicht) */
   const fehlend = (r) => nurZutaten(r).filter((z) => z.menge != null && !z.optional && !Zutaten.info(z).nie && !istZuhause(z.name)).length;
@@ -336,6 +419,7 @@
     const zf = zutatenFilter(f.z);
     const ern = ERNAEHRUNG.find((x) => x.id === f.e);
     return rezepte.filter((r) => {
+      if (f.fav && !istFavorit(r.id)) return false;
       if (f.k && r.kategorie !== f.k) return false;
       if (ern && !ern.passt(ernaehrungVon(r))) return false;
       if (f.m.length) {
@@ -357,7 +441,7 @@
     const m = (q.get('m') || '').split(',').filter(Boolean);
     const f = { s: q.get('s') || '', k: q.get('k') || '', z: q.get('z') || '',
       e: q.get('e') || (m.includes('veggie') ? 'vegetarisch' : ''),   // alte Links: m=veggie
-      m: m.filter((x) => x !== 'veggie'), o: sortierung(q.get('o'))[0], d: q.get('d') || '' };
+      m: m.filter((x) => x !== 'veggie'), o: sortierung(q.get('o'))[0], d: q.get('d') || '', fav: q.get('fav') === '1' };
     if (!ERNAEHRUNG.some((x) => x.id === f.e)) f.e = '';
     if (!['auf', 'ab'].includes(f.d)) f.d = sortierung(f.o)[3];
     const kategorien = [...new Set(rezepte.map((r) => r.kategorie).filter(Boolean))].sort();
@@ -373,6 +457,7 @@
               <input id="suche" type="search" placeholder="Suchen: Titel, Zutat, Tag …" value="${esc(f.s)}" autocomplete="off">
             </label>
             <button type="button" class="knopf filter-knopf${offen ? ' an' : ''}" id="filter-auf" aria-expanded="${offen}">${svg('filter')} <span>Filter</span><span class="zahl" id="filter-zahl"></span></button>
+            <button type="button" class="knopf icon-knopf wuerfel-knopf" id="wuerfel" aria-label="Was koche ich heute? Zufallsrezept" title="Was koche ich heute?">${svg('wuerfel')}</button>
           </div>
           <div class="chips" id="kat-chips" aria-label="Kategorie">
             <button type="button" class="chip" data-k="">Alle</button>
@@ -381,6 +466,7 @@
           <div class="chips ern-chips" id="ern-chips" aria-label="Ernährung">
             <button type="button" class="chip" data-e="">Alle</button>
             ${ERNAEHRUNG.map((x) => `<button type="button" class="chip e-${x.id}" data-e="${x.id}">${x.name}</button>`).join('')}
+            <button type="button" class="chip fav-chip" id="fav-chip" aria-pressed="false">${svg('herz')} Favoriten</button>
           </div>
           <div class="filter-feld" id="filter-feld"${offen ? '' : ' hidden'}>
             <label class="feld"><span>Mit Zutaten</span>
@@ -404,6 +490,7 @@
             ${SORTIERUNGEN.filter((x) => !x[6]).slice(0, 3).map(option).join('')}
             <optgroup label="Nährwerte pro Portion">${SORTIERUNGEN.filter((x) => x[6] === 'nw').map(option).join('')}</optgroup>
             <optgroup label="Vorrat">${option(sortierung('zuhause'))}</optgroup>
+            <optgroup label="Meine Rezepte">${SORTIERUNGEN.filter((x) => x[6] === 'ich').map(option).join('')}</optgroup>
           </select>
           <button type="button" class="knopf richtung" id="richtung"></button>
         </div>
@@ -418,21 +505,26 @@
       if (f.e) p.set('e', f.e);
       if (f.z) p.set('z', f.z);
       if (f.m.length) p.set('m', f.m.join(','));
+      if (f.fav) p.set('fav', '1');
       if (f.o !== 'name') p.set('o', f.o);
       if (f.d !== sortierung(f.o)[3]) p.set('d', f.d);
       adresseSetzen('#/' + (p.toString() ? '?' + p.toString() : ''));
       const liste = filtern(f);
-      $('karten').innerHTML = liste.map((r) => karte(r, f.o)).join('') || '<p class="leer">Keine Rezepte gefunden. Filter lockern?</p>';
+      $('karten').innerHTML = liste.map((r) => karte(r, f.o)).join('') || (f.fav && !favoriten.length
+        ? `<p class="leer">Noch keine Favoriten. Im Rezept auf ${svg('herz')} tippen, um es hier zu sammeln.</p>`
+        : '<p class="leer">Keine Rezepte gefunden. Filter lockern?</p>');
       const aktiv = f.m.length + (f.z ? 1 : 0);
       $('filter-zahl').textContent = aktiv || '';
-      $('treffer').textContent = (aktiv || f.s || f.k || f.e) ? liste.length + ' von ' + rezepte.length + ' Rezepten' : rezepte.length + ' Rezepte';
+      $('treffer').textContent = (aktiv || f.s || f.k || f.e || f.fav) ? liste.length + ' von ' + rezepte.length + ' Rezepten' : rezepte.length + ' Rezepte';
       const s = sortierung(f.o);
       const knopf = $('richtung');
       knopf.hidden = !s[4] || !s[5];
       knopf.innerHTML = `<span aria-hidden="true">${f.d === 'ab' ? '↓' : '↑'}</span> ${esc(f.d === 'ab' ? s[5] : s[4])}`;
       knopf.setAttribute('aria-label', 'Reihenfolge: ' + (f.d === 'ab' ? s[5] : s[4]) + ' – umdrehen');
       document.querySelectorAll('#kat-chips .chip').forEach((c) => c.classList.toggle('aktiv', c.dataset.k === f.k));
-      document.querySelectorAll('#ern-chips .chip').forEach((c) => c.classList.toggle('aktiv', c.dataset.e === f.e));
+      document.querySelectorAll('#ern-chips [data-e]').forEach((c) => c.classList.toggle('aktiv', c.dataset.e === f.e));
+      $('fav-chip').classList.toggle('aktiv', f.fav);
+      $('fav-chip').setAttribute('aria-pressed', String(f.fav));
       document.querySelectorAll('#merkmal-chips .chip').forEach((c) => c.classList.toggle('aktiv', f.m.includes(c.dataset.m)));
     }
     const tippen = (el, feld) => { let t; el.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { f[feld] = el.value; aktualisieren(); }, 150); }); };
@@ -442,6 +534,8 @@
     $('richtung').addEventListener('click', () => { f.d = f.d === 'ab' ? 'auf' : 'ab'; aktualisieren(); });
     $('kat-chips').addEventListener('click', (e) => { const c = e.target.closest('[data-k]'); if (c) { f.k = c.dataset.k; aktualisieren(); } });
     $('ern-chips').addEventListener('click', (e) => { const c = e.target.closest('[data-e]'); if (c) { f.e = c.dataset.e; aktualisieren(); } });
+    $('fav-chip').addEventListener('click', () => { f.fav = !f.fav; aktualisieren(); });
+    $('wuerfel').addEventListener('click', () => wuerfelBlatt(() => filtern(f)));
     $('merkmal-chips').addEventListener('click', (e) => {
       const c = e.target.closest('[data-m]'); if (!c) return;
       f.m = f.m.includes(c.dataset.m) ? f.m.filter((x) => x !== c.dataset.m) : [...f.m, c.dataset.m];
@@ -475,12 +569,83 @@
           <span${an('kcal')}>${nwZahl(nwp(r).kcal, 'kcal')}</span>
           ${nw ? `<span class="sortwert">${nwZahl(nwp(r)[o], 'g')} ${nw}</span>` : ''}
           ${zuhause.length ? `<span class="fehlt">${fehlend(r) ? 'fehlt: ' + fehlend(r) : 'alles da'}</span>` : ''}
+          ${persoenlichMeta(r, o)}
         </span>
         ${merkmalHTML(r)}
       </a>`;
   }
+  /** Favorit, Sterne und (bei passender Sortierung) „gekocht“ auf der Karte */
+  function persoenlichMeta(r, o) {
+    const sterne = sterneVon(r.id), t = tageSeitGekocht(r.id), n = gekochtHilfe.daten(r.id).length;
+    const teile = [];
+    if (istFavorit(r.id)) teile.push(`<span class="karte-fav" title="Favorit">${svg('herz', 'voll')}<span class="nur-sr">Favorit</span></span>`);
+    if (sterne) teile.push(`<span class="karte-sterne${o === 'bewertung' ? ' sortwert' : ''}" title="${sterne} von 5 Sternen">★ ${sterne}</span>`);
+    if (o === 'zuletzt' || o === 'laengst') teile.push(`<span class="sortwert">${t === Infinity ? 'noch nie gekocht' : 'gekocht ' + vorText(t)}</span>`);
+    if (o === 'haeufig') teile.push(`<span class="sortwert">${n ? n + '× gekocht' : 'noch nie gekocht'}</span>`);
+    return teile.join('');
+  }
   function merkmalHTML(r) {
     return `<span class="merkmale">${ernaehrungHTML(r)}${merkmaleVon(r).map((x) => `<span class="merkmal m-${x.id}">${esc(x.name)}</span>`).join('')}</span>`;
+  }
+
+  // ---------------------------------------------------------------- Zufallsrezept „Was koche ich heute?“
+  // Aus den aktuellen Treffern, gewichtet: Favorit, gute Bewertung, lange nicht gekocht, viel zuhause. Nie zweimal hintereinander dasselbe.
+  let letzterWurf = null;
+  function wurfGewicht(r) {
+    let w = istFavorit(r.id) ? 2.5 : 1;
+    const s = sterneVon(r.id);
+    if (s) w *= [1, 0.3, 0.6, 1, 1.5, 2][s];
+    const t = tageSeitGekocht(r.id);
+    w *= t === Infinity ? 1.2 : t < 7 ? 0.3 : t < 21 ? 0.7 : 1 + Math.min(t, 90) / 90 * 0.6;
+    if (zuhause.length) {
+      const zut = nurZutaten(r).filter((z) => z.menge != null && !z.optional && !Zutaten.info(z).nie);
+      w *= 0.6 + (zut.length ? 1 - fehlend(r) / zut.length : 0);
+    }
+    return w;
+  }
+  function wuerfeln(treffer) {
+    const pool = treffer.length > 1 ? treffer.filter((r) => r.id !== letzterWurf) : treffer;
+    const gewichte = pool.map(wurfGewicht);
+    let x = Math.random() * gewichte.reduce((a, b) => a + b, 0);
+    const r = pool.find((p, i) => (x -= gewichte[i]) <= 0) || pool[pool.length - 1];
+    letzterWurf = r.id;
+    return r;
+  }
+  /** trefferHolen = aktuelle Treffer der Übersicht (bei jedem Wurf neu, falls sich etwas geändert hat) */
+  function wuerfelBlatt(trefferHolen) {
+    if (!trefferHolen().length) { melden('Keine passenden Rezepte – Filter lockern'); return; }
+    const b = blattAuf('Was koche ich heute?', { klasse: 'wf-blatt' });
+    function zeigen() {
+      const treffer = trefferHolen(), r = wuerfeln(treffer), z = gesamtzeit(r.zeit), t = tageSeitGekocht(r.id);
+      const personen = begrenzen(standardWer().length ? portionen({ wer: standardWer() }) : r.personen || STANDARD_PERSONEN);
+      const info = [z ? svg('uhr') + ' ' + dauer(z) : '', nwZahl(nwp(r).kcal, 'kcal'),
+        zuhause.length ? (fehlend(r) ? 'fehlt: ' + fehlend(r) : 'alles da') : ''].filter(Boolean);
+      const ich = [istFavorit(r.id) ? svg('herz', 'voll') + ' Favorit' : '', sterneVon(r.id) ? '★ ' + sterneVon(r.id) : '',
+        t === Infinity ? 'noch nie gekocht' : 'gekocht ' + vorText(t)].filter(Boolean);
+      b.zeigen(`
+        <div class="wf-karte">
+          ${r.bild ? `<img src="${esc(r.bild)}" alt="">` : ''}
+          <span class="karte-kat">${esc(r.kategorie || '')}</span>
+          <h3>${esc(r.titel)}</h3>
+          <p class="wf-info">${info.join('<span aria-hidden="true"> · </span>')}</p>
+          <p class="wf-ich klein">${ich.join(' · ')}</p>
+          ${merkmalHTML(r)}
+          <p class="klein wf-pool">${treffer.length === 1 ? 'Nur dieses Rezept passt zu deinen Filtern.' : `Zufällig aus ${treffer.length} passenden Rezepten – Favoriten, gut Bewertetes und lange nicht Gekochtes kommen öfter.`}</p>
+        </div>`,
+      `<button type="button" class="knopf" id="wf-nochmal" data-f="wf-nochmal" ${treffer.length > 1 ? '' : 'disabled'}>${svg('wuerfel')} Nochmal würfeln</button>
+       <a class="knopf" href="#/rezept/${esc(r.id)}">${svg('buch')} Ansehen</a>
+       <button type="button" class="knopf" id="wf-liste" data-f="wf-liste">${svg('korb')} <span>Auf Einkaufsliste</span></button>
+       <a class="knopf haupt" href="#/kochen/${esc(r.id)}?p=${personen}&amp;s=1">${svg('topf')} Jetzt kochen</a>`, true);
+      b.el.querySelector('#wf-liste').addEventListener('click', (e) => {
+        liste.push({ uid: uid(), id: r.id, personen });
+        sichern(); zaehlerAktualisieren();
+        e.currentTarget.disabled = true;
+        e.currentTarget.innerHTML = svg('haken') + ' <span>Auf der Liste</span>';
+        melden('Zutaten für ' + personen + ' P. auf der Einkaufsliste', '#/einkauf', 'Ansehen');
+      });
+    }
+    b.el.addEventListener('click', (e) => { if (e.target.closest('#wf-nochmal')) zeigen(); });
+    zeigen();
   }
 
   // ---------------------------------------------------------------- Rezept
@@ -514,9 +679,13 @@
       <article class="rezept">
         <header class="r-kopf">
           <div class="r-titelblock">
-            <span class="r-kat">${esc([r.kategorie, ...(r.tags || [])].filter(Boolean).join(' · '))}</span>
+            <div class="r-kat-zeile">
+              <span class="r-kat">${esc([r.kategorie, ...(r.tags || [])].filter(Boolean).join(' · '))}</span>
+              ${interaktiv ? favKnopfHTML(r) : ''}
+            </div>
             <h1>${esc(r.titel)}</h1>
             ${r.beschreibung ? `<p class="r-beschreibung">${esc(r.beschreibung)}</p>` : ''}
+            ${interaktiv ? sterneHTML(r) : ''}
             ${interaktiv ? kochKnopfHTML(r, personen) : ''}
           </div>
           ${r.bild ? `<img class="r-bild" src="${esc(r.bild)}" alt="">` : ''}
@@ -551,6 +720,7 @@
               <ul>${zutaten}</ul>
             </section>
             ${(r.tipps && r.tipps.length) ? `<section class="r-tipps"><h2>Tipps</h2><ul>${r.tipps.map((t) => `<li>${fett(t)}</li>`).join('')}</ul></section>` : ''}
+            ${notizHTML(r, interaktiv)}
           </div>
           <section class="r-schritte">
             <h2>Zubereitung</h2>
@@ -559,6 +729,32 @@
         </div>
 
       </article>`;
+  }
+
+  // Favorit, Sterne, Notizen (nur Bildschirm; Notizen werden mitgedruckt, wenn vorhanden)
+  const favKnopfHTML = (r) => {
+    const an = istFavorit(r.id);
+    return `<button type="button" class="knopf leise icon-knopf fav-knopf nur-bildschirm${an ? ' an' : ''}" id="fav" aria-pressed="${an}" aria-label="Favorit" title="${an ? 'Favorit – antippen zum Entfernen' : 'Als Favorit merken'}">${svg('herz', an ? 'voll' : '')}</button>`;
+  };
+  const STERN_TEXT = ['Noch nicht bewertet', 'geht so', 'okay', 'gut', 'sehr gut', 'großartig'];
+  function sterneHTML(r) {
+    const n = sterneVon(r.id);
+    return `
+      <div class="r-sterne nur-bildschirm">
+        <span class="sterne" role="group" aria-label="Bewertung">${[1, 2, 3, 4, 5].map((i) => `<button type="button" class="stern${i <= n ? ' an' : ''}" data-stern="${i}" aria-pressed="${i === n}" aria-label="${i} von 5 Sternen${i === n ? ' – nochmal antippen zum Zurücksetzen' : ''}">${svg('stern', i <= n ? 'voll' : '')}</button>`).join('')}</span>
+        <span class="klein" id="sterne-text">${STERN_TEXT[n]}</span>
+      </div>`;
+  }
+  function notizHTML(r, interaktiv) {
+    const t = notizVon(r.id);
+    if (!interaktiv) return t ? `<section class="r-notizen"><h2>Notizen</h2><p class="r-notiz-text">${esc(t)}</p></section>` : '';
+    return `
+      <section class="r-notizen${t ? '' : ' ohne-notiz'}">
+        <h2><span class="nur-bildschirm">Meine </span>Notizen</h2>
+        <textarea class="notiz-feld nur-bildschirm" id="notiz" rows="2" maxlength="${NOTIZ_MAX}" placeholder="z. B. nächstes Mal weniger Salz" aria-label="Meine Notizen">${esc(t)}</textarea>
+        <span class="notiz-status klein nur-bildschirm" id="notiz-status" aria-live="polite"></span>
+        <p class="r-notiz-text nur-druck">${esc(t)}</p>
+      </section>`;
   }
 
   const NW_ZEILEN = [
@@ -600,12 +796,42 @@
       ${rezeptHTML(r, personen, true)}`;
 
     app.querySelectorAll('.stepper button').forEach((b) => b.addEventListener('click', () => {
+      notizenJetzt();
       adresseSetzen('#/rezept/' + r.id + '?p=' + begrenzen(b.dataset.p));
       seiteRezept(r, begrenzen(b.dataset.p), true);
       Timer.markieren();
     }));
     const gk = document.getElementById('gekocht');
     if (gk) gk.addEventListener('click', () => kochenAbschliessen(r));
+    const verlauf = document.getElementById('gekocht-verlauf');
+    if (verlauf) verlauf.addEventListener('click', () => gekochtBlatt(r));
+    document.getElementById('fav').addEventListener('click', (e) => {
+      const an = favoritUmschalten(r.id), k = e.currentTarget;
+      k.classList.toggle('an', an); k.setAttribute('aria-pressed', String(an));
+      k.title = an ? 'Favorit – antippen zum Entfernen' : 'Als Favorit merken';
+      k.innerHTML = svg('herz', an ? 'voll' : '');
+      melden(an ? 'Zu den Favoriten hinzugefügt' : 'Aus den Favoriten entfernt');
+    });
+    app.querySelector('.sterne').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-stern]');
+      if (!b) return;
+      const n = bewerten(r.id, Number(b.dataset.stern));
+      // an Ort und Stelle aktualisieren (Fokus bleibt auf dem Stern)
+      app.querySelectorAll('[data-stern]').forEach((s) => {
+        const i = Number(s.dataset.stern);
+        s.classList.toggle('an', i <= n);
+        s.setAttribute('aria-pressed', String(i === n));
+        s.setAttribute('aria-label', i + ' von 5 Sternen' + (i === n ? ' – nochmal antippen zum Zurücksetzen' : ''));
+        s.innerHTML = svg('stern', i <= n ? 'voll' : '');
+      });
+      document.getElementById('sterne-text').textContent = STERN_TEXT[n];
+    });
+    const feld = document.getElementById('notiz');
+    notizFeldBinden(feld, document.getElementById('notiz-status'), r.id, (text) => {
+      feld.closest('.r-notizen').classList.toggle('ohne-notiz', !text);
+      feld.parentElement.querySelector('.r-notiz-text').textContent = feld.value;
+    });
+    verlassen = notizenJetzt;
     document.getElementById('zum-plan').addEventListener('click', (e) => {
       // Personenzahl selbst gewählt → so übernehmen, sonst isst der Standard-Haushalt mit (falls angelegt)
       const neu = planEintrag(r.id, gewaehlt ? personen : 0);
@@ -700,6 +926,217 @@
     binden: (zeile) => zeile.querySelector('button').addEventListener('click', haushaltBlatt),
   });
 
+  // ---------------------------------------------------------------- Darstellung (hell / dunkel)
+  // speicher 'darstellung' = 'auto' | 'hell' | 'dunkel'; angewendet vom kleinen Script im <head> (index.html)
+  const DARSTELLUNGEN = [['auto', 'Automatisch (System)', 'Folgt der Einstellung des Geräts'], ['hell', 'Hell', 'Immer hell'], ['dunkel', 'Dunkel', 'Immer dunkel']];
+  const darstellung = () => { const w = speicher.lesen('darstellung', 'auto'); return DARSTELLUNGEN.some((d) => d[0] === w) ? w : 'auto'; };
+  const darstellungAnwenden = () => { if (window.darstellungAnwenden) window.darstellungAnwenden(); };
+  mehrEintrag('darstellung', {
+    id: 'farbschema', titel: 'Farbschema', icon: 'mond',
+    text: () => DARSTELLUNGEN.find((d) => d[0] === darstellung())[2] + ' · Druck immer hell',
+    html: () => `<select id="farbschema" aria-label="Farbschema">${DARSTELLUNGEN.map(([id, name]) => `<option value="${id}"${id === darstellung() ? ' selected' : ''}>${name}</option>`).join('')}</select>`,
+    binden: (zeile) => zeile.querySelector('select').addEventListener('change', (e) => {
+      speicher.schreiben('darstellung', e.target.value);
+      darstellungAnwenden();
+      zeile.querySelector('small').textContent = DARSTELLUNGEN.find((d) => d[0] === darstellung())[2] + ' · Druck immer hell';
+    }),
+  });
+
+  // ---------------------------------------------------------------- Daten sichern / wiederherstellen
+  // Sicherung = JSON mit allen localStorage-Schlüsseln 'rezepte.*' (ohne laufende Timer und das Sicherungsdatum).
+  // speicher 'sicherung' = {zuletzt: 'JJJJ-MM-TT' | undefined, seit: erster Start mit dieser Funktion}
+  const SICHERUNG_VERSION = 1;
+  const NICHT_SICHERN = ['rezepte.timer', 'rezepte.sicherung'];
+  const SICHERUNG_ERINNERN_TAGE = 30;
+  const sicherungStand = () => { const v = speicher.lesen('sicherung', {}); return istObjekt(v) ? v : {}; };
+  if (!sicherungStand().seit) speicher.schreiben('sicherung', Object.assign(sicherungStand(), { seit: heuteISO() }));
+  /** Gibt es überhaupt eigene Daten, die verloren gehen könnten? */
+  const hatDaten = () => !!(plan.length || liste.length || extras.length || zuhause.length || favoriten.length || profile.length ||
+    Object.keys(bewertung).length || Object.keys(notizen).length || Object.keys(gekocht).length);
+  const sicherungFaellig = () => { const s = sicherungStand(); return hatDaten() && tageSeit(s.zuletzt || s.seit) >= SICHERUNG_ERINNERN_TAGE; };
+
+  /** Alle eigenen Daten aus localStorage: {'rezepte.plan': […], …} */
+  function eigeneDaten() {
+    const d = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('rezepte.') || NICHT_SICHERN.includes(k)) continue;
+        try { d[k] = JSON.parse(localStorage.getItem(k)); } catch (e) { /* kein JSON: nicht von uns */ }
+      }
+    } catch (e) { /* kein Zugriff */ }
+    return d;
+  }
+  async function sicherungErstellen() {
+    notizenJetzt(); sichern();
+    const text = JSON.stringify({ app: 'Rezepte', version: SICHERUNG_VERSION, erstellt: new Date().toISOString(), appStand: APP_STAND, daten: eigeneDaten() }, null, 1);
+    const name = 'rezepte-sicherung-' + heuteISO() + '.json';
+    const fertig = () => {
+      speicher.schreiben('sicherung', Object.assign(sicherungStand(), { zuletzt: heuteISO() }));
+      if (document.body.dataset.seite === 'mehr') zeichnen();
+    };
+    // iPhone/iPad: Teilen-Menü („In Dateien sichern“, Nachricht, Mail …); sonst normaler Download
+    let datei = null;
+    try { datei = new File([text], name, { type: 'application/json' }); } catch (e) { /* alter Browser */ }
+    const beruehrung = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    if (datei && beruehrung && navigator.canShare && navigator.canShare({ files: [datei] })) {
+      try { await navigator.share({ files: [datei], title: 'Rezepte – Sicherung' }); fertig(); melden('Sicherung erstellt'); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }   // abgebrochen; andere Fehler: Download versuchen
+    }
+    herunterladen(name, text, 'application/json');
+    fertig();
+    melden('Sicherung „' + name + '“ heruntergeladen');
+  }
+
+  /** Text einer Sicherungsdatei prüfen → {daten, erstellt, verworfen}; wirft Error mit verständlicher Meldung */
+  const SICHERUNG_TYPEN = { plan: 'liste', liste: 'liste', extras: 'liste', zuhause: 'liste', profile: 'liste', favoriten: 'liste',
+    abgehakt: 'objekt', gekocht: 'objekt', bewertung: 'objekt', notizen: 'objekt', kochen: 'objekt', vorschlag: 'objekt' };
+  function sicherungPruefen(text) {
+    let j;
+    try { j = JSON.parse(text); } catch (e) { throw new Error('Die Datei lässt sich nicht lesen – ist es wirklich eine Sicherung (.json) dieser App?'); }
+    if (!istObjekt(j) || j.app !== 'Rezepte' || !istObjekt(j.daten)) throw new Error('Diese Datei ist keine Sicherung der Rezepte-App.');
+    if (Number(j.version) > SICHERUNG_VERSION) throw new Error('Die Sicherung stammt aus einer neueren Version der App. Bitte die App neu laden und es nochmal versuchen.');
+    const daten = {};
+    let verworfen = 0;
+    for (const [k, v] of Object.entries(j.daten)) {
+      if (!k.startsWith('rezepte.') || NICHT_SICHERN.includes(k)) continue;
+      const typ = SICHERUNG_TYPEN[k.slice(8)];
+      if ((typ === 'liste' && !Array.isArray(v)) || (typ === 'objekt' && !istObjekt(v))) { verworfen++; continue; }
+      daten[k] = v;
+    }
+    if (!Object.keys(daten).length) throw new Error('Die Sicherung enthält keine Daten.');
+    return { daten, erstellt: j.erstellt, verworfen };
+  }
+  /** Kurzer Inhalt für die Vorschau: ['Wochenplan 5', 'Zuhause 14', …] */
+  function inhaltText(d) {
+    const n = (k) => { const v = d['rezepte.' + k]; return Array.isArray(v) ? v.length : istObjekt(v) ? Object.keys(v).length : 0; };
+    const gk = istObjekt(d['rezepte.gekocht']) ? Object.values(d['rezepte.gekocht']).reduce((a, l) => a + (Array.isArray(l) ? l.length : 0), 0) : 0;
+    const teile = [['Wochenplan', n('plan')], ['Einkaufsliste', n('liste'), n('liste') === 1 ? ' Rezept' : ' Rezepte'], ['eigene Einträge', n('extras')],
+      ['Zuhause', n('zuhause')], ['Favoriten', n('favoriten')], ['Bewertungen', n('bewertung')], ['Notizen', n('notizen')],
+      ['gekocht', gk, '×'], ['Haushalt', n('profile'), n('profile') === 1 ? ' Person' : ' Personen']]
+      .filter((t) => t[1]).map(([name, zahl, einheit]) => name + ' ' + zahl + (einheit || ''));
+    if (d['rezepte.ladenfolge'] || d['rezepte.darstellung']) teile.push('Einstellungen');
+    return teile.length ? teile : ['keine eigenen Daten'];
+  }
+
+  // Zusammenführen: Listen ohne Doppelte vereinigen; bei Werten je Rezept (Bewertung, Notiz …) gilt der vorhandene
+  const vereinigen = (a, b, ...schluessel) => {
+    const l = Array.isArray(a) ? a.slice() : [];
+    for (const x of Array.isArray(b) ? b : []) if (!l.some((y) => schluessel.some((s) => s(x) != null && s(x) === s(y)))) l.push(x);
+    return l;
+  };
+  const ergaenzen = (a, b) => Object.assign({}, istObjekt(b) ? b : {}, istObjekt(a) ? a : {});
+  const ZUSAMMEN = {
+    plan: (a, b) => vereinigen(a, b, (e) => e && e.uid, (e) => e && [e.id, e.tag, e.gekocht || ''].join('|')),
+    liste: (a, b) => vereinigen(a, b, (e) => e && e.uid, (e) => e && e.id + '|' + e.personen),
+    extras: (a, b) => vereinigen(a, b, (x) => x && x.uid, (x) => x && Zutaten.normal(x.text)),
+    zuhause: (a, b) => vereinigen(a, b, (x) => x && Zutaten.normal(x.name)),
+    profile: (a, b) => vereinigen(a, b, (p) => p && p.uid, (p) => p && p.name),
+    favoriten: (a, b) => vereinigen(a, b, (id) => id),
+    abgehakt: ergaenzen, bewertung: ergaenzen, notizen: ergaenzen, kochen: ergaenzen,
+    gekocht: (a, b) => {
+      const g = ergaenzen(a, {});
+      for (const [id, l] of Object.entries(istObjekt(b) ? b : {})) {
+        if (!Array.isArray(l)) continue;
+        const hier = (g[id] || []).slice();
+        // je Tag die größere Anzahl behalten (zweimal am selben Tag gekocht bleibt zweimal)
+        for (const d of new Set(l)) {
+          const fehlt = l.filter((x) => x === d).length - hier.filter((x) => x === d).length;
+          for (let i = 0; i < fehlt; i++) hier.push(d);
+        }
+        g[id] = hier.sort().slice(-GEKOCHT_MAX);
+      }
+      return g;
+    },
+    vorschlag: (a, b) => {
+      a = istObjekt(a) ? a : {}; b = istObjekt(b) ? b : {};
+      const verlauf = vereinigen(a.verlauf, b.verlauf, (x) => x && x.id + '|' + x.datum).sort((x, y) => String(x.datum).localeCompare(String(y.datum)));
+      return { wuensche: a.wuensche || b.wuensche || {}, verlauf: verlauf.slice(-VS_VERLAUF_MAX) };
+    },
+  };
+  function zusammenfuehren(alt, neu) {
+    const d = Object.assign({}, alt);
+    for (const [k, v] of Object.entries(neu)) {
+      const f = ZUSAMMEN[k.slice(8)];
+      d[k] = f ? f(alt[k], v) : alt[k] != null ? alt[k] : v;
+    }
+    return d;
+  }
+  /** art = 'ersetzen' | 'zusammen' */
+  function sicherungEinspielen(daten, art) {
+    notizenJetzt(); sichern();
+    const alt = eigeneDaten();
+    const neu = art === 'ersetzen' ? daten : zusammenfuehren(alt, daten);
+    try {
+      Object.keys(alt).forEach((k) => localStorage.removeItem(k));
+      Object.entries(neu).forEach(([k, v]) => localStorage.setItem(k, JSON.stringify(v)));
+    } catch (e) {
+      // Speicher voll o. Ä.: alten Stand zurückschreiben
+      try { Object.entries(alt).forEach(([k, v]) => localStorage.setItem(k, JSON.stringify(v))); } catch (e2) { /* nichts mehr zu retten */ }
+      melden('Laden fehlgeschlagen – der Speicher des Browsers ist voll oder gesperrt');
+      return;
+    }
+    zustandLesen();
+    datenPruefen();
+    sichern();
+    darstellungAnwenden();
+    zeichnen();
+    melden(art === 'ersetzen' ? 'Sicherung geladen – Daten ersetzt' : 'Sicherung mit deinen Daten zusammengeführt');
+  }
+  function sicherungLadenBlatt(text) {
+    const b = blattAuf('Sicherung laden');
+    let s;
+    try { s = sicherungPruefen(text); } catch (e) {
+      b.zeigen(`<p class="hinweis fehler">${esc(e.message)}</p><p class="klein">Es wurde nichts verändert.</p>`,
+        '<button type="button" class="knopf haupt" data-blatt-zu>OK</button>');
+      return;
+    }
+    const vom = s.erstellt && !isNaN(new Date(s.erstellt)) ? new Date(s.erstellt).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    b.zeigen(`
+      <p>Sicherung${vom ? ' vom <strong>' + esc(vom) + '</strong>' : ''} enthält:</p>
+      <p class="sg-inhalt">${inhaltText(s.daten).map(esc).join(' · ')}</p>
+      <p class="klein">Auf diesem Gerät jetzt: ${inhaltText(eigeneDaten()).map(esc).join(' · ')}</p>
+      ${s.verworfen ? `<p class="klein hinweis fehler">${s.verworfen} beschädigte Einträge werden übersprungen.</p>` : ''}
+      <div class="sg-wahl">
+        <button type="button" class="knopf wahl-knopf" data-art="zusammen">${svg('plus')}<span><strong>Zusammenführen</strong>
+          <small>Beides behalten: Listen vereinigen, Doppeltes weglassen. Bei Bewertungen und Notizen gilt, was hier schon steht.</small></span></button>
+        <button type="button" class="knopf wahl-knopf" data-art="ersetzen">${svg('hochladen')}<span><strong>Ersetzen</strong>
+          <small>Alles auf diesem Gerät durch die Sicherung überschreiben.</small></span></button>
+      </div>`,
+    '<button type="button" class="knopf leise" data-blatt-zu>Abbrechen</button>');
+    b.el.addEventListener('click', (e) => {
+      const k = e.target.closest('[data-art]');
+      if (!k) return;
+      b.schliessen();
+      sicherungEinspielen(s.daten, k.dataset.art);
+    });
+  }
+  const dateiLesen = (f) => (f.text ? f.text() : new Promise((ok, fehler) => {
+    const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = fehler; r.readAsText(f);
+  }));
+  mehrEintrag('daten', {
+    id: 'sichern', titel: 'Sicherung erstellen', icon: 'download',
+    text: () => {
+      const s = sicherungStand();
+      const stand = s.zuletzt ? 'Zuletzt gesichert ' + vorText(tageSeit(s.zuletzt)) : 'Noch nie gesichert';
+      return 'Daten liegen nur auf diesem Gerät – regelmäßig sichern. ' + stand + (sicherungFaellig() ? ' – Zeit für eine neue Sicherung.' : '.');
+    },
+    html: () => `<button type="button" class="knopf${sicherungFaellig() ? ' haupt' : ''}">Sichern</button>`,
+    binden: (zeile) => {
+      zeile.classList.toggle('faellig', sicherungFaellig());
+      zeile.querySelector('button').addEventListener('click', sicherungErstellen);
+    },
+  });
+  mehrEintrag('daten', {
+    id: 'laden', titel: 'Sicherung laden', icon: 'hochladen', text: 'Aus einer Datei: ersetzen oder zusammenführen',
+    html: () => '<label class="knopf datei-knopf">Laden …<input type="file" accept="application/json,.json"></label>',
+    binden: (zeile) => zeile.querySelector('input').addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (f) dateiLesen(f).then(sicherungLadenBlatt, () => melden('Datei konnte nicht gelesen werden'));
+    }),
+  });
+
   function seiteMehr() {
     document.title = 'Mehr – Rezepte';
     const text = (e) => (typeof e.text === 'function' ? e.text() : e.text);
@@ -719,7 +1156,7 @@
           <ul class="mehr-liste">${a.eintraege.map(zeile).join('')}</ul>
         </section>`).join('')}
       <p class="mehr-info klein">${rezepte.length} Rezepte · Version vom ${stand}<br>
-        Wochenplan, Einkaufsliste und Zuhause werden nur auf diesem Gerät gespeichert.</p>`;
+        Wochenplan, Einkaufsliste, Zuhause, Favoriten und Notizen werden nur auf diesem Gerät gespeichert.</p>`;
     MEHR.forEach((a) => a.eintraege.forEach((e) => { if (e.binden) e.binden(document.getElementById('mehr-' + e.id)); }));
   }
 
@@ -814,13 +1251,13 @@
     const weiter = kochFrisch(st) && st.s > 1;
     const n = schrittListe(r).length;
     if (!n) return '';
-    const zuletzt = gekochtHilfe.zuletzt(r.id);
+    const zuletzt = gekochtHilfe.zuletzt(r.id), oft = gekochtHilfe.daten(r.id).length;
     return `
       <div class="koch-zeile nur-bildschirm">
         <a class="knopf haupt koch-knopf" href="#/kochen/${esc(r.id)}?p=${personen}&amp;s=${weiter ? st.s : 1}">${svg('topf')} <span>${weiter ? 'Weiterkochen' : 'Jetzt kochen'}</span></a>
         <span class="klein">${weiter ? `bei Schritt ${st.s} von ${n}` : `Schritt für Schritt · ${n} Schritte · Bildschirm bleibt an`}</span>
         <span class="koch-gekocht">
-          ${zuletzt ? `<span class="klein">Zuletzt gekocht: ${datumText(zuletzt)}</span>` : ''}
+          ${zuletzt ? `<button type="button" class="link-knopf klein gekocht-verlauf" id="gekocht-verlauf" title="Koch-Verlauf ansehen">Zuletzt gekocht: ${vorText(tageSeit(zuletzt))} · ${oft}× gekocht</button>` : ''}
           <button type="button" class="knopf leise" id="gekocht" title="Als gekocht merken, Verbrauchtes aus „Zuhause“ nehmen">${svg('haken')} Gekocht</button>
         </span>
       </div>`;
@@ -846,6 +1283,7 @@
         <header class="km-kopf">
           <a class="knopf leise icon-knopf km-zu" id="km-zu" href="${zurueck()}" data-zurueck aria-label="Kochmodus beenden">${svg('schliessen')}</a>
           <strong class="km-titel">${esc(r.titel)}</strong>
+          <button type="button" class="knopf leise icon-knopf km-notiz-knopf" id="km-notiz" aria-label="Meine Notizen" title="Meine Notizen">${svg('notiz')}<span class="punkt" hidden></span></button>
           <button type="button" class="knopf km-zut-knopf" id="km-zut-auf" aria-expanded="false" aria-controls="km-zutaten">${svg('liste')} <span>Zutaten</span> <span class="km-zut-zahl" id="km-zut-zahl"></span></button>
         </header>
         <div class="km-fortschritt" aria-hidden="true"><span id="km-balken"></span></div>
@@ -874,6 +1312,7 @@
       $('km-buehne').innerHTML = `
         <div class="km-schritt${richtung ? ' km-' + richtung : ''}" ${timerZiel(r, sch.nr, stand.p)}>
           <div class="km-ort"><span class="km-abschnitt">${esc(sch.abschnitt)}</span><span class="km-zaehler">${sch.nr} / ${schritte.length}</span></div>
+          ${stand.s === 1 && notizVon(r.id) ? `<button type="button" class="km-notiz" data-notiz-auf>${svg('notiz')}<span><strong>Meine Notiz</strong>${esc(notizVon(r.id))}</span></button>` : ''}
           <p class="km-text">${Timer.chips(fett(sch.text))}</p>
           ${zut.length ? `<div class="km-dafuer"><h3>Dafür</h3><ul>${zut.map((i) => `<li>${zutatKnopf(i, 'km-z')}</li>`).join('')}</ul></div>` : ''}
         </div>`;
@@ -884,6 +1323,7 @@
       $('km-weiter').innerHTML = letzter ? svg('haken') + ' Fertig' : 'Weiter ' + svg('vor');
       $('km-weiter').classList.toggle('fertig', letzter);
       zahlZeigen();
+      app.querySelector('#km-notiz .punkt').hidden = !notizVon(r.id);
       adresseSetzen('#/kochen/' + r.id + '?p=' + stand.p + '&s=' + stand.s);
       kochenSichern(r.id, stand);
       Timer.markieren();
@@ -934,6 +1374,9 @@
     $('km-zurueck').addEventListener('click', () => blaettern(-1));
     $('km-weiter').addEventListener('click', () => (stand.s >= schritte.length ? fertig() : blaettern(1)));
     $('km-zut-auf').addEventListener('click', () => listeAuf($('km-zutaten').hidden));
+    let offen = true;              // false nach dem Verlassen (Blatt schließt evtl. erst danach)
+    const notizAuf = () => notizBlatt(r, () => { if (offen) zeigen(); });
+    $('km-notiz').addEventListener('click', notizAuf);
     app.querySelector('.kochmodus').addEventListener('click', (e) => {
       const z = e.target.closest('[data-z]');
       if (z) {
@@ -941,7 +1384,8 @@
         if (stand.haken[i]) delete stand.haken[i]; else stand.haken[i] = true;
         app.querySelectorAll(`[data-z="${i}"]`).forEach((b) => { b.classList.toggle('an', !!stand.haken[i]); b.setAttribute('aria-pressed', String(!!stand.haken[i])); });
         kochenSichern(r.id, stand); zahlZeigen();
-      } else if (e.target.closest('[data-zl-zu]')) listeAuf(false);
+      } else if (e.target.closest('[data-notiz-auf]')) notizAuf();
+      else if (e.target.closest('[data-zl-zu]')) listeAuf(false);
       else if (e.target.closest('[data-zl-reset]')) { stand.haken = {}; kochenSichern(r.id, stand); listeZeigen(); zeigen(); }
       else if (e.target.closest('[data-kp]')) {
         stand.p = begrenzen(stand.p + Number(e.target.closest('[data-kp]').dataset.kp));
@@ -964,15 +1408,26 @@
     }, { passive: true });
 
     const tasten = (e) => {
-      if (e.target.closest('input, select, textarea') || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (blatt || e.target.closest('input, select, textarea') || e.altKey || e.ctrlKey || e.metaKey) return;
       if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); blaettern(1); }
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); blaettern(-1); }
       else if (e.key === 'Escape') { if (!$('km-zutaten').hidden) listeAuf(false); else location.hash = zurueck(); }
     };
     document.addEventListener('keydown', tasten);
     wach.starten();
-    verlassen = () => { document.removeEventListener('keydown', tasten); wach.beenden(); };
+    verlassen = () => { offen = false; document.removeEventListener('keydown', tasten); wach.beenden(); };
     zeigen();
+  }
+
+  /** Notizen im Kochmodus ansehen/ändern */
+  function notizBlatt(r, nachher) {
+    const b = blattAuf('Meine Notizen', { zu: () => { notizenJetzt(); if (nachher) nachher(); } });
+    b.zeigen(`
+      <p class="klein">${esc(r.titel)} – was du dir fürs nächste Mal merken willst. Wird automatisch gespeichert.</p>
+      <textarea class="notiz-feld" id="notiz-blatt" rows="4" maxlength="${NOTIZ_MAX}" placeholder="z. B. nächstes Mal weniger Salz" aria-label="Meine Notizen">${esc(notizVon(r.id))}</textarea>
+      <span class="notiz-status klein" id="notiz-blatt-status" aria-live="polite"></span>`,
+    '<button type="button" class="knopf haupt" data-blatt-zu>Fertig</button>');
+    notizFeldBinden(b.el.querySelector('#notiz-blatt'), b.el.querySelector('#notiz-blatt-status'), r.id);
   }
 
   // ---------------------------------------------------------------- Gekocht → Verbrauch aus „Zuhause“
@@ -1025,6 +1480,30 @@
       melden(weg.size + (weg.size === 1 ? ' Zutat' : ' Zutaten') + ' aus „Zuhause“ entfernt');
     });
     zaehlen();
+  }
+
+  /** Verlauf „gekocht“ eines Rezepts, einzelne Tage löschbar */
+  function gekochtBlatt(r) {
+    let geaendert = false;
+    const b = blattAuf('Gekocht', { zu: () => { if (geaendert) zeichnen(); } });
+    const zeigen = () => {
+      const tage = gekochtHilfe.daten(r.id).reverse();
+      b.zeigen(`
+        <p class="klein">${esc(r.titel)} – ${tage.length ? tage.length + '× gekocht' : 'noch nie gekocht'}. Versehentlich eingetragen? Mit ${svg('muell')} entfernen.</p>
+        <ul class="gk-liste">${tage.map((d, i) => `
+          <li><span>${new Date(d + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}
+            <small>${vorText(tageSeit(d))}</small></span>
+            <button type="button" class="knopf leise icon-knopf" data-vergessen="${d}" data-f="g${i}" aria-label="Eintrag vom ${datumText(d)} entfernen">${svg('muell')}</button></li>`).join('')}</ul>`,
+      '<button type="button" class="knopf haupt" data-blatt-zu>Fertig</button>');
+    };
+    b.el.addEventListener('click', (e) => {
+      const k = e.target.closest('[data-vergessen]');
+      if (!k) return;
+      gekochtHilfe.vergessen(r.id, k.dataset.vergessen);
+      geaendert = true;
+      zeigen();
+    });
+    zeigen();
   }
 
   // ---------------------------------------------------------------- Wochenplan
@@ -1780,15 +2259,30 @@
   const BREITE_MM = 180;
   const PX_JE_MM = 96 / 25.4;
   const MIN_ZOOM = 0.85;
+  /** Tipps und Notizen (in dieser Reihenfolge) unter den Zutaten bzw. in der Spalte el */
+  const zusatzVon = (el, auchLeer) => [el.querySelector('.r-tipps'), el.querySelector(auchLeer ? '.r-notizen' : '.r-notizen:not(.ohne-notiz)')].filter(Boolean);
   function druckVorbereiten() {
+    notizenJetzt();
+    document.documentElement.setAttribute('data-theme', 'light');   // Druck immer hell
     document.body.classList.add('druck');
     document.querySelectorAll('.rezept').forEach((el) => {
       el.style.zoom = ''; el.style.width = ''; el.classList.remove('zweiseitig');
-      // Tipps in die kürzere Spalte (meist unter die Zubereitung, wenn die Zutatenliste lang ist)
-      const tipps = el.querySelector('.r-tipps'), links = el.querySelector('.r-links'), rechts = el.querySelector('.r-schritte');
-      if (tipps && links && rechts) {
-        links.appendChild(tipps);
-        if (links.getBoundingClientRect().height > rechts.getBoundingClientRect().height + tipps.getBoundingClientRect().height) rechts.appendChild(tipps);
+      // Tipps und Notizen in die kürzere Spalte (meist unter die Zubereitung, wenn die Zutatenliste lang ist).
+      // Bevorzugt beide zusammen; Notizen wandern nur in die andere Spalte, wenn das Rezept dadurch kürzer wird.
+      const zusatz = zusatzVon(el), links = el.querySelector('.r-links'), rechts = el.querySelector('.r-schritte');
+      if (zusatz.length && links && rechts) {
+        const legen = (spalten) => zusatz.forEach((x, i) => (spalten[i] === 'r' ? rechts : links).appendChild(x));
+        legen('ll');
+        const h = zusatz.reduce((n, x) => n + x.getBoundingClientRect().height, 0);
+        const erst = links.getBoundingClientRect().height > rechts.getBoundingClientRect().height + h ? 'rr' : 'll';
+        const varianten = zusatz.length > 1 ? [erst, erst === 'll' ? 'rr' : 'll', 'lr', 'rl'] : [erst[0]];
+        let beste = null;
+        for (const v of varianten) {
+          legen(v);
+          const hoehe = el.getBoundingClientRect().height;
+          if (!beste || hoehe < beste.hoehe - 2) beste = { v, hoehe };
+        }
+        legen(beste.v);
       }
       let zoom = 1;
       for (let i = 0; i < 4; i++) {
@@ -1809,9 +2303,10 @@
     document.body.classList.remove('druck');
     document.querySelectorAll('.rezept').forEach((el) => {
       el.style.zoom = ''; el.style.width = ''; el.classList.remove('zweiseitig');
-      const tipps = el.querySelector('.r-tipps'), links = el.querySelector('.r-links');
-      if (tipps && links) links.appendChild(tipps);
+      const links = el.querySelector('.r-links');
+      if (links) zusatzVon(el, true).forEach((x) => links.appendChild(x));
     });
+    darstellungAnwenden();
   }
   window.addEventListener('beforeprint', druckVorbereiten);
   window.addEventListener('afterprint', druckEnde);
@@ -1821,9 +2316,8 @@
   window.addEventListener('hashchange', zeichnen);
   window.addEventListener('storage', (e) => {
     if (e.key === 'rezepte.timer') return;   // erledigt assets/timer.js
-    plan = speicher.lesen('plan', []); abgehakt = speicher.lesen('abgehakt', {}); extras = speicher.lesen('extras', []); liste = speicher.lesen('liste', []); zuhause = speicher.lesen('zuhause', []);
-    kochen = speicher.lesen('kochen', {});
-    profile = speicher.lesen('profile', []); ladenfolge = speicher.lesen('ladenfolge', null); gekocht = speicher.lesen('gekocht', {});
+    if (e.key === 'rezepte.darstellung' || !e.key) darstellungAnwenden();
+    zustandLesen();
     datenPruefen();
     zeichnen();
   });
@@ -1847,6 +2341,7 @@
     mehrEintrag, mehrAbschnitt, speicher, melden, zeichnen, blattAuf,
     gekocht: gekochtHilfe,          // „zuletzt gekocht“ & Verlauf, siehe oben bei GEKOCHT_MAX
     portionen, kategorienFolge,
+    favorit: istFavorit, bewertung: sterneVon, notiz: notizVon,
   };
   // Browser bitten, die Daten dauerhaft zu behalten (nicht bei Speicherknappheit löschen)
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* egal */ }
