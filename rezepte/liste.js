@@ -11,6 +11,7 @@ window.REZEPT_DATEIEN = [
   "low-carb-huehnchen-mit-mozzarella-tomaten-pesto",
   "mediterraner-salat-mit-geroestetem-pesto-gemuese",
   "one-pot-hackfleisch-porree-nudeln",
+  "one-pot-reis-mit-spinat",
   "pasta-mit-rotwein-sauce-steak-streifen",
   "pfannkuchen",
   "pfifferlinge-mit-spinatknoedeln-in-salbeibutter",

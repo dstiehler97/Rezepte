@@ -50,11 +50,14 @@
     'ghee':          { k: KU, icon: 'butter' },
     'oregano':       { k: GW, icon: 'kraeuter', vorrat: true },
     'getrocknete minze': { k: GW, icon: 'kraeuter', vorrat: true },
+    'getrockneter rosmarin': { k: GW, icon: 'kraeuter', vorrat: true },
+    'getrockneter thymian': { k: GW, icon: 'kraeuter', vorrat: true },
     'lorbeerblatt':  { k: GW, icon: 'kraeuter', vorrat: true },
     'lorbeer':       { k: GW, icon: 'kraeuter', vorrat: true },
     'öl':            { k: GW, icon: 'oel', vorrat: true },
     'sesamöl':       { k: GW, icon: 'oel' },
     'essig':         { k: GW, icon: 'oel', vorrat: true },
+    'balsamico':     { k: GW, icon: 'oel', vorrat: true },
     'brühe':         { k: GW, icon: 'gewuerz', vorrat: true },
     'senf':          { k: GW, icon: 'gewuerz' },
     'sojasauce':     { k: GW, icon: 'oel' },
@@ -91,6 +94,7 @@
     'haselnusskerne': { k: BA, icon: 'nuss' },
     'sesamsaat':     { k: BA, icon: 'nuss' },
     'sesam':         { k: BA, icon: 'nuss' },
+    'pinienkerne':   { k: BA, icon: 'nuss' },
 
     // Kühlregal
     'butter':        { k: KU, icon: 'butter' },
@@ -111,6 +115,7 @@
     'gnocchi':       { k: KU, icon: 'nudeln' },
     'pfannenkäse':   { k: KU, icon: 'kaese' },
     'tofu':          { k: KU },
+    'blätterteig':   { k: KU, icon: 'mehl' },
 
     // Obst & Gemüse
     'zwiebel':       { k: OG, icon: 'zwiebel' },

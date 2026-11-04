@@ -25,11 +25,12 @@
     'pfeffer': N(255, 11, 39, 1, 3.3, 25, { dichte: 0.5 }),
     'paprikapulver': GEWUERZ, 'chiliflocken': GEWUERZ, 'muskat': GEWUERZ, 'muskatnuss': GEWUERZ,
     'zimt': GEWUERZ, 'kreuzkümmel': GEWUERZ, 'currypulver': GEWUERZ, 'kurkuma': GEWUERZ, 'piment': GEWUERZ, 'oregano': GEWUERZ,
-    'getrocknete minze': GEWUERZ,
+    'getrocknete minze': GEWUERZ, 'getrockneter rosmarin': GEWUERZ, 'getrockneter thymian': GEWUERZ,
     'lorbeerblatt': N(310, 8, 48, 0, 8, 26, { stueck: 0.2, blatt: 0.2 }),
     'lorbeer': N(310, 8, 48, 0, 8, 26, { stueck: 0.2, blatt: 0.2 }),
     'öl': N(884, 0, 0, 0, 100, 0, { dichte: 0.92 }),
     'essig': N(20, 0, 0.6, 0.6, 0, 0),
+    'balsamico': N(90, 0.5, 17, 15, 0, 0, { dichte: 1.06 }),   // Aceto Balsamico
     'brühe': N(5, 0.2, 0.5, 0.4, 0.2, 0),               // zubereitet
     'senf': N(85, 6, 5, 3, 4.5, 2, { dichte: 1.05 }),
     'sojasauce': N(55, 8, 5, 1, 0.1, 0.8, { dichte: 1.15 }),
@@ -67,6 +68,7 @@
     'haselnusskerne': N(645, 15, 11, 4, 61, 8, { handvoll: 30 }),
     'sesamsaat': N(575, 18, 10, 0.3, 50, 12, { dichte: 0.6 }),
     'sesam': N(575, 18, 10, 0.3, 50, 12, { dichte: 0.6 }),
+    'pinienkerne': N(675, 14, 4, 3.6, 68, 3.7, { handvoll: 30, dichte: 0.55 }),
 
     // Kühlregal
     'butter': N(741, 0.7, 0.6, 0.6, 83, 0, { dichte: 0.9 }),
@@ -87,6 +89,8 @@
     'gnocchi': N(155, 4, 32, 1, 0.6, 2, { packung: 400 }),         // Frischware, Kühlregal
     'pfannenkäse': N(300, 17, 12, 1, 21, 1, { stueck: 25 }),      // panierter Ofenkäse
     'tofu': N(125, 13, 1.5, 0.5, 7.5, 1.5, { packung: 200, stueck: 200 }),
+    'blätterteig': N(390, 5.5, 33, 1.5, 26, 1.5, { packung: 275, stueck: 275 }),   // frisch, Kühlregal
+    'griechischer joghurt': N(120, 4.5, 4, 4, 10, 0, { becher: 150 }),   // 10 % Fett
 
     // Obst & Gemüse
     'zwiebel': N(40, 1.2, 8, 4.7, 0.1, 1.8, { stueck: 80 }),
