@@ -365,15 +365,12 @@ button.chip { font: inherit; font-size: .9rem; cursor: pointer; }
   /* Rezeptseite */
   .r-werkzeuge { flex-wrap: nowrap; margin-bottom: .9rem; gap: .4rem; }
   .r-werkzeuge > * { flex-shrink: 0; }
-  .r-werkzeuge #zur-liste { flex-shrink: 1; min-width: 0; overflow: hidden; }
-  .r-werkzeuge .zurueck span { display: none; }
-  .r-werkzeuge .zurueck { padding: .5rem; }
-  .r-werkzeuge .abstand { display: none; }
+  .r-werkzeuge #zur-liste { display: none; }   /* steht unten neben „Jetzt kochen“ */
+  .r-werkzeuge .zurueck { padding: .5rem .6rem .5rem .4rem; }
   .r-werkzeuge .knopf { white-space: nowrap; }
-  .r-werkzeuge #zur-liste { flex: 1; justify-content: center; }
-  .r-werkzeuge #zum-plan span { display: none; }
   .r-werkzeuge #zum-plan, .r-werkzeuge .icon-knopf { padding: .5rem .7rem; }
   .rezept { padding: 0 1rem 1.25rem; overflow: hidden; }
+  @supports (overflow: clip) { .rezept { overflow: clip; } }   /* clip statt hidden: Reiter-Leiste kann kleben */
   .r-kopf { flex-direction: column-reverse; gap: 1rem; }
   .r-bild { width: calc(100% + 2rem); margin: 0 -1rem; border-radius: var(--radius) var(--radius) 0 0; aspect-ratio: 16/10; }
   .r-kopf:not(:has(.r-bild)) { padding-top: 1.25rem; }

@@ -183,6 +183,7 @@
     'pflanzlicher drink': N(45, 0.5, 7, 4, 1.5, 0.8),   // z. B. Haferdrink
     'preiselbeeren': N(180, 0.3, 43, 40, 0.3, 2, { glas: 400, dichte: 1.2 }),
     'kichererbsen': N(120, 7, 16, 1, 2.6, 5, { dose: 240 }),     // abgetropft
+    'erbsen': N(81, 5.4, 10, 5, 0.4, 5, { packung: 450 }),       // tiefgefroren
     'mais': N(80, 3, 14, 4, 1.2, 3, { dose: 285 }),
 
     // Brot

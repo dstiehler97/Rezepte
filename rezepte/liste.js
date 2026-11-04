@@ -18,5 +18,6 @@ window.REZEPT_DATEIEN = [
   "spaghetti-bolognese",
   "suesskartoffelragout-mit-bulgur-cashewkernen",
   "thai-kokos-suesskartoffelsuppe",
-  "tofu-scramble-mit-gemuese"
+  "tofu-scramble-mit-gemuese",
+  "wuerziger-couscous-one-pot"
 ];

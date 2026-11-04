@@ -214,6 +214,7 @@
     'pflanzlicher drink': { k: KU, icon: 'milch' },
     'preiselbeeren':     { k: KO },
     'kichererbsen':      { k: KO },
+    'erbsen':            { k: 'Tiefkühl' },   // meist tiefgefroren
     'mais':              { k: KO },
 
     // Brot
