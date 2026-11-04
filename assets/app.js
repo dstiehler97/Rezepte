@@ -650,26 +650,34 @@
   const timerZiel = (r, nr, personen) =>
     `data-timer-name="${esc(r.titel + ' · Schritt ' + nr)}" data-timer-link="#/kochen/${esc(r.id)}?p=${personen}&amp;s=${nr}"`;
 
-  // Zutaten ↔ Schritt per Namensabgleich: Wortformen (Zwiebeln/Zwiebel), Zusammensetzungen (Zwiebelwürfel,
-  // Salzwasser → Salz) und Oberbegriffe (Öl → Pflanzenöl, Brühe → Rinderbrühe). Kommt eine Zutat mehrfach vor
-  // (Butter zum Braten, Butter für die Sauce), bekommt die k-te Erwähnung das k-te Vorkommen.
+  // Zutaten ↔ Schritt per Namensabgleich: Wortformen (Zwiebeln/Zwiebel, Walnüsse/Walnusskerne), Zusammensetzungen
+  // (Zwiebelwürfel, Salzwasser → Salz) und Oberbegriffe (Öl → Pflanzenöl, Brühe → Rinderbrühe). „ohne Öl“ zählt nicht.
+  // Kommt eine Zutat mehrfach vor (Butter zum Braten, Butter für die Sauce), bekommt die k-te Erwähnung das k-te Vorkommen.
   const OBERBEGRIFF_NICHT = ['sauce', 'soße', 'masse', 'teig', 'wasser', 'mischung', 'flüssigkeit'];
-  const woerter = (t) => Zutaten.normal(String(t).replace(/\*\*/g, '')).replace(/[^a-zäöüß0-9]+/g, ' ').trim().split(' ').filter(Boolean);
-  const kopfwort = (name) => { const w = woerter(name); return w[w.length - 1] || ''; };   // „Rote Linsen“ → linsen
+  const ohneUmlaut = (w) => w.replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u');
+  const woerter = (t) => ohneUmlaut(Zutaten.normal(String(t).replace(/\*\*/g, ''))).replace(/[^a-zß0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+  /** Kopfwörter eines Namens: „Rote Linsen“ → linsen, „Haselnusskerne“ → haselnusskerne, haselnuss */
+  const kopfwoerter = (name) => {
+    const w = woerter(name), k = w[w.length - 1] || '';
+    const ohneKerne = k.replace(/kerne?$/, '');
+    return ohneKerne !== k && ohneKerne.length >= 4 ? [k, ohneKerne] : [k];
+  };
   const gleich = (w, kopf) => { const b = formen(kopf); return formen(w).some((x) => x.length > 1 && b.includes(x)); };
   function zusammengesetzt(w, kopf) {
     if (kopf.length >= 4 && [kopf, kopf.replace(/n$/, '')].some((f) => f.length >= 4 && w.startsWith(f))) return true;
-    return (w.length >= 4 || w === 'öl') && !OBERBEGRIFF_NICHT.includes(w) && kopf.length > w.length && kopf.endsWith(w);
+    return (w.length >= 4 || w === 'ol') && !OBERBEGRIFF_NICHT.includes(w) && kopf.length > w.length && kopf.endsWith(w);
   }
   function schrittZutaten(r, schritte) {
     const zut = (r.zutaten || []).map((z, i) => ({ z, i, k: Zutaten.normal(z.name) })).filter((x) => !x.z.abschnitt);
-    const koepfe = zut.map((x) => [x.z.name, x.z.mehrzahl].filter(Boolean).map(kopfwort));
+    const koepfe = zut.map((x) => [x.z.name, x.z.mehrzahl].filter(Boolean).flatMap(kopfwoerter));
     const gruppe = {};
     zut.forEach((x) => { (gruppe[x.k] = gruppe[x.k] || []).push(x.i); });
     const gezaehlt = {};
     return schritte.map((s) => {
       const treffer = new Set();
-      for (const w of woerter(s.text)) {
+      const ws = woerter(s.text);
+      for (const [n, w] of ws.entries()) {
+        if (ws[n - 1] === 'ohne') continue;
         const exakt = zut.filter((x, j) => koepfe[j].some((k) => gleich(w, k)));
         // Zusammensetzungen nur, wenn das Wort nicht selbst eine Zutat ist (Tomatenmark ≠ Tomaten)
         (exakt.length ? exakt : zut.filter((x, j) => koepfe[j].some((k) => zusammengesetzt(w, k)))).forEach((x) => treffer.add(x.k));
