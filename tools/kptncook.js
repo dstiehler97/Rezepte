@@ -123,7 +123,6 @@ ${schritte.map((s) => '    ' + js(s) + ',').join('\n')}
   ],
 
   tipps: [],
-  quelle: 'KptnCook',
 });
 `;
   fs.writeFileSync(datei, inhalt);

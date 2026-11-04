@@ -44,6 +44,7 @@ for (const datei of dateien) {
   if (ids.has(r.id)) melde(datei, 'doppelte id ' + r.id);
   ids.add(r.id);
   if (!r.titel) melde(datei, 'titel fehlt');
+  if (r.personen !== 4) melde(datei, 'Rezepte immer für 4 Personen anlegen (personen: 4)');
   if (!Array.isArray(r.zutaten) || !r.zutaten.length) melde(datei, 'zutaten fehlen');
   if (!Array.isArray(r.schritte) || !r.schritte.length) melde(datei, 'schritte fehlen');
   if (r.schwierigkeit && !['einfach', 'mittel', 'anspruchsvoll'].includes(r.schwierigkeit)) melde(datei, 'schwierigkeit: einfach | mittel | anspruchsvoll');

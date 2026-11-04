@@ -165,7 +165,6 @@ label.inline input { width: 4.5rem; }
 .r-naehrwerte tr.gesamt { color: var(--leise); }
 .nw-hinweis { margin: .4rem 0 0; font-size: .78rem; color: var(--leise); }
 .kcal-marke { font-size: .65rem; font-weight: 700; color: var(--akzent); border: 1.5px solid currentColor; border-radius: 4px; padding: 0 .2rem; line-height: 1.4; }
-.r-quelle { margin: 1rem 0 0; font-size: .85rem; color: var(--leise); }
 
 /* ============================================================ Wochenplan */
 .plan-neu { margin-bottom: 1.5rem; }

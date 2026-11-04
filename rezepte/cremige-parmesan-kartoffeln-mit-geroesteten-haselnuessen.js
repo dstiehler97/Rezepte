@@ -46,5 +46,4 @@ Rezept({
   ],
 
   tipps: [],
-  quelle: 'KptnCook',
 });

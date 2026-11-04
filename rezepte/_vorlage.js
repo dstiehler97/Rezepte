@@ -47,5 +47,4 @@ Rezept({
   ],
 
   tipps: [],
-  quelle: '',
 });

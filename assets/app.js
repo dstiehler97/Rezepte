@@ -245,7 +245,6 @@
         </div>
 
         ${naehrwertHTML(r, personen)}
-        ${r.quelle ? `<p class="r-quelle">Quelle: ${esc(r.quelle)}</p>` : ''}
       </article>`;
   }
 

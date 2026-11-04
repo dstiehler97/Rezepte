@@ -39,5 +39,4 @@ Rezept({
   tipps: [
     'Die Sauce schmeckt am nächsten Tag noch besser und lässt sich gut einfrieren.',
   ],
-  quelle: '',
 });

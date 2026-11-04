@@ -35,5 +35,4 @@ Rezept({
   tipps: [
     'Eine große, tiefe Pfanne nehmen. Ist die Brühe zu früh verkocht, einen Schuss Wasser nachgießen und gelegentlich umrühren.',
   ],
-  quelle: 'KptnCook',
 });

@@ -41,5 +41,4 @@ Rezept({
   tipps: [
     'Eine Limette als Spalten zum Servieren aufheben, wenn man es gern frischer mag.',
   ],
-  quelle: 'KptnCook',
 });
