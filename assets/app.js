@@ -25,7 +25,9 @@
   let plan = speicher.lesen('plan', []);           // [{uid, id, personen, tag}]
   let abgehakt = speicher.lesen('abgehakt', {});   // {schluessel: true}
   let extras = speicher.lesen('extras', []);       // [{uid, text}]
+  let liste = speicher.lesen('liste', []);         // Rezepte direkt auf der Einkaufsliste [{uid, id, personen}]
   const sichern = () => {
+    speicher.schreiben('liste', liste);
     speicher.schreiben('plan', plan);
     speicher.schreiben('abgehakt', abgehakt);
     speicher.schreiben('extras', extras);
@@ -78,6 +80,7 @@
       rezepte.sort((a, b) => a.titel.localeCompare(b.titel, 'de'));
       nachId = Object.fromEntries(rezepte.map((r) => [r.id, r]));
       plan = plan.filter((e) => nachId[e.id]);
+      liste = liste.filter((e) => nachId[e.id]);
     });
   }
 
@@ -91,10 +94,9 @@
 
   function zeichnen() {
     const { teile, q } = route();
-    document.querySelectorAll('.nav a').forEach((a) => {
-      a.classList.toggle('aktiv', ('#/' + (teile[0] || '')) === a.getAttribute('href'));
-    });
-    document.getElementById('plan-zahl').textContent = plan.length || '';
+    const ziel = '#/' + (teile[0] === 'rezept' ? '' : (teile[0] || ''));
+    document.querySelectorAll('.nav a, .tabs a').forEach((a) => a.classList.toggle('aktiv', ziel === a.getAttribute('href')));
+    zaehlerAktualisieren();
     document.body.dataset.seite = teile[0] || 'start';
 
     if (teile[0] === 'rezept' && nachId[teile[1]]) {
@@ -105,6 +107,13 @@
     else if (teile[0] === 'kochbuch') seiteKochbuch(q);
     else seiteUebersicht(q);
     window.scrollTo(0, 0);
+  }
+
+  /** Alle Rezepte, deren Zutaten auf die Einkaufsliste kommen: Wochenplan + direkt hinzugefügte */
+  const fuerEinkauf = () => [...plan, ...liste];
+  function zaehlerAktualisieren() {
+    document.querySelectorAll('[data-zahl="plan"]').forEach((el) => { el.textContent = plan.length || ''; });
+    document.querySelectorAll('[data-zahl="einkauf"]').forEach((el) => { el.textContent = fuerEinkauf().length + extras.length || ''; });
   }
 
   // ---------------------------------------------------------------- Übersicht
@@ -276,11 +285,12 @@
   function seiteRezept(r, personen) {
     document.title = r.titel + ' – Rezepte';
     app.innerHTML = `
-      <div class="werkzeuge nur-bildschirm">
-        <a class="knopf leise" href="#/">${svg('zurueck')} Alle Rezepte</a>
+      <div class="werkzeuge r-werkzeuge nur-bildschirm">
+        <a class="knopf leise zurueck" href="#/" aria-label="Alle Rezepte">${svg('zurueck')} <span>Alle Rezepte</span></a>
         <span class="abstand"></span>
-        <button class="knopf" id="zum-plan">${svg('kalender')} Zum Wochenplan</button>
-        <button class="knopf haupt" onclick="window.print()">${svg('drucker')} Drucken</button>
+        <button class="knopf haupt" id="zur-liste">${svg('korb')} <span>Auf Einkaufsliste</span></button>
+        <button class="knopf" id="zum-plan" aria-label="Zum Wochenplan" title="Zum Wochenplan">${svg('kalender')} <span>Wochenplan</span></button>
+        <button class="knopf icon-knopf" onclick="window.print()" aria-label="Drucken" title="Drucken">${svg('drucker')}</button>
       </div>
       ${rezeptHTML(r, personen, true)}`;
 
@@ -290,10 +300,15 @@
     }));
     document.getElementById('zum-plan').addEventListener('click', (e) => {
       plan.push({ uid: uid(), id: r.id, personen, tag: '' });
-      sichern();
-      document.getElementById('plan-zahl').textContent = plan.length;
-      e.currentTarget.innerHTML = svg('haken') + ' Im Plan';
-      melden(r.titel + ' für ' + personen + ' Personen eingeplant');
+      sichern(); zaehlerAktualisieren();
+      e.currentTarget.innerHTML = svg('haken') + ' <span>Im Plan</span>';
+      melden(r.titel + ' für ' + personen + ' P. eingeplant');
+    });
+    document.getElementById('zur-liste').addEventListener('click', (e) => {
+      liste.push({ uid: uid(), id: r.id, personen });
+      sichern(); zaehlerAktualisieren();
+      e.currentTarget.innerHTML = svg('haken') + ' <span>Auf der Liste</span>';
+      melden('Zutaten für ' + personen + ' P. auf der Einkaufsliste', '#/einkauf', 'Ansehen');
     });
   }
 
@@ -383,7 +398,7 @@
   // ---------------------------------------------------------------- Einkaufsliste
   function einkaufsliste() {
     const map = new Map();
-    for (const e of plan) {
+    for (const e of fuerEinkauf()) {
       const r = nachId[e.id];
       const faktor = e.personen / (r.personen || STANDARD_PERSONEN);
       for (const z of nurZutaten(r)) {
@@ -430,7 +445,7 @@
 
   function alsText(gruppen, markdown) {
     const datum = new Date().toLocaleDateString('de-DE');
-    const fuer = plan.map((e) => `${nachId[e.id].titel} (${e.personen} P.)`).join(', ');
+    const fuer = fuerEinkauf().map((e) => `${nachId[e.id].titel} (${e.personen} P.)`).join(', ');
     const box = markdown ? '- [ ] ' : '☐ ';
     let t = (markdown ? '# ' : '') + 'Einkaufsliste – ' + datum + '\n';
     if (fuer) t += (markdown ? '\n_Für: ' + fuer + '_\n' : 'Für: ' + fuer + '\n');
@@ -447,7 +462,8 @@
   function seiteEinkauf() {
     document.title = 'Einkaufsliste – Rezepte';
     const gruppen = einkaufsliste();
-    const leer = !plan.length && !extras.length;
+    const quellen = fuerEinkauf();
+    const leer = !quellen.length && !extras.length;
     const offen = gruppen.reduce((n, g) => n + g.liste.filter((p) => !abgehakt[p.schluessel]).length, 0);
 
     app.innerHTML = `
@@ -455,14 +471,17 @@
         <h1>Einkaufsliste</h1>
         <span class="abstand"></span>
         ${leer ? '' : `
-        <button class="knopf nur-bildschirm" id="ek-kopieren">${svg('kopieren')} Kopieren</button>
-        <button class="knopf nur-bildschirm" id="ek-txt">${svg('download')} .txt</button>
-        <button class="knopf nur-bildschirm" id="ek-md">${svg('download')} .md</button>
-        ${navigator.share ? `<button class="knopf nur-bildschirm" id="ek-teilen">${svg('teilen')} Teilen</button>` : ''}
-        <button class="knopf haupt nur-bildschirm" onclick="window.print()">${svg('drucker')} Drucken</button>`}
+        <div class="ek-export nur-bildschirm">
+          ${navigator.share ? `<button class="knopf haupt" id="ek-teilen">${svg('teilen')} Teilen</button>` : ''}
+          <button class="knopf" id="ek-kopieren">${svg('kopieren')} Kopieren</button>
+          <button class="knopf" id="ek-txt">${svg('download')} .txt</button>
+          <button class="knopf" id="ek-md">${svg('download')} .md</button>
+          <button class="knopf${navigator.share ? '' : ' haupt'}" onclick="window.print()">${svg('drucker')} Drucken</button>
+        </div>`}
       </div>
-      ${plan.length ? `<p class="ek-fuer">Für: ${plan.map((e) => `${esc(nachId[e.id].titel)} <span class="klein">(${e.personen} P.)</span>`).join(', ')}</p>` : ''}
-      ${leer ? `<p class="leer">Die Einkaufsliste entsteht aus dem <a href="#/plan">Wochenplan</a>. Plane zuerst ein paar Rezepte ein.</p>` : ''}
+      ${quellen.length ? `<div class="ek-fuer"><span class="nur-druck">Für: </span>${quellen.map((e) => `
+        <span class="ek-chip">${esc(nachId[e.id].titel)} <span class="klein">${e.personen} P.</span>${plan.includes(e) ? ' <span class="klein nur-bildschirm">· Plan</span>' : `<button type="button" class="nur-bildschirm" data-weg-liste="${e.uid}" aria-label="Von der Liste nehmen">×</button>`}</span>`).join('<span class="nur-druck">, </span>')}</div>` : ''}
+      ${leer ? `<p class="leer">Noch leer. Öffne ein Rezept und tippe auf <strong>„Auf Einkaufsliste“</strong> – oder plane Rezepte im <a href="#/plan">Wochenplan</a> ein.</p>` : ''}
       <form class="ek-neu nur-bildschirm" id="ek-neu">
         <input id="ek-text" placeholder="Eigener Eintrag, z. B. Spülmittel" autocomplete="off">
         <button class="knopf" type="submit">${svg('plus')} Hinzufügen</button>
@@ -484,7 +503,7 @@
             </ul>
           </section>`).join('')}
       </div>
-      ${leer ? '' : `<p class="nur-bildschirm klein">${offen} offen · Antippen zum Abhaken · <a href="#" id="ek-zuruecksetzen">Haken zurücksetzen</a></p>`}`;
+      ${leer ? '' : `<p class="nur-bildschirm klein">${offen} offen · Antippen zum Abhaken · <a href="#" id="ek-zuruecksetzen">Haken zurücksetzen</a>${liste.length || extras.length ? ' · <a href="#" id="ek-leeren">Liste leeren</a>' : ''}</p>`}`;
 
     app.querySelectorAll('.ek-posten').forEach((li) => li.addEventListener('click', (ev) => {
       if (ev.target.closest('[data-extra]')) return;
@@ -492,6 +511,9 @@
       if (abgehakt[k]) delete abgehakt[k]; else abgehakt[k] = true;
       sichern();
       li.classList.toggle('erledigt');
+    }));
+    app.querySelectorAll('[data-weg-liste]').forEach((b) => b.addEventListener('click', () => {
+      liste = liste.filter((x) => x.uid !== b.dataset.wegListe); sichern(); zeichnen();
     }));
     app.querySelectorAll('[data-extra]').forEach((b) => b.addEventListener('click', () => {
       extras = extras.filter((x) => x.uid !== b.dataset.extra); sichern(); zeichnen();
@@ -503,6 +525,10 @@
     });
     const an = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
     an('ek-zuruecksetzen', (ev) => { ev.preventDefault(); abgehakt = {}; sichern(); zeichnen(); });
+    an('ek-leeren', (ev) => {
+      ev.preventDefault();
+      if (confirm('Einkaufsliste leeren? (Der Wochenplan bleibt erhalten.)')) { liste = []; extras = []; abgehakt = {}; sichern(); zeichnen(); }
+    });
     an('ek-kopieren', () => kopieren(alsText(einkaufsliste(), false)));
     an('ek-txt', () => herunterladen('einkaufsliste.txt', alsText(einkaufsliste(), false), 'text/plain'));
     an('ek-md', () => herunterladen('einkaufsliste.md', alsText(einkaufsliste(), true), 'text/markdown'));
@@ -528,12 +554,12 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  function melden(text) {
+  function melden(text, link, linkText) {
     const el = document.getElementById('meldung');
-    el.textContent = text;
+    el.innerHTML = esc(text) + (link ? ` <a href="${link}">${esc(linkText)}</a>` : '');
     el.classList.add('sichtbar');
     clearTimeout(melden.t);
-    melden.t = setTimeout(() => el.classList.remove('sichtbar'), 2200);
+    melden.t = setTimeout(() => el.classList.remove('sichtbar'), link ? 4000 : 2200);
   }
 
   // ---------------------------------------------------------------- Druck
@@ -584,8 +610,9 @@
   // ---------------------------------------------------------------- Start
   window.addEventListener('hashchange', zeichnen);
   window.addEventListener('storage', () => {
-    plan = speicher.lesen('plan', []); abgehakt = speicher.lesen('abgehakt', {}); extras = speicher.lesen('extras', []);
+    plan = speicher.lesen('plan', []); abgehakt = speicher.lesen('abgehakt', {}); extras = speicher.lesen('extras', []); liste = speicher.lesen('liste', []);
     zeichnen();
   });
+  document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = svg(el.dataset.icon); });
   laden().then(zeichnen);
 })();
