@@ -128,6 +128,8 @@
     'apfel': N(54, 0.3, 14, 10, 0.2, 2, { stueck: 150 }),
     'banane': N(93, 1.2, 20, 17, 0.2, 2, { stueck: 120 }),
     'ingwer': N(80, 1.8, 16, 1.7, 0.8, 2, { stueck: 20 }),
+    'avocado': N(160, 2, 3.6, 0.7, 15, 6.7, { stueck: 150 }),    // Fruchtfleisch
+    'radieschen': N(16, 1, 2.1, 1.9, 0.1, 1.6, { stueck: 15, bund: 200 }),
 
     // Kräuter
     'petersilie': KRAEUTER, 'basilikum': KRAEUTER, 'schnittlauch': KRAEUTER, 'thymian': KRAEUTER,
@@ -185,11 +187,13 @@
     'kichererbsen': N(120, 7, 16, 1, 2.6, 5, { dose: 240 }),     // abgetropft
     'erbsen': N(81, 5.4, 10, 5, 0.4, 5, { packung: 450 }),       // tiefgefroren
     'mais': N(80, 3, 14, 4, 1.2, 3, { dose: 285 }),
+    'olive': N(140, 1.2, 1, 0, 14, 3.3, { stueck: 4, glas: 160 }),   // schwarz, abgetropft
 
     // Brot
     'brot': N(220, 6.5, 43, 2, 1.2, 5, { scheibe: 45 }),
     'brötchen': N(275, 9, 54, 2, 1.5, 3, { stueck: 60 }),
     'knödelbrot': N(375, 11, 74, 3, 2, 4),
+    'baguette': N(260, 8.5, 52, 2.5, 1.3, 3, { stueck: 250, scheibe: 20 }),
     'semmelbrösel': N(365, 10, 73, 3, 2, 5, { dichte: 0.45 }),
 
     // Getränke

@@ -152,6 +152,8 @@
     'apfel':         { k: OG },
     'banane':        { k: OG },
     'ingwer':        { k: OG },
+    'avocado':       { k: OG },
+    'radieschen':    { k: OG },
 
     // Kräuter (frisch)
     'petersilie':    { k: KR, icon: 'kraeuter' },
@@ -216,11 +218,13 @@
     'kichererbsen':      { k: KO },
     'erbsen':            { k: 'Tiefkühl' },   // meist tiefgefroren
     'mais':              { k: KO },
+    'olive':             { k: KO },
 
     // Brot
     'brot':          { k: BR },
     'brötchen':      { k: BR },
     'knödelbrot':    { k: BR },
+    'baguette':      { k: BR },
     'semmelbrösel':  { k: BR, icon: 'mehl', vorrat: true },
 
     // Getränke
