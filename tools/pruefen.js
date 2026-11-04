@@ -8,11 +8,17 @@
  *  Außerdem: Nährwerte je Rezept, Warnung bei fehlenden Nährwertdaten,
  *  Fehler wenn Nudeln/Reis nicht als Trockengewicht in g angegeben sind.
  *  Ernährungsform je Rezept (aus den Zutaten oder Feld ernaehrung); Fehler bei widersprüchlichen Tags.
+ *  5. bereitet die Fotos auf (tools/bilder.js: Vorschaubilder bilder/klein/, große Fotos höchstens 1200 px breit)
+ *     und schreibt ihre Maße nach rezepte/liste.js
+ *  6. schreibt Version und Dateiliste in sw.js (Offline-Speicher) – nach jeder Änderung ausführen,
+ *     damit installierte Apps die neue Version übernehmen
  */
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const crypto = require('crypto');
+const bilder = require('./bilder.js');
 
 const WURZEL = path.join(__dirname, '..');
 const kontext = { console };
@@ -60,6 +66,7 @@ for (const datei of dateien) {
     if (Zutaten.info(z).trocken && z.menge != null && !['g', 'kg'].includes(z.einheit)) melde(datei, `${z.name}: Nudeln/Reis/Getreide immer als Trockengewicht in g angeben`);
   }
   // Ernährungsform: Tags dürfen nicht widersprechen
+  if (r.bild && !fs.existsSync(path.join(WURZEL, r.bild))) melde(datei, 'Bild fehlt: ' + r.bild);
   const ern = Zutaten.ernaehrung(r);
   const tags = (r.tags || []).map((t) => t.toLowerCase());
   if (tags.includes('vegan') && ern.id !== 'vegan') melde(datei, `Tag "Vegan", aber ${ern.id} (${ern.gruende.join(', ') || 'Feld ernaehrung'})`);
@@ -77,10 +84,44 @@ for (const datei of dateien) {
 if (ohneKategorie.size) console.log('  ! ohne Einkaufs-Kategorie (landen unter "Sonstiges"): ' + [...ohneKategorie].join(', '));
 console.log(`  ${dateien.length} Rezepte`);
 
+// ---------------------------------------------------------------- 5. Bilder (vor liste.js: Maße gehören hinein)
+console.log('Bilder aufbereiten …');
+const bildMasse = bilder.erzeugen().masse;
+console.log(`  ${Object.keys(bildMasse).length} Fotos, ${Object.values(bildMasse).filter((x) => x.klein).length} Vorschaubilder`);
+
 // ---------------------------------------------------------------- 2. liste.js
+const listeInhalt = 'window.REZEPT_DATEIEN = ' + JSON.stringify(dateien.map((d) => d.replace(/\.js$/, '')), null, 2) + ';\n' +
+  '// Fotos: Breite b × Höhe h, Vorschaubild klein (kb × kh) – für width/height und kleine Bilder in Karten\n' +
+  'window.REZEPT_BILDER = ' + JSON.stringify(bildMasse) + ';\n';
+const pruefsumme = (inhalt) => crypto.createHash('sha256').update(inhalt).digest('hex').slice(0, 12);
+// Offline-Dateien (alles, was die App zum Starten braucht) mit Prüfsumme; liste.js wird unten ergänzt
+const vorab = [
+  ['./', 'index.html'], ['manifest.json'],
+  ...fs.readdirSync(path.join(WURZEL, 'assets')).filter((f) => /\.(js|css)$/.test(f)).sort().map((f) => ['assets/' + f]),
+  ...dateien.map((d) => ['rezepte/' + d]),
+  ...['app.svg', 'app-180.png', 'app-192.png', 'app-512.png'].filter((f) => fs.existsSync(path.join(WURZEL, 'icons', f))).map((f) => ['icons/' + f]),
+  ...Object.values(bildMasse).filter((x) => x.klein).map((x) => [x.klein]),
+].map(([url, datei]) => [url, pruefsumme(fs.readFileSync(path.join(WURZEL, datei || url)))]);
+const version = pruefsumme(JSON.stringify(vorab) + listeInhalt);
 fs.writeFileSync(path.join(ordner, 'liste.js'),
-  '// Automatisch erzeugt von tools/pruefen.js – nicht von Hand bearbeiten.\n' +
-  'window.REZEPT_DATEIEN = ' + JSON.stringify(dateien.map((d) => d.replace(/\.js$/, '')), null, 2) + ';\n');
+  '// Automatisch erzeugt von tools/pruefen.js – nicht von Hand bearbeiten.\n' + listeInhalt +
+  '// Version der App (Prüfsumme aller Dateien) – vergleicht die App mit dem Service Worker (sw.js)\n' +
+  'window.APP_VERSION = ' + JSON.stringify(version) + ';\n');
+vorab.push(['rezepte/liste.js', pruefsumme(fs.readFileSync(path.join(ordner, 'liste.js')))]);
+
+// ---------------------------------------------------------------- 6. sw.js
+const swDatei = path.join(WURZEL, 'sw.js');
+const sw = fs.readFileSync(swDatei, 'utf8');
+const grosseBilder = Object.keys(bildMasse).map((b) => [b, pruefsumme(fs.readFileSync(path.join(WURZEL, b)))]);
+const block = '// <automatisch> von tools/pruefen.js – nicht von Hand bearbeiten\n' +
+  'const VERSION = ' + JSON.stringify(version) + ';\n' +
+  'const DATEIEN = ' + JSON.stringify(vorab).replace(/\],\[/g, '],\n  [').replace(/^\[\[/, '[\n  [').replace(/\]\]$/, '],\n]') + ';\n' +
+  'const BILDER = ' + JSON.stringify(grosseBilder).replace(/\],\[/g, '],\n  [').replace(/^\[\[/, '[\n  [').replace(/\]\]$/, '],\n]') + ';\n' +
+  '// </automatisch>';
+if (!/\/\/ <automatisch>[\s\S]*?\/\/ <\/automatisch>/.test(sw)) melde('sw.js', 'Markierung // <automatisch> … // </automatisch> fehlt');
+else fs.writeFileSync(swDatei, sw.replace(/\/\/ <automatisch>[\s\S]*?\/\/ <\/automatisch>/, block));
+const kb = Math.round(vorab.reduce((n, [u]) => n + fs.statSync(path.join(WURZEL, u === './' ? 'index.html' : u)).size, 0) / 1024);
+console.log(`  Offline: ${vorab.length} Dateien (${kb} KB), Version ${version}`);
 
 // ---------------------------------------------------------------- 3. Icons
 const iconOrdner = path.join(WURZEL, 'icons');
