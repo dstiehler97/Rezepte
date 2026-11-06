@@ -78,6 +78,7 @@
     'eier': N(155, 13, 1.1, 1.1, 11, 0, { stueck: 55 }),
     'milch': N(64, 3.3, 4.8, 4.8, 3.5, 0, { dichte: 1.03 }),
     'sahne': N(290, 2.4, 3.2, 3.2, 30, 0, { becher: 200 }),
+    'kochsahne': N(160, 3, 4, 4, 15, 0, { becher: 200 }),           // ca. 15 % Fett
     'schmand': N(240, 2.7, 3.4, 3.4, 24, 0, { becher: 200 }),
     'joghurt': N(63, 3.6, 4.3, 4.3, 3.5, 0, { becher: 150 }),
     'quark': N(70, 12, 4, 4, 0.3, 0, { becher: 250, packung: 250 }),
@@ -91,6 +92,7 @@
     'schafkäse': N(262, 17, 0.7, 0.7, 21, 0, { packung: 200, stueck: 200 }),
     'hefe': N(100, 12, 9, 0, 1, 7, { wuerfel: 42, paeckchen: 7 }),
     'gnocchi': N(155, 4, 32, 1, 0.6, 2, { packung: 400 }),         // Frischware, Kühlregal
+    'schupfnudeln': N(165, 4.5, 33, 1, 1.2, 2.5, { packung: 500 }),  // Frischware, Kühlregal
     'pfannenkäse': N(300, 17, 12, 1, 21, 1, { stueck: 25 }),      // panierter Ofenkäse
     'käsetaler': N(300, 17, 12, 1, 21, 1, { stueck: 25 }),        // panierte Käsetaler
     'tofu': N(125, 13, 1.5, 0.5, 7.5, 1.5, { packung: 200, stueck: 200 }),
