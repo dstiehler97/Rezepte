@@ -11,17 +11,17 @@
  */
 'use strict';
 // <automatisch> von tools/pruefen.js – nicht von Hand bearbeiten
-const VERSION = "43352d2d7deb";
+const VERSION = "a0719d5bf4b9";
 const DATEIEN = [
   ["./","77cd73de6db1"],
   ["manifest.json","1df84bcab53b"],
   ["assets/app.js","2e5c68d793e5"],
   ["assets/einheiten.js","cb08bff8d674"],
   ["assets/icons.js","f068fc307ec8"],
-  ["assets/naehrwerte.js","a41a3e36431c"],
+  ["assets/naehrwerte.js","33086ddc8b92"],
   ["assets/style.css","4b23811f287f"],
   ["assets/timer.js","c771db408d36"],
-  ["assets/zutaten.js","5f5accf71828"],
+  ["assets/zutaten.js","59eddfdada9f"],
   ["rezepte/apfel-bananen-muffins.js","ad7ada067ab0"],
   ["rezepte/chinesische-pilzpfanne-mit-austernsauce-reis.js","d4a1f01bbd21"],
   ["rezepte/cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen.js","65fd5f46f949"],
@@ -41,6 +41,7 @@ const DATEIEN = [
   ["rezepte/pfifferlinge-mit-spinatknoedeln-in-salbeibutter.js","90fc59dc700e"],
   ["rezepte/pistazien-pesto-pasta-mit-burrata.js","63842326b90f"],
   ["rezepte/sanshoku-don-vegetarische-drei-farben-reisschale.js","a1c4714efca0"],
+  ["rezepte/schupfnudelpfanne-mit-tomaten-und-mozzarella.js","ab9bc0179b15"],
   ["rezepte/semmelknoedel.js","9db08749fa0a"],
   ["rezepte/spaghetti-bolognese.js","9a27d3a950cd"],
   ["rezepte/suesskartoffelragout-mit-bulgur-cashewkernen.js","bf33a2e068eb"],
@@ -71,6 +72,7 @@ const DATEIEN = [
   ["bilder/klein/pfifferlinge-mit-spinatknoedeln-in-salbeibutter.jpg","d593eb868b97"],
   ["bilder/klein/pistazien-pesto-pasta-mit-burrata.jpg","4be86c602329"],
   ["bilder/klein/sanshoku-don-vegetarische-drei-farben-reisschale.jpg","52650398b75b"],
+  ["bilder/klein/schupfnudelpfanne-mit-tomaten-und-mozzarella.jpg","76d7941915b1"],
   ["bilder/klein/semmelknoedel.jpg","1361fa4cd5da"],
   ["bilder/klein/spaghetti-bolognese.jpg","3173b81ec97f"],
   ["bilder/klein/suesskartoffelragout-mit-bulgur-cashewkernen.jpg","dc886eca60a4"],
@@ -78,7 +80,7 @@ const DATEIEN = [
   ["bilder/klein/thai-kokos-suesskartoffelsuppe.jpg","944f23736cf7"],
   ["bilder/klein/tofu-scramble-mit-gemuese.jpg","2558b384b677"],
   ["bilder/klein/wuerziger-couscous-one-pot.jpg","e69df802bd58"],
-  ["rezepte/liste.js","a15c4b6c0488"],
+  ["rezepte/liste.js","3d0623d074a5"],
 ];
 const BILDER = [
   ["bilder/apfel-bananen-muffins.jpg","8691047efc18"],
@@ -100,6 +102,7 @@ const BILDER = [
   ["bilder/pfifferlinge-mit-spinatknoedeln-in-salbeibutter.jpg","de9557fa5bde"],
   ["bilder/pistazien-pesto-pasta-mit-burrata.jpg","341313a7af74"],
   ["bilder/sanshoku-don-vegetarische-drei-farben-reisschale.jpg","6485d0f56415"],
+  ["bilder/schupfnudelpfanne-mit-tomaten-und-mozzarella.jpg","af9c062bd8e9"],
   ["bilder/semmelknoedel.jpg","3386cef47888"],
   ["bilder/spaghetti-bolognese.jpg","e39cec0b92e2"],
   ["bilder/suesskartoffelragout-mit-bulgur-cashewkernen.jpg","36a2d9cf31d7"],
