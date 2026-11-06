@@ -98,6 +98,8 @@
     'sesamsaat':     { k: BA, icon: 'nuss' },
     'sesam':         { k: BA, icon: 'nuss' },
     'pinienkerne':   { k: BA, icon: 'nuss' },
+    'pistazien':     { k: BA, icon: 'nuss' },
+    'pistazienkerne': { k: BA, icon: 'nuss' },
 
     // Kühlregal
     'butter':        { k: KU, icon: 'butter' },
