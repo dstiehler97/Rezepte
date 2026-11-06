@@ -11,17 +11,17 @@
  */
 'use strict';
 // <automatisch> von tools/pruefen.js – nicht von Hand bearbeiten
-const VERSION = "0fbf396f308f";
+const VERSION = "43352d2d7deb";
 const DATEIEN = [
   ["./","77cd73de6db1"],
   ["manifest.json","1df84bcab53b"],
   ["assets/app.js","2e5c68d793e5"],
   ["assets/einheiten.js","cb08bff8d674"],
   ["assets/icons.js","f068fc307ec8"],
-  ["assets/naehrwerte.js","330f1eb6fc10"],
+  ["assets/naehrwerte.js","a41a3e36431c"],
   ["assets/style.css","4b23811f287f"],
   ["assets/timer.js","c771db408d36"],
-  ["assets/zutaten.js","df5b8fe0080e"],
+  ["assets/zutaten.js","5f5accf71828"],
   ["rezepte/apfel-bananen-muffins.js","ad7ada067ab0"],
   ["rezepte/chinesische-pilzpfanne-mit-austernsauce-reis.js","d4a1f01bbd21"],
   ["rezepte/cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen.js","65fd5f46f949"],
@@ -39,6 +39,7 @@ const DATEIEN = [
   ["rezepte/pasta-mit-rotwein-sauce-steak-streifen.js","6f407b55555a"],
   ["rezepte/pfannkuchen.js","924093340e2a"],
   ["rezepte/pfifferlinge-mit-spinatknoedeln-in-salbeibutter.js","90fc59dc700e"],
+  ["rezepte/pistazien-pesto-pasta-mit-burrata.js","63842326b90f"],
   ["rezepte/sanshoku-don-vegetarische-drei-farben-reisschale.js","a1c4714efca0"],
   ["rezepte/semmelknoedel.js","9db08749fa0a"],
   ["rezepte/spaghetti-bolognese.js","9a27d3a950cd"],
@@ -68,6 +69,7 @@ const DATEIEN = [
   ["bilder/klein/pasta-mit-rotwein-sauce-steak-streifen.jpg","042d5e574aea"],
   ["bilder/klein/pfannkuchen.jpg","2e8978ab8de8"],
   ["bilder/klein/pfifferlinge-mit-spinatknoedeln-in-salbeibutter.jpg","d593eb868b97"],
+  ["bilder/klein/pistazien-pesto-pasta-mit-burrata.jpg","4be86c602329"],
   ["bilder/klein/sanshoku-don-vegetarische-drei-farben-reisschale.jpg","52650398b75b"],
   ["bilder/klein/semmelknoedel.jpg","1361fa4cd5da"],
   ["bilder/klein/spaghetti-bolognese.jpg","3173b81ec97f"],
@@ -76,7 +78,7 @@ const DATEIEN = [
   ["bilder/klein/thai-kokos-suesskartoffelsuppe.jpg","944f23736cf7"],
   ["bilder/klein/tofu-scramble-mit-gemuese.jpg","2558b384b677"],
   ["bilder/klein/wuerziger-couscous-one-pot.jpg","e69df802bd58"],
-  ["rezepte/liste.js","c10030ae35ae"],
+  ["rezepte/liste.js","a15c4b6c0488"],
 ];
 const BILDER = [
   ["bilder/apfel-bananen-muffins.jpg","8691047efc18"],
@@ -96,6 +98,7 @@ const BILDER = [
   ["bilder/pasta-mit-rotwein-sauce-steak-streifen.jpg","a56ceb0f02a4"],
   ["bilder/pfannkuchen.jpg","e45a6349178e"],
   ["bilder/pfifferlinge-mit-spinatknoedeln-in-salbeibutter.jpg","de9557fa5bde"],
+  ["bilder/pistazien-pesto-pasta-mit-burrata.jpg","341313a7af74"],
   ["bilder/sanshoku-don-vegetarische-drei-farben-reisschale.jpg","6485d0f56415"],
   ["bilder/semmelknoedel.jpg","3386cef47888"],
   ["bilder/spaghetti-bolognese.jpg","e39cec0b92e2"],

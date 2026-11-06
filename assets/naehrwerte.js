@@ -69,6 +69,8 @@
     'sesamsaat': N(575, 18, 10, 0.3, 50, 12, { dichte: 0.6 }),
     'sesam': N(575, 18, 10, 0.3, 50, 12, { dichte: 0.6 }),
     'pinienkerne': N(675, 14, 4, 3.6, 68, 3.7, { handvoll: 30, dichte: 0.55 }),
+    'pistazien': N(580, 20, 18, 7.7, 46, 10, { handvoll: 30 }),   // geschält, ungesalzen
+    'pistazienkerne': N(580, 20, 18, 7.7, 46, 10, { handvoll: 30 }),
 
     // Kühlregal
     'butter': N(741, 0.7, 0.6, 0.6, 83, 0, { dichte: 0.9 }),
