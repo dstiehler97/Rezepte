@@ -1569,3 +1569,26 @@ body[data-seite="rezept"] #meldung { transition: opacity .2s, transform .2s, bot
 }
 .vw-blatt .sg-wahl { margin: .75rem 0 1rem; }
 .vw-liste li span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* „Neu“ (in den letzten 7 Tagen hinzugefügt): dezent oben links auf Karten- und Mini-Bildern – nur am Bildschirm */
+@media screen {
+  .karte-neu {
+    position: absolute; left: 8px; top: 8px; z-index: 1; display: inline-flex; align-items: center;
+    height: 22px; padding: 0 8px; border-radius: 999px; background: rgba(255, 255, 255, .9); color: #a8432a;
+    font-size: .6875rem; font-weight: 700; letter-spacing: .02em; line-height: 1; pointer-events: none;
+    -webkit-backdrop-filter: saturate(180%) blur(12px); backdrop-filter: saturate(180%) blur(12px);
+  }
+  :root[data-theme="dark"] .karte-neu { background: rgba(24, 21, 19, .78); color: #ec8b6f; }
+  .mini-bild .karte-neu { left: 6px; top: 6px; height: 20px; padding: 0 7px; font-size: .65rem; }
+  /* Mehr → Nach neuer Version suchen */
+  .update-status:empty { display: none; }
+  .mehr-text small.update-status { margin-top: .2rem; font-weight: 600; color: var(--text); }
+  .update-status[data-ergebnis="neu"] { color: var(--akzent) !important; }
+  .update-status[data-ergebnis="aktuell"] { color: var(--erfolg) !important; }
+  /* Text volle Breite, Knopf darunter (passt so auch aufs iPhone SE) */
+  #mehr-update .mehr-zeile { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: .8rem; row-gap: .6rem; }
+  #mehr-update .mehr-steuer { grid-column: 2; justify-self: start; }
+  #mehr-update .mehr-steuer:empty { display: none; }
+  #mehr-update .mehr-steuer .knopf { white-space: nowrap; }
+}
+@media print { .karte-neu { display: none !important; } }

@@ -12,12 +12,16 @@
  *     und schreibt ihre Maße nach rezepte/liste.js
  *  6. schreibt Version und Dateiliste in sw.js (Offline-Speicher) – nach jeder Änderung ausführen,
  *     damit installierte Apps die neue Version übernehmen
+ *  7. „Hinzugefügt am“ je Rezept nach rezepte/liste.js (window.REZEPT_HINZU): Datum des ersten Commits der Datei
+ *     (git log --diff-filter=A --follow, also auch über Umbenennungen hinweg), noch nicht committet → heute;
+ *     Rezeptfeld hinzugefuegt: 'JJJJ-MM-TT' überschreibt. Dazu window.APP_DATUM = Tag der letzten Versionsänderung.
  */
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const crypto = require('crypto');
+const { execFileSync } = require('child_process');
 const bilder = require('./bilder.js');
 
 const WURZEL = path.join(__dirname, '..');
@@ -64,6 +68,11 @@ const melde = (datei, text) => { fehler++; console.log('  ✗ ' + datei + ': ' +
 const ordner = path.join(WURZEL, 'rezepte');
 const dateien = fs.readdirSync(ordner).filter((f) => f.endsWith('.js') && !f.startsWith('_') && f !== 'liste.js').sort();
 const ids = new Set();
+const hinzuFeld = {};          // id → hinzugefuegt aus der Rezeptdatei (überschreibt das Git-Datum)
+const ISO_DATUM = /^\d{4}-\d{2}-\d{2}$/;
+const ortsDatum = (d) => [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+const HEUTE = ortsDatum(new Date());
+const gueltigesDatum = (t) => typeof t === 'string' && ISO_DATUM.test(t) && ortsDatum(new Date(t + 'T12:00')) === t;
 const ohneKategorie = new Set();
 console.log('Rezepte prüfen …');
 for (const datei of dateien) {
@@ -83,6 +92,11 @@ for (const datei of dateien) {
   if (!Array.isArray(r.zutaten) || !r.zutaten.length) melde(datei, 'zutaten fehlen');
   if (!Array.isArray(r.schritte) || !r.schritte.length) melde(datei, 'schritte fehlen');
   if (r.schwierigkeit && !['einfach', 'mittel', 'anspruchsvoll'].includes(r.schwierigkeit)) melde(datei, 'schwierigkeit: einfach | mittel | anspruchsvoll');
+  if (r.hinzugefuegt !== undefined) {
+    if (!gueltigesDatum(r.hinzugefuegt)) melde(datei, "hinzugefuegt: Datum als 'JJJJ-MM-TT' angeben (oder weglassen – dann gilt der erste Commit)");
+    else if (r.hinzugefuegt > HEUTE) melde(datei, 'hinzugefuegt liegt in der Zukunft: ' + r.hinzugefuegt);
+    else hinzuFeld[name] = r.hinzugefuegt;
+  }
   if (r.ernaehrung !== undefined && !Zutaten.ERNAEHRUNG.includes(r.ernaehrung)) melde(datei, 'ernaehrung: ' + Zutaten.ERNAEHRUNG.join(' | '));
   // Backrezepte nach Stückzahl: ergibt: { menge: 12, einheit: 'Muffins' } (personen bleibt 4, Umrechnung über den Faktor)
   if (r.ergibt !== undefined) {
@@ -135,10 +149,36 @@ console.log('Bilder aufbereiten …');
 const bildMasse = bilder.erzeugen().masse;
 console.log(`  ${Object.keys(bildMasse).length} Fotos, ${Object.values(bildMasse).filter((x) => x.klein).length} Vorschaubilder`);
 
+// ---------------------------------------------------------------- 7. Hinzugefügt am (vor liste.js)
+// Erster Commit der Datei; --follow geht über Umbenennungen (z. B. Entwurf _<id>.js → <id>.js) zurück.
+// Viele „Zwischenstand“-Commits ändern daran nichts: --diff-filter=A nimmt nur das Hinzufügen, das älteste zählt.
+function gitHinzu(datei) {
+  try {
+    const aus = execFileSync('git', ['log', '--diff-filter=A', '--follow', '--format=%as', '--', 'rezepte/' + datei],
+      { cwd: WURZEL, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const zeilen = aus.split('\n').map((z) => z.trim()).filter((z) => ISO_DATUM.test(z));
+    return zeilen.length ? zeilen[zeilen.length - 1] : null;     // wie „| tail -1“
+  } catch (e) { return null; }                                   // kein git / kein Repo
+}
+const hinzu = {};
+let ohneCommit = 0;
+for (const datei of dateien) {
+  const id = datei.replace(/\.js$/, '');
+  const g = gitHinzu(datei);
+  if (!g && !hinzuFeld[id]) ohneCommit++;
+  hinzu[id] = hinzuFeld[id] || g || HEUTE;
+}
+console.log('Hinzugefügt am …');
+const hinzuFolge = Object.entries(hinzu).sort((a, b) => b[1].localeCompare(a[1]) || a[0].localeCompare(b[0]));
+console.log(`  neuestes ${hinzuFolge[0] ? hinzuFolge[0][1] + ' (' + hinzuFolge[0][0] + ')' : '–'}, ältestes ${hinzuFolge.length ? hinzuFolge[hinzuFolge.length - 1][1] : '–'}` +
+  (ohneCommit ? `, ${ohneCommit} noch nicht committet (heute)` : '') + (Object.keys(hinzuFeld).length ? `, ${Object.keys(hinzuFeld).length} aus Feld hinzugefuegt` : ''));
+
 // ---------------------------------------------------------------- 2. liste.js
 const listeInhalt = 'window.REZEPT_DATEIEN = ' + JSON.stringify(dateien.map((d) => d.replace(/\.js$/, '')), null, 2) + ';\n' +
   '// Fotos: Breite b × Höhe h, Vorschaubild klein (kb × kh) – für width/height und kleine Bilder in Karten\n' +
-  'window.REZEPT_BILDER = ' + JSON.stringify(bildMasse) + ';\n';
+  'window.REZEPT_BILDER = ' + JSON.stringify(bildMasse) + ';\n' +
+  '// Hinzugefügt am (erster Commit der Rezeptdatei; Rezeptfeld hinzugefuegt überschreibt) – für „Zuletzt hinzugefügt“\n' +
+  'window.REZEPT_HINZU = ' + JSON.stringify(hinzu, null, 1).replace(/\n /g, '\n  ') + ';\n';
 const pruefsumme = (inhalt) => crypto.createHash('sha256').update(inhalt).digest('hex').slice(0, 12);
 // Offline-Dateien (alles, was die App zum Starten braucht) mit Prüfsumme; liste.js wird unten ergänzt
 const vorab = [
@@ -149,10 +189,17 @@ const vorab = [
   ...Object.values(bildMasse).filter((x) => x.klein).map((x) => [x.klein]),
 ].map(([url, datei]) => [url, pruefsumme(fs.readFileSync(path.join(WURZEL, datei || url)))]);
 const version = pruefsumme(JSON.stringify(vorab) + listeInhalt);
-fs.writeFileSync(path.join(ordner, 'liste.js'),
+// Stand-Datum: bleibt, solange sich die Version nicht ändert (sonst gäbe es jeden Tag eine „neue Version“)
+const listePfad = path.join(ordner, 'liste.js');
+const alteListe = fs.existsSync(listePfad) ? fs.readFileSync(listePfad, 'utf8') : '';
+const alterStand = /window\.APP_VERSION = "([0-9a-f]+)";[\s\S]*?window\.APP_DATUM = "(\d{4}-\d{2}-\d{2})"/.exec(alteListe);
+const appDatum = alterStand && alterStand[1] === version ? alterStand[2] : HEUTE;
+fs.writeFileSync(listePfad,
   '// Automatisch erzeugt von tools/pruefen.js – nicht von Hand bearbeiten.\n' + listeInhalt +
   '// Version der App (Prüfsumme aller Dateien) – vergleicht die App mit dem Service Worker (sw.js)\n' +
-  'window.APP_VERSION = ' + JSON.stringify(version) + ';\n');
+  'window.APP_VERSION = ' + JSON.stringify(version) + ';\n' +
+  '// Stand: Tag, an dem sich diese Version zuletzt geändert hat (Mehr → Nach neuer Version suchen)\n' +
+  'window.APP_DATUM = ' + JSON.stringify(appDatum) + ';\n');
 vorab.push(['rezepte/liste.js', pruefsumme(fs.readFileSync(path.join(ordner, 'liste.js')))]);
 
 // ---------------------------------------------------------------- 6. sw.js

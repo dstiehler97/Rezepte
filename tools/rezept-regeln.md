@@ -70,6 +70,8 @@ Gilt für jedes Rezept, das in `rezepte/` aufgenommen wird – egal ob aus KptnC
 - `tipps`: optional, eigene sinnvolle Hinweise (Varianten, Ersatzzutaten). Leer lassen, wenn nichts Sinnvolles.
 - **Keine Quelle** angeben.
 - `bild: 'bilder/<id>.jpg'` (vom Import-Werkzeug).
+- **„Hinzugefügt am“ nicht eintragen** – `tools/pruefen.js` nimmt das Datum des ersten Commits der Datei (über Umbenennungen
+  hinweg, z. B. vom Entwurf `_<id>.js`; noch nicht committet = heute). Nur wenn das falsch wäre: `hinzugefuegt: 'JJJJ-MM-TT'`.
 
 ## Nicht tun
 

@@ -7,7 +7,7 @@
   const STANDARD_PERSONEN = 4;
   const TAGE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
   const SCHWIERIGKEIT = { einfach: 1, mittel: 2, anspruchsvoll: 3 };
-  const APP_STAND = '2026-11-04';   // bei Änderungen an der App anpassen (steht unter „Mehr“)
+  const APP_STAND = '2026-11-07';   // bei Änderungen an der App anpassen (steht unter „Mehr“)
 
   const app = document.getElementById('app');
   let rezepte = [];
@@ -520,6 +520,7 @@
     ['name', 'Name', null, 'auf', 'A–Z', 'Z–A'],
     ['schwierigkeit', 'Schwierigkeit', (r) => SCHWIERIGKEIT[r.schwierigkeit] || 1, 'auf', 'einfach zuerst', 'schwer zuerst'],
     ['zeit', 'Zeit', (r) => gesamtzeit(r.zeit), 'auf', 'schnell zuerst', 'lang zuerst'],
+    ['hinzu', 'Hinzugefügt am', (r) => hinzuZahl(r), 'ab', 'älteste zuerst', 'neueste zuerst'],
     ['kcal', 'Kalorien', (r) => nwp(r).kcal, 'auf', 'wenig zuerst', 'viel zuerst', 'nw'],
     ['eiweiss', 'Eiweiß', (r) => nwp(r).eiweiss, 'ab', 'wenig zuerst', 'viel zuerst', 'nw'],
     ['fett', 'Fett', (r) => nwp(r).fett, 'auf', 'wenig zuerst', 'viel zuerst', 'nw'],
@@ -531,6 +532,27 @@
     ['haeufig', 'Am häufigsten gekocht', (r) => gekochtHilfe.daten(r.id).length || null, 'ab', 'selten zuerst', 'oft zuerst', 'ich'],
   ];
   const nullWennNie = (t) => (t === Infinity ? null : t);
+
+  // „Hinzugefügt am“: window.REZEPT_HINZU (tools/pruefen.js: erster Commit der Rezeptdatei), Rezeptfeld hinzugefuegt überschreibt.
+  // „Neu“ = in den letzten NEU_TAGE Tagen hinzugefügt, aber nicht zum Grundbestand (Rezepte vom allerersten Tag) gehörend –
+  // sonst trügen kurz nach dem Start alle Rezepte die Marke.
+  const HINZU = window.REZEPT_HINZU || {};
+  const NEU_TAGE = 7;
+  const NEU_REIHE = 8;
+  const hinzuVon = (r) => { const d = r.hinzugefuegt || HINZU[r.id]; return typeof d === 'string' && ISO_TAG.test(d) ? d : null; };
+  const hinzuZahl = (r) => (hinzuVon(r) ? Math.round(datumVon(hinzuVon(r)) / 864e5) : null);
+  let grundbestand;   // frühestes Hinzufüge-Datum (nach dem Laden einmal ermittelt)
+  const istNeu = (r) => {
+    const d = hinzuVon(r);
+    if (!d) return false;
+    if (grundbestand === undefined) grundbestand = rezepte.map(hinzuVon).filter(Boolean).sort()[0] || '';
+    return d > grundbestand && tageSeit(d) >= 0 && tageSeit(d) < NEU_TAGE;
+  };
+  const hinzuDatum = (d) => (d.slice(0, 4) === heuteISO().slice(0, 4) ? datumText(d)
+    : datumVon(d).toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' }));
+  /** „neu · 6. Nov.“ bzw. „hinzugefügt 4. Nov.“ */
+  const hinzuText = (r) => { const d = hinzuVon(r); return !d ? '' : (istNeu(r) ? 'neu · ' : 'hinzugefügt ') + hinzuDatum(d); };
+  const neuMarke = (r) => (istNeu(r) ? '<span class="karte-neu">Neu<span class="nur-sr"> hinzugefügt</span></span>' : '');
   const sortierung = (o) => SORTIERUNGEN.find((x) => x[0] === o) || SORTIERUNGEN[0];
   /** Vergleich für Sortierung o in Richtung d ('auf' | 'ab'); bei Gleichstand nach Name */
   function vergleich(o, d) {
@@ -806,7 +828,7 @@
 
   function heuteReihen() {
     const gk = (r) => tageSeitGekocht(r.id);
-    return [
+    const reihen = [
       { id: 'favoriten', titel: 'Favoriten', alle: '#/rezepte?fav=1',
         liste: favoriten.slice().reverse().map((id) => nachId[id]).filter(Boolean),
         info: (r) => (sterneVon(r.id) ? '★ ' + sterneVon(r.id) : gesamtzeit(r.zeit) ? dauer(gesamtzeit(r.zeit)) : '') },
@@ -819,14 +841,21 @@
       { id: 'vorrat', titel: 'Passt zu deinem Vorrat', alle: '#/rezepte?o=zuhause',
         liste: zuhause.length ? rezepte.filter((r) => fehlend(r) <= 2).sort((a, b) => fehlend(a) - fehlend(b) || titelVergleich(a, b)) : [],
         info: (r) => (fehlend(r) ? 'fehlt: ' + fehlend(r) : 'alles da') },
+      { id: 'neu', titel: 'Zuletzt hinzugefügt', alle: '#/rezepte?o=hinzu',
+        liste: rezepte.filter(hinzuVon).sort(vergleich('hinzu', 'ab')).slice(0, NEU_REIHE),
+        info: (r) => 'hinzugefügt ' + hinzuDatum(hinzuVon(r)) },
       { id: 'schnell', titel: 'Schnell gemacht', alle: '#/rezepte?m=schnell&o=zeit',
         liste: rezepte.filter((r) => merkmaleVon(r).some((m) => m.id === 'schnell')).sort((a, b) => gesamtzeit(a.zeit) - gesamtzeit(b.zeit)),
         info: (r) => dauer(gesamtzeit(r.zeit)) },
     ].filter((x) => x.liste.length);
+    // Gibt es wirklich Neues, steht die Reihe gleich nach den Favoriten
+    const i = reihen.findIndex((x) => x.id === 'neu');
+    if (i > 0 && reihen[i].liste.some(istNeu)) reihen.splice(reihen[0].id === 'favoriten' ? 1 : 0, 0, ...reihen.splice(i, 1));
+    return reihen;
   }
   const miniKarte = (r, info) => `
     <li><a class="mini-karte" href="#/rezept/${esc(r.id)}">
-      <span class="mini-bild">${bildFlaeche(r)}</span>
+      <span class="mini-bild">${bildFlaeche(r)}${neuMarke(r)}</span>
       <strong>${esc(r.titel)}</strong>
       ${info ? `<small>${esc(info)}</small>` : ''}
     </a></li>`;
@@ -1006,7 +1035,8 @@
       : o === 'zuhause' ? (fehlend(r) ? 'fehlt: ' + fehlend(r) : 'alles da')
       : o === 'bewertung' ? (sterne ? '★ ' + sterne : 'unbewertet')
       : o === 'zuletzt' || o === 'laengst' ? (t === Infinity ? 'noch nie gekocht' : 'gekocht ' + vorText(t))
-      : o === 'haeufig' ? (n ? n + '× gekocht' : 'noch nie gekocht') : '';
+      : o === 'haeufig' ? (n ? n + '× gekocht' : 'noch nie gekocht')
+      : o === 'hinzu' ? hinzuText(r) : '';
     const teile = [
       hervor ? `<span class="sortwert">${esc(hervor)}</span>` : '',
       z ? `<span${o === 'zeit' ? ' class="sortwert"' : ''}>${dauer(z)}</span>` : '',
@@ -1017,7 +1047,7 @@
         <span class="karte-bild">
           ${bildFlaeche(r)}
           ${istFavorit(r.id) || sterne ? `<span class="karte-marken">${sterne ? `<span class="karte-sterne" title="${sterne} von 5 Sternen">${svg('stern', 'voll')}${sterne}<span class="nur-sr"> von 5 Sternen</span></span>` : ''}${istFavorit(r.id) ? `<span class="karte-fav" title="Favorit">${svg('herz', 'voll')}<span class="nur-sr">Favorit</span></span>` : ''}</span>` : ''}
-          ${kartenAbzeichen(r)}
+          ${kartenAbzeichen(r)}${neuMarke(r)}
         </span>
         <h2 class="karte-titel">${esc(r.titel)}</h2>
         <span class="karte-meta">${teile.join('<span class="punkt" aria-hidden="true"> · </span>')}</span>
@@ -1766,6 +1796,10 @@
     }),
   });
 
+  /** Stand der App: Tag der letzten Versionsänderung (tools/pruefen.js → APP_DATUM), sonst APP_STAND */
+  const appDatum = () => (ISO_TAG.test(window.APP_DATUM || '') ? window.APP_DATUM : APP_STAND);
+  const datumLang = (iso) => datumVon(iso).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+
   function seiteMehr() {
     document.title = 'Mehr – Rezepte';
     const text = (e) => (typeof e.text === 'function' ? e.text() : e.text);
@@ -1776,7 +1810,7 @@
         ? `<a class="mehr-zeile" href="${esc(e.href)}">${inhalt}<span class="mehr-pfeil">${svg('vor')}</span></a>`
         : `<div class="mehr-zeile">${inhalt}<span class="mehr-steuer">${e.html ? e.html() : ''}</span></div>`}</li>`;
     };
-    const stand = new Date(APP_STAND + 'T12:00').toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+    const stand = datumLang(appDatum());
     app.innerHTML = `
       <div class="werkzeuge"><h1>Mehr</h1></div>
       ${MEHR.filter((a) => a.eintraege.length).map((a) => `
@@ -3377,6 +3411,8 @@
   // bietet dann „Aktualisieren“ an (Vergleich window.APP_VERSION aus rezepte/liste.js mit der Version von sw.js).
   const offlineMoeglich = 'serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname));
   let swVersion = null;
+  let swReg = null;              // Registrierung (für „Nach neuer Version suchen“)
+  let manuellGesucht = false;    // Ergebnis steht unter Mehr – dann keine zusätzliche Meldung „Neue Version verfügbar“
   function swVersionFragen() {
     const c = offlineMoeglich && navigator.serviceWorker.controller;
     if (!c) return Promise.resolve(null);
@@ -3402,16 +3438,95 @@
         swVersion = v;
         offlineZeigen();
         if (erstes || !v || !window.APP_VERSION || v === window.APP_VERSION) return;
+        if (manuellGesucht && document.getElementById('mehr-update')) return;
         melden('Neue Version verfügbar', null, null, { knopf: 'Aktualisieren', aktion: () => { notizenJetzt(); location.reload(); }, dauer: 15000 });
       });
     });
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+      swReg = reg;
       const suchen = () => reg.update().catch(() => {});
       document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') suchen(); });
       setInterval(suchen, 3600e3);
     }).catch(() => { /* z. B. privater Modus */ });
     swVersionFragen().then((v) => { swVersion = v; offlineZeigen(); });
   }
+  // ---------------------------------------------------------------- Mehr → App → Nach neuer Version suchen
+  // registration.update() lädt sw.js neu; hat sich VERSION geändert, installiert der Browser die neue Version
+  // (sw.js speichert alle Dateien vorab und übernimmt dann selbst). „Aktualisieren“ lädt die Seite mit der neuen Version.
+  // Ergebnis: 'neu' | 'aktuell' | 'offline' | 'fehler'
+  const mitFrist = (p, ms, wert) => Promise.race([p, new Promise((f) => setTimeout(() => f(wert), ms))]);
+  /** Bis die gefundene Version fertig installiert ist (oder scheitert) */
+  function bisInstalliert(w) {
+    return new Promise((fertig) => {
+      const pruefen = () => {
+        if (['installed', 'activating', 'activated'].includes(w.state)) fertig(true);
+        else if (w.state === 'redundant') fertig(false);
+        else return false;
+        w.removeEventListener('statechange', pruefen);
+        return true;
+      };
+      if (!pruefen()) w.addEventListener('statechange', pruefen);
+    });
+  }
+  async function versionSuchen() {
+    if (navigator.onLine === false) return 'offline';
+    const reg = swReg || await navigator.serviceWorker.getRegistration().catch(() => null);
+    if (!reg) return 'fehler';
+    swReg = reg;
+    const ok = await mitFrist(reg.update().then(() => true, () => false), 15000, false);
+    if (!ok) return 'offline';   // sw.js nicht erreichbar (oder keine Antwort) = keine Verbindung
+    const neu = reg.installing || reg.waiting;
+    if (neu) return (await mitFrist(bisInstalliert(neu), 120000, false)) ? 'neu' : 'fehler';
+    // schon im Hintergrund übernommen, aber diese Seite läuft noch mit der alten Version?
+    const v = await swVersionFragen();
+    if (v) swVersion = v;
+    return v && window.APP_VERSION && v !== window.APP_VERSION ? 'neu' : 'aktuell';
+  }
+  function neueVersionLaden() {
+    notizenJetzt();
+    const w = swReg && swReg.waiting;
+    if (!w) { location.reload(); return; }
+    navigator.serviceWorker.addEventListener('controllerchange', () => location.reload(), { once: true });
+    w.postMessage('skipWaiting');
+    setTimeout(() => location.reload(), 3000);
+  }
+  const UPDATE_TEXT = {
+    neu: 'Neue Version gefunden', aktuell: 'Du hast die neueste Version',
+    offline: 'Keine Verbindung – später erneut versuchen', fehler: 'Suche fehlgeschlagen – später erneut versuchen',
+  };
+  mehrAbschnitt('app', 'App');
+  mehrEintrag('app', {
+    id: 'update', titel: 'Nach neuer Version suchen', icon: 'aktualisieren',
+    text: () => `Stand ${datumLang(appDatum())} · ${rezepte.length} Rezepte` + (window.APP_VERSION ? ' · Version ' + window.APP_VERSION.slice(0, 7) : '') +
+      (offlineMoeglich ? '' : ' · Suche nur in der installierten App'),
+    html: () => (offlineMoeglich ? '<button type="button" class="knopf" data-update>Jetzt suchen</button>' : ''),
+    binden: (zeile) => {
+      const k = zeile.querySelector('[data-update]');
+      if (!k) return;
+      const status = document.createElement('small');
+      status.className = 'update-status';
+      status.setAttribute('role', 'status');
+      zeile.querySelector('.mehr-text').appendChild(status);
+      let ergebnis = null;
+      k.addEventListener('click', async () => {
+        if (ergebnis === 'neu') { neueVersionLaden(); return; }
+        k.disabled = true;
+        k.textContent = 'Suche …';
+        status.textContent = '';
+        manuellGesucht = true;
+        ergebnis = await versionSuchen().catch(() => 'fehler');
+        if (!zeile.isConnected) return;
+        status.textContent = UPDATE_TEXT[ergebnis];
+        status.dataset.ergebnis = ergebnis;
+        k.disabled = false;
+        k.textContent = ergebnis === 'neu' ? 'Aktualisieren' : 'Erneut suchen';
+        k.classList.toggle('haupt', ergebnis === 'neu');
+        if (ergebnis !== 'neu') manuellGesucht = false;
+        else k.focus();
+      });
+    },
+  });
+
   function offlineZeigen() {
     const el = document.querySelector('.mehr-offline');
     if (el) { el.textContent = offlineText(); el.classList.toggle('aus', navigator.onLine === false); }
