@@ -170,6 +170,7 @@
     mond: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
     hochladen: '<path d="M12 15V3M7 8l5-5 5 5M4 21h16"/>',
     verschieben: '<path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/>',
+    aktualisieren: '<path d="M19.5 12a7.5 7.5 0 0 1-13.3 4.7M4.5 12a7.5 7.5 0 0 1 13.3-4.7"/><path d="M18.5 3.5v4h-4M5.5 20.5v-4h4"/>',
   };
 
   function svg(name, klasse) {

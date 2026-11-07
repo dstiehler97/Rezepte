@@ -11,15 +11,15 @@
  */
 'use strict';
 // <automatisch> von tools/pruefen.js – nicht von Hand bearbeiten
-const VERSION = "a0719d5bf4b9";
+const VERSION = "142188740c0a";
 const DATEIEN = [
   ["./","77cd73de6db1"],
   ["manifest.json","1df84bcab53b"],
-  ["assets/app.js","2e5c68d793e5"],
+  ["assets/app.js","1eb8624b0464"],
   ["assets/einheiten.js","cb08bff8d674"],
-  ["assets/icons.js","f068fc307ec8"],
+  ["assets/icons.js","ebf52db1418a"],
   ["assets/naehrwerte.js","33086ddc8b92"],
-  ["assets/style.css","4b23811f287f"],
+  ["assets/style.css","d6bc5e05166a"],
   ["assets/timer.js","c771db408d36"],
   ["assets/zutaten.js","59eddfdada9f"],
   ["rezepte/apfel-bananen-muffins.js","ad7ada067ab0"],
@@ -80,7 +80,7 @@ const DATEIEN = [
   ["bilder/klein/thai-kokos-suesskartoffelsuppe.jpg","944f23736cf7"],
   ["bilder/klein/tofu-scramble-mit-gemuese.jpg","2558b384b677"],
   ["bilder/klein/wuerziger-couscous-one-pot.jpg","e69df802bd58"],
-  ["rezepte/liste.js","3d0623d074a5"],
+  ["rezepte/liste.js","49670109f252"],
 ];
 const BILDER = [
   ["bilder/apfel-bananen-muffins.jpg","8691047efc18"],
@@ -169,6 +169,9 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('message', (e) => {
   if (e.data === 'version' && e.ports[0]) e.ports[0].postMessage(VERSION);
+  // „Aktualisieren“ unter Mehr → Nach neuer Version suchen: wartende Version sofort übernehmen
+  // (normalerweise übernimmt sie schon selbst per skipWaiting beim Installieren)
+  if (e.data === 'skipWaiting') self.skipWaiting();
 });
 
 /** Speicher-Schlüssel: ohne ?…; Seite selbst (./, index.html, Navigation) = ./ */
