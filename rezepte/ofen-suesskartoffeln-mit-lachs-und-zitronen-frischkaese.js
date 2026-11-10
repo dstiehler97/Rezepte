@@ -14,7 +14,7 @@ Rezept({
     { menge: 2, einheit: 'EL', name: 'Öl', hinweis: 'für die Süßkartoffeln' },
     { menge: 1, einheit: 'TL', name: 'Paprikapulver' },
     { abschnitt: 'Lachs' },
-    { menge: 4, name: 'Lachsfilet', mehrzahl: 'Lachsfilets', hinweis: 'je ca. 140 g' },
+    { menge: 4, name: 'Lachsfilet', mehrzahl: 'Lachsfilets', hinweis: 'je ca. 140 g, mit oder ohne Haut' },
     { menge: 1, einheit: 'EL', name: 'Öl', hinweis: 'für den Lachs' },
     { menge: 2, einheit: 'Zehe', name: 'Knoblauch', hinweis: 'für den Lachs' },
     { menge: 1, name: 'Zitrone', mehrzahl: 'Zitronen', hinweis: 'für den Lachs, in Scheiben' },
@@ -43,6 +43,6 @@ Rezept({
   ],
 
   tipps: [
-    'Die Lachsfilets lassen sich auch in Alufolie einpacken, dann bleiben sie besonders saftig.',
+    'Mit Haut bleibt der Lachs saftiger: Hautseite nach unten aufs Blech legen, nach dem Backen lässt sich die Haut abziehen oder mitessen.',
   ],
 });

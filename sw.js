@@ -11,7 +11,7 @@
  */
 'use strict';
 // <automatisch> von tools/pruefen.js – nicht von Hand bearbeiten
-const VERSION = "1238a1a20cb7";
+const VERSION = "6ba40e1f0753";
 const DATEIEN = [
   ["./","77cd73de6db1"],
   ["manifest.json","1df84bcab53b"],
@@ -40,8 +40,8 @@ const DATEIEN = [
   ["rezepte/low-carb-huehnchen-mit-mozzarella-tomaten-pesto.js","8ebe902bf2de"],
   ["rezepte/mediterraner-salat-mit-geroestetem-pesto-gemuese.js","c1bf24a2a789"],
   ["rezepte/mini-gnocchi-in-pilz-frischkaese-sahnesauce.js","7c0e9cc5ab9a"],
-  ["rezepte/mini-gnocchi-mit-lachs-in-zitronen-frischkaese-sauce.js","126a006ca325"],
-  ["rezepte/ofen-suesskartoffeln-mit-lachs-und-zitronen-frischkaese.js","df79d2f4f364"],
+  ["rezepte/mini-gnocchi-mit-lachs-in-zitronen-frischkaese-sauce.js","8d3f1c77db7e"],
+  ["rezepte/ofen-suesskartoffeln-mit-lachs-und-zitronen-frischkaese.js","bb49b88f0d82"],
   ["rezepte/one-pot-hackfleisch-porree-nudeln.js","d255abb1efe9"],
   ["rezepte/one-pot-reis-mit-spinat.js","5824bcbb69d8"],
   ["rezepte/pasta-mit-rotwein-sauce-steak-streifen.js","6f407b55555a"],
@@ -90,7 +90,7 @@ const DATEIEN = [
   ["bilder/klein/thai-kokos-suesskartoffelsuppe.jpg","944f23736cf7"],
   ["bilder/klein/tofu-scramble-mit-gemuese.jpg","2558b384b677"],
   ["bilder/klein/wuerziger-couscous-one-pot.jpg","e69df802bd58"],
-  ["rezepte/liste.js","976db9d8908e"],
+  ["rezepte/liste.js","85f334694228"],
 ];
 const BILDER = [
   ["bilder/apfel-bananen-muffins.jpg","8691047efc18"],
