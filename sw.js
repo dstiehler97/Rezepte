@@ -11,19 +11,20 @@
  */
 'use strict';
 // <automatisch> von tools/pruefen.js – nicht von Hand bearbeiten
-const VERSION = "9ff2227312db";
+const VERSION = "f67d842256f1";
 const DATEIEN = [
   ["./","77cd73de6db1"],
   ["manifest.json","1df84bcab53b"],
   ["assets/app.js","1eb8624b0464"],
   ["assets/einheiten.js","cb08bff8d674"],
   ["assets/icons.js","ebf52db1418a"],
-  ["assets/naehrwerte.js","675cecc9228c"],
+  ["assets/naehrwerte.js","9b4a627d4215"],
   ["assets/style.css","d6bc5e05166a"],
   ["assets/timer.js","c771db408d36"],
-  ["assets/zutaten.js","f72a1a1ed4c1"],
+  ["assets/zutaten.js","32e76eee663d"],
   ["rezepte/apfel-bananen-muffins.js","ad7ada067ab0"],
   ["rezepte/apfeltarte.js","31ecf9ea92c9"],
+  ["rezepte/blattsalat-mit-feta-und-tomaten.js","1f2f9a01ab26"],
   ["rezepte/chinesische-pilzpfanne-mit-austernsauce-reis.js","d4a1f01bbd21"],
   ["rezepte/cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen.js","65fd5f46f949"],
   ["rezepte/crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree.js","d9a1418ff771"],
@@ -84,7 +85,7 @@ const DATEIEN = [
   ["bilder/klein/thai-kokos-suesskartoffelsuppe.jpg","944f23736cf7"],
   ["bilder/klein/tofu-scramble-mit-gemuese.jpg","2558b384b677"],
   ["bilder/klein/wuerziger-couscous-one-pot.jpg","e69df802bd58"],
-  ["rezepte/liste.js","097545c29569"],
+  ["rezepte/liste.js","f2271d11b6b3"],
 ];
 const BILDER = [
   ["bilder/apfel-bananen-muffins.jpg","8691047efc18"],

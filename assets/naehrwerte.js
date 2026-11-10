@@ -136,6 +136,7 @@
     'spinat': N(23, 2.9, 0.6, 0.4, 0.4, 2.6, { handvoll: 30 }),
     'grünkohl': N(49, 4.3, 2.5, 1.7, 0.9, 4.2),
     'salat': N(15, 1.2, 1.5, 1, 0.2, 1.5, { stueck: 300, handvoll: 25 }),
+    'kopfsalat': N(14, 1.3, 1.4, 1, 0.2, 1.5, { stueck: 250, handvoll: 25 }),
     'salat-mix': N(17, 1.5, 1.8, 1, 0.3, 1.8, { handvoll: 25, packung: 125 }),
     'rucola': N(25, 2.6, 2.1, 2, 0.7, 1.6, { handvoll: 20, packung: 125 }),
     'gurke': N(12, 0.6, 1.8, 1.8, 0.2, 0.5, { stueck: 400 }),

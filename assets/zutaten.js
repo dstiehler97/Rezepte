@@ -163,6 +163,7 @@
     'spinat':        { k: OG, icon: 'kraeuter' },
     'grünkohl':      { k: OG, icon: 'kraeuter' },
     'salat':         { k: OG, icon: 'kraeuter' },
+    'kopfsalat':     { k: OG, icon: 'kraeuter', kauf: 'Stück' },
     'salat-mix':     { k: OG, icon: 'kraeuter' },
     'rucola':        { k: OG, icon: 'kraeuter' },
     'gurke':         { k: OG, kauf: 'Stück' },
