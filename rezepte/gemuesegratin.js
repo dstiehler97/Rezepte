@@ -1,0 +1,47 @@
+Rezept({
+  id: 'gemuesegratin',
+  titel: 'Gemüsegratin',
+  beschreibung: 'Dünne Streifen von gelber Zucchini und Kohlrabi, mit Tomatenscheiben in eine Form gesetzt und unter einer Kräuter-Sahne-Parmesan-Mischung goldbraun überbacken.',
+  kategorie: 'Hauptgericht',
+  tags: ['Vegetarisch', 'Gratin', 'Zucchini', 'Kohlrabi', 'Ofengericht'],
+  personen: 4,
+  zeit: { vorbereitung: 35, backen: 35 },
+  schwierigkeit: 'einfach',
+
+  zutaten: [
+    { abschnitt: 'Gemüse' },
+    { menge: 4, name: 'Zucchini', mehrzahl: 'Zucchini', hinweis: 'gelb (Sommerkürbis), je ca. 250 g, ungeschält' },
+    { menge: 2, name: 'Kohlrabi', mehrzahl: 'Kohlrabi', hinweis: 'je ca. 250 g, geschält' },
+    { menge: 2, name: 'Tomate', mehrzahl: 'Tomaten' },
+    { name: 'Butter', hinweis: 'zum Einfetten der Form', optional: true },
+    { abschnitt: 'Für den Guss' },
+    { menge: 1, name: 'Zwiebel', mehrzahl: 'Zwiebeln' },
+    { menge: 1, einheit: 'Zehe', name: 'Knoblauch' },
+    { menge: 1, einheit: 'EL', name: 'Rosmarin', hinweis: 'gehackt' },
+    { menge: 1, einheit: 'EL', name: 'Thymian', hinweis: 'gehackt' },
+    { menge: 1, einheit: 'EL', name: 'Oregano', hinweis: 'gehackt' },
+    { menge: 200, einheit: 'ml', name: 'Sahne', hinweis: 'oder Crème fraîche' },
+    { menge: 50, einheit: 'g', name: 'Parmesan', hinweis: 'gerieben' },
+    { menge: 0.5, einheit: 'TL', name: 'Salz' },
+    { name: 'Pfeffer' },
+  ],
+
+  schritte: [
+    { abschnitt: 'Vorbereiten' },
+    'Backofen auf **200 °C Ober-/Unterhitze** vorheizen. Eine ofenfeste Form (ca. 3 Liter Inhalt, rund etwa 20 cm Durchmesser) einfetten.',
+    'Zucchini waschen und ungeschält lassen, Kohlrabi schälen. Tomaten in Scheiben schneiden.',
+    'Zucchini und Kohlrabi mit dem Gemüsehobel für breite Streifen in lange Streifen schneiden.',
+    { abschnitt: 'Schichten' },
+    'Die Gemüsestreifen locker falten und aufrecht dicht an dicht in die Form setzen. Die Tomatenscheiben dazwischenstecken.',
+    { abschnitt: 'Guss' },
+    'Zwiebel, Knoblauch, Rosmarin, Thymian und Oregano fein hacken.',
+    'Mit Sahne und Parmesan verrühren und mit Salz und Pfeffer würzen. Den Guss gleichmäßig über das Gemüse gießen.',
+    { abschnitt: 'Backen' },
+    'Das Gratin in der Ofenmitte **ca. 35 Minuten** backen, bis das Gemüse weich und die Oberfläche goldbraun ist.',
+    'Vor dem Servieren kurz ruhen lassen.',
+  ],
+
+  tipps: [
+    'Passt zu Nudeln, gegrilltem Fleisch oder Fisch.',
+  ],
+});
