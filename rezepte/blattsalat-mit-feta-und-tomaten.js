@@ -1,0 +1,46 @@
+Rezept({
+  id: 'blattsalat-mit-feta-und-tomaten',
+  titel: 'Gemischter Blattsalat mit Feta und Tomaten',
+  beschreibung: 'Knackiger Kopfsalat mit Tomaten, roten Zwiebelringen und Feta, angemacht mit einem frischen Zitronen-Knoblauch-Dressing.',
+  kategorie: 'Salat',
+  tags: ['Vegetarisch', 'Beilage', 'Feta', 'Tomaten'],
+  personen: 4,
+  zeit: { vorbereitung: 15, kochen: 0 },
+  schwierigkeit: 'einfach',
+
+  zutaten: [
+    { abschnitt: 'Für den Salat' },
+    { menge: 2, name: 'Kopfsalat', mehrzahl: 'Kopfsalate', hinweis: 'je ca. 250 g, z. B. grüner Salat' },
+    { menge: 450, einheit: 'g', name: 'Tomate', mehrzahl: 'Tomaten' },
+    { menge: 1, name: 'Zwiebel', mehrzahl: 'Zwiebeln', hinweis: 'rot' },
+    { menge: 180, einheit: 'g', name: 'Feta' },
+    { menge: 1, name: 'Avocado', mehrzahl: 'Avocados', hinweis: 'reif', optional: true },
+    { abschnitt: 'Für das Dressing' },
+    { menge: 4, einheit: 'EL', name: 'Olivenöl' },
+    { menge: 1, name: 'Zitrone', mehrzahl: 'Zitronen', hinweis: 'Saft' },
+    { menge: 1, name: 'Knoblauchzehe', mehrzahl: 'Knoblauchzehen' },
+    { menge: 1, einheit: 'TL', name: 'Senf' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+  ],
+
+  schritte: [
+    { abschnitt: 'Vorbereiten' },
+    'Kopfsalat in Blätter zerlegen, gründlich waschen, in der Salatschleuder oder mit einem Küchentuch **gut trocknen** und in mundgerechte Stücke zupfen.',
+    'Tomaten waschen, den Stielansatz entfernen und in Spalten schneiden. Zwiebel schälen und in feine Ringe schneiden.',
+    'Falls verwendet, die Avocado halbieren, entkernen, schälen und in Scheiben schneiden.',
+    { abschnitt: 'Dressing' },
+    'Knoblauch schälen und fein hacken. Zitrone auspressen. Knoblauch mit Zitronensaft, Olivenöl, Senf, Salz und Pfeffer zu einem Dressing verrühren.',
+    { abschnitt: 'Anrichten' },
+    'Salat, Tomaten, Zwiebelringe und Avocado **erst kurz vor dem Servieren** in einer großen Schüssel mit dem Dressing locker vermengen.',
+    'Feta zerbröseln, darüberstreuen und sofort servieren.',
+  ],
+
+  tipps: [
+    'Passt als Beilage zu Pasta, Gnocchi, Fisch oder Ofengemüse.',
+    'Das Dressing getrennt aufbewahren und den Salat erst kurz vor dem Essen anmachen, damit er knackig bleibt.',
+    'Mit Avocado wird der Salat sättigender.',
+    'Variante: Für ein cremiges Dressing das Olivenöl teilweise durch Joghurt ersetzen. Statt Zitronensaft passt auch Limettensaft.',
+    'Für eine vegane Variante Feta und Joghurt weglassen.',
+  ],
+});

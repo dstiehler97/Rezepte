@@ -2,6 +2,7 @@
 window.REZEPT_DATEIEN = [
   "apfel-bananen-muffins",
   "apfeltarte",
+  "blattsalat-mit-feta-und-tomaten",
   "chinesische-pilzpfanne-mit-austernsauce-reis",
   "cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen",
   "crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree",
@@ -38,6 +39,7 @@ window.REZEPT_BILDER = {"bilder/apfel-bananen-muffins.jpg":{"b":1136,"h":640,"kl
 window.REZEPT_HINZU = {
   "apfel-bananen-muffins": "2026-11-04",
   "apfeltarte": "2026-11-10",
+  "blattsalat-mit-feta-und-tomaten": "2026-11-10",
   "chinesische-pilzpfanne-mit-austernsauce-reis": "2026-11-04",
   "cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen": "2026-11-04",
   "crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree": "2026-11-04",
@@ -69,6 +71,6 @@ window.REZEPT_HINZU = {
   "wuerziger-couscous-one-pot": "2026-11-04"
 };
 // Version der App (Prüfsumme aller Dateien) – vergleicht die App mit dem Service Worker (sw.js)
-window.APP_VERSION = "9ff2227312db";
+window.APP_VERSION = "f67d842256f1";
 // Stand: Tag, an dem sich diese Version zuletzt geändert hat (Mehr → Nach neuer Version suchen)
 window.APP_DATUM = "2026-11-10";
