@@ -10,7 +10,7 @@ Rezept({
 
   zutaten: [
     { abschnitt: 'Lachs' },
-    { menge: 400, einheit: 'g', name: 'Lachsfilet', hinweis: 'ohne Haut, in Würfeln' },
+    { menge: 400, einheit: 'g', name: 'Lachsfilet', hinweis: 'ohne Haut, in Würfeln – oder mit Haut, siehe Tipp' },
     { menge: 1, einheit: 'EL', name: 'Öl', hinweis: 'für den Lachs' },
     { abschnitt: 'Gnocchi' },
     { menge: 800, einheit: 'g', name: 'Mini-Gnocchi', hinweis: 'aus dem Kühlregal' },
@@ -43,5 +43,6 @@ Rezept({
 
   tipps: [
     'Den Lachs nicht zu lange garen, sonst wird er trocken.',
+    'Mit Haut geht auch: Filets am Stück mit der Hautseite zuerst **4–5 Minuten** knusprig braten, wenden und **2 Minuten** weitergaren, dann herausnehmen, in Stücke schneiden (die Haut bleibt dran) und am Schluss wie die Würfel in die Sauce geben.',
   ],
 });

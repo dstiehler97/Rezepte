@@ -81,6 +81,6 @@ window.REZEPT_HINZU = {
   "wuerziger-couscous-one-pot": "2026-11-04"
 };
 // Version der App (Prüfsumme aller Dateien) – vergleicht die App mit dem Service Worker (sw.js)
-window.APP_VERSION = "1238a1a20cb7";
+window.APP_VERSION = "6ba40e1f0753";
 // Stand: Tag, an dem sich diese Version zuletzt geändert hat (Mehr → Nach neuer Version suchen)
 window.APP_DATUM = "2026-11-10";
