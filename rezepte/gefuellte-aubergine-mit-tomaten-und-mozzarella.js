@@ -1,0 +1,46 @@
+Rezept({
+  id: 'gefuellte-aubergine-mit-tomaten-und-mozzarella',
+  titel: 'Gefüllte Aubergine mit Tomaten und Mozzarella',
+  beschreibung: 'Ausgehöhlte Auberginenhälften mit einer Füllung aus Fruchtfleisch, Zwiebel, Knoblauch und Tomaten, überbacken mit Mozzarella und Parmesan.',
+  kategorie: 'Hauptgericht',
+  tags: ['Vegetarisch', 'Aubergine', 'Mozzarella', 'Ofengericht', 'Italienisch'],
+  personen: 4,
+  zeit: { vorbereitung: 20, backen: 30 },
+  schwierigkeit: 'einfach',
+
+  zutaten: [
+    { abschnitt: 'Auberginen' },
+    { menge: 2, name: 'Aubergine', mehrzahl: 'Auberginen', hinweis: 'groß, je ca. 400 g' },
+    { menge: 2, einheit: 'EL', name: 'Olivenöl', hinweis: 'zum Bestreichen der Auberginen' },
+    { abschnitt: 'Für die Füllung' },
+    { menge: 1, einheit: 'EL', name: 'Olivenöl', hinweis: 'für die Füllung' },
+    { menge: 1, name: 'Zwiebel', mehrzahl: 'Zwiebeln' },
+    { menge: 2, einheit: 'Zehe', name: 'Knoblauch' },
+    { menge: 400, einheit: 'g', name: 'Stückige Tomaten', hinweis: 'aus der Dose' },
+    { menge: 1, einheit: 'TL', name: 'Oregano', hinweis: 'getrocknet' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+    { abschnitt: 'Zum Überbacken' },
+    { menge: 250, einheit: 'g', name: 'Mozzarella', hinweis: 'abgetropft' },
+    { menge: 40, einheit: 'g', name: 'Parmesan', hinweis: 'gerieben' },
+    { menge: 1, einheit: 'Handvoll', name: 'Basilikum', optional: true },
+  ],
+
+  schritte: [
+    { abschnitt: 'Auberginen vorbereiten' },
+    'Backofen auf **200 °C Ober-/Unterhitze** vorheizen. Auberginen waschen, längs halbieren und mit einem Löffel aushöhlen, sodass ein etwa **1 cm** dicker Rand bleibt. Das Fruchtfleisch fein würfeln.',
+    'Auberginenhälften mit Olivenöl zum Bestreichen einpinseln, salzen, in eine Auflaufform legen und **10 Minuten** vorbacken.',
+    { abschnitt: 'Füllung' },
+    'Zwiebel schälen und würfeln, Knoblauch schälen und hacken. Mozzarella abtropfen lassen und in Stücke zupfen, Parmesan reiben.',
+    'Olivenöl für die Füllung in einer Pfanne erhitzen, Zwiebel und das Auberginenfruchtfleisch **5 Minuten** anbraten, dann den Knoblauch kurz mitbraten.',
+    'Tomaten und Oregano zugeben und alles **5–8 Minuten** einköcheln lassen. Mit Salz und Pfeffer kräftig abschmecken.',
+    { abschnitt: 'Überbacken' },
+    'Füllung in die vorgebackenen Auberginenhälften geben, mit Mozzarella und Parmesan belegen und **15–20 Minuten** überbacken, bis der Käse goldbraun ist.',
+    { abschnitt: 'Servieren' },
+    'Mit Basilikum bestreut servieren.',
+  ],
+
+  tipps: [
+    'Dazu passen Brot oder ein grüner Salat.',
+  ],
+});

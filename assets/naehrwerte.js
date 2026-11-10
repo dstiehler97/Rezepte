@@ -89,6 +89,8 @@
     'kapern': N(23, 2.4, 4.9, 0.4, 0.9, 3.2, { glas: 60 }),
     'gouda': N(355, 25, 0, 0, 28, 0, { scheibe: 20 }),
     'feta': N(262, 17, 0.7, 0.7, 21, 0, { packung: 200, stueck: 200 }),
+    'frischkäse': N(250, 6, 3.5, 3.5, 24, 0, { packung: 200, becher: 200 }),   // Doppelrahmstufe
+    'ravioli': N(180, 7, 29, 2, 4, 2, { packung: 250 }),                     // Frischware, Kühlregal
     'schafkäse': N(262, 17, 0.7, 0.7, 21, 0, { packung: 200, stueck: 200 }),
     'hefe': N(100, 12, 9, 0, 1, 7, { wuerfel: 42, paeckchen: 7 }),
     'gnocchi': N(155, 4, 32, 1, 0.6, 2, { packung: 400 }),         // Frischware, Kühlregal
@@ -163,6 +165,7 @@
     'pancetta': N(380, 14, 0, 0, 36, 0, { scheibe: 10 }),
     'schinken': N(110, 19, 1, 1, 3.5, 0, { scheibe: 20 }),
     'lachs': N(200, 20, 0, 0, 13, 0, { stueck: 125 }),
+    'lachsfilet': N(200, 20, 0, 0, 13, 0, { stueck: 140 }),
     'fisch': N(90, 19, 0, 0, 1, 0, { stueck: 125 }),
     'garnele': N(90, 19, 0, 0, 1.2, 0),
 

@@ -11,23 +11,24 @@
  */
 'use strict';
 // <automatisch> von tools/pruefen.js – nicht von Hand bearbeiten
-const VERSION = "f67d842256f1";
+const VERSION = "1238a1a20cb7";
 const DATEIEN = [
   ["./","77cd73de6db1"],
   ["manifest.json","1df84bcab53b"],
   ["assets/app.js","1eb8624b0464"],
   ["assets/einheiten.js","cb08bff8d674"],
   ["assets/icons.js","ebf52db1418a"],
-  ["assets/naehrwerte.js","9b4a627d4215"],
+  ["assets/naehrwerte.js","f0f6ba8ae6cb"],
   ["assets/style.css","d6bc5e05166a"],
   ["assets/timer.js","c771db408d36"],
-  ["assets/zutaten.js","32e76eee663d"],
+  ["assets/zutaten.js","5a3baa16acb9"],
   ["rezepte/apfel-bananen-muffins.js","ad7ada067ab0"],
   ["rezepte/apfeltarte.js","31ecf9ea92c9"],
   ["rezepte/blattsalat-mit-feta-und-tomaten.js","1f2f9a01ab26"],
   ["rezepte/chinesische-pilzpfanne-mit-austernsauce-reis.js","d4a1f01bbd21"],
   ["rezepte/cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen.js","65fd5f46f949"],
   ["rezepte/crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree.js","d9a1418ff771"],
+  ["rezepte/gefuellte-aubergine-mit-tomaten-und-mozzarella.js","b91b37971458"],
   ["rezepte/gemuesegratin.js","bfefedd0bfa3"],
   ["rezepte/gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips.js","9a446e2b6c5f"],
   ["rezepte/guacamole-salat-bowl-mit-knusprigem-brot.js","8caf054efa40"],
@@ -38,12 +39,16 @@ const DATEIEN = [
   ["rezepte/linguine-mit-zitronenbutter-burrata.js","e8426ea102bd"],
   ["rezepte/low-carb-huehnchen-mit-mozzarella-tomaten-pesto.js","8ebe902bf2de"],
   ["rezepte/mediterraner-salat-mit-geroestetem-pesto-gemuese.js","c1bf24a2a789"],
+  ["rezepte/mini-gnocchi-in-pilz-frischkaese-sahnesauce.js","7c0e9cc5ab9a"],
+  ["rezepte/mini-gnocchi-mit-lachs-in-zitronen-frischkaese-sauce.js","126a006ca325"],
+  ["rezepte/ofen-suesskartoffeln-mit-lachs-und-zitronen-frischkaese.js","df79d2f4f364"],
   ["rezepte/one-pot-hackfleisch-porree-nudeln.js","d255abb1efe9"],
   ["rezepte/one-pot-reis-mit-spinat.js","5824bcbb69d8"],
   ["rezepte/pasta-mit-rotwein-sauce-steak-streifen.js","6f407b55555a"],
   ["rezepte/pfannkuchen.js","924093340e2a"],
   ["rezepte/pfifferlinge-mit-spinatknoedeln-in-salbeibutter.js","90fc59dc700e"],
   ["rezepte/pistazien-pesto-pasta-mit-burrata.js","63842326b90f"],
+  ["rezepte/ravioli-auflauf-mit-pilzen-tomaten-und-mozzarella.js","978c83613721"],
   ["rezepte/rote-bete-carpaccio.js","a4473a0122cf"],
   ["rezepte/sanshoku-don-vegetarische-drei-farben-reisschale.js","a1c4714efca0"],
   ["rezepte/schupfnudelpfanne-mit-tomaten-und-mozzarella.js","ab9bc0179b15"],
@@ -85,7 +90,7 @@ const DATEIEN = [
   ["bilder/klein/thai-kokos-suesskartoffelsuppe.jpg","944f23736cf7"],
   ["bilder/klein/tofu-scramble-mit-gemuese.jpg","2558b384b677"],
   ["bilder/klein/wuerziger-couscous-one-pot.jpg","e69df802bd58"],
-  ["rezepte/liste.js","f2271d11b6b3"],
+  ["rezepte/liste.js","976db9d8908e"],
 ];
 const BILDER = [
   ["bilder/apfel-bananen-muffins.jpg","8691047efc18"],

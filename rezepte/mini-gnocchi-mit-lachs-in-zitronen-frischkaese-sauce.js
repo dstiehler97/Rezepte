@@ -1,0 +1,47 @@
+Rezept({
+  id: 'mini-gnocchi-mit-lachs-in-zitronen-frischkaese-sauce',
+  titel: 'Mini-Gnocchi mit Lachs in Zitronen-Frischkäse-Sauce',
+  beschreibung: 'Knusprig gebratene Mini-Gnocchi und saftige Lachswürfel in einer frischen Frischkäse-Sauce mit Zitrone und Knoblauch.',
+  kategorie: 'Hauptgericht',
+  tags: ['Fisch', 'Lachs', 'Gnocchi', 'Zitrone', 'Pfannengericht'],
+  personen: 4,
+  zeit: { vorbereitung: 10, kochen: 15 },
+  schwierigkeit: 'einfach',
+
+  zutaten: [
+    { abschnitt: 'Lachs' },
+    { menge: 400, einheit: 'g', name: 'Lachsfilet', hinweis: 'ohne Haut, in Würfeln' },
+    { menge: 1, einheit: 'EL', name: 'Öl', hinweis: 'für den Lachs' },
+    { abschnitt: 'Gnocchi' },
+    { menge: 800, einheit: 'g', name: 'Mini-Gnocchi', hinweis: 'aus dem Kühlregal' },
+    { menge: 30, einheit: 'g', name: 'Butter', hinweis: 'für die Gnocchi' },
+    { abschnitt: 'Für die Zitronensauce' },
+    { menge: 2, einheit: 'Zehe', name: 'Knoblauch' },
+    { menge: 200, einheit: 'g', name: 'Frischkäse', hinweis: 'natur' },
+    { menge: 1, name: 'Zitrone', mehrzahl: 'Zitronen', hinweis: 'Bio, Schale und Saft' },
+    { menge: 150, einheit: 'ml', name: 'Wasser' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+    { abschnitt: 'Zum Servieren' },
+    { menge: 30, einheit: 'g', name: 'Parmesan', hinweis: 'gerieben', optional: true },
+    { menge: 1, einheit: 'Handvoll', name: 'Dill', hinweis: 'gehackt', optional: true },
+  ],
+
+  schritte: [
+    { abschnitt: 'Vorbereiten' },
+    'Lachs trocken tupfen, in mundgerechte Würfel schneiden und mit Salz und Pfeffer würzen. Knoblauch schälen und hacken. Zitrone heiß waschen, die Schale fein abreiben und den Saft auspressen.',
+    { abschnitt: 'Lachs braten' },
+    'Öl für den Lachs in einer **großen Pfanne** erhitzen und die Lachswürfel darin rundum nur **2–3 Minuten** braten. Herausnehmen und beiseitestellen.',
+    { abschnitt: 'Gnocchi braten' },
+    'Butter für die Gnocchi in der Pfanne erhitzen und die Gnocchi darin unter gelegentlichem Wenden **8–10 Minuten** goldbraun und knusprig braten.',
+    { abschnitt: 'Sauce' },
+    'Knoblauch zugeben und **30 Sekunden** mitbraten. Frischkäse, Zitronensaft, Zitronenschale und Wasser einrühren und alles **2–3 Minuten** zu einer cremigen Sauce köcheln lassen. Mit Salz und Pfeffer abschmecken.',
+    'Lachs zurück in die Pfanne geben und nur noch **1–2 Minuten** in der Sauce ziehen lassen.',
+    { abschnitt: 'Servieren' },
+    'Nach Belieben mit Parmesan und Dill bestreuen.',
+  ],
+
+  tipps: [
+    'Den Lachs nicht zu lange garen, sonst wird er trocken.',
+  ],
+});

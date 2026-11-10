@@ -1,0 +1,46 @@
+Rezept({
+  id: 'mini-gnocchi-in-pilz-frischkaese-sahnesauce',
+  titel: 'Mini-Gnocchi in Pilz-Frischkäse-Sahnesauce',
+  beschreibung: 'Knusprig in Butter gebratene Mini-Gnocchi mit Champignons in einer cremigen Frischkäse-Sahnesauce und Parmesan.',
+  kategorie: 'Hauptgericht',
+  tags: ['Vegetarisch', 'Gnocchi', 'Pilze', 'Pfannengericht', 'Italienisch'],
+  personen: 4,
+  zeit: { vorbereitung: 10, kochen: 15 },
+  schwierigkeit: 'einfach',
+
+  zutaten: [
+    { abschnitt: 'Gnocchi' },
+    { menge: 800, einheit: 'g', name: 'Mini-Gnocchi', hinweis: 'aus dem Kühlregal' },
+    { menge: 30, einheit: 'g', name: 'Butter', hinweis: 'für die Gnocchi' },
+    { abschnitt: 'Für die Pilzsauce' },
+    { menge: 20, einheit: 'g', name: 'Butter', hinweis: 'für die Pilze' },
+    { menge: 400, einheit: 'g', name: 'Champignon', mehrzahl: 'Champignons' },
+    { menge: 1, name: 'Zwiebel', mehrzahl: 'Zwiebeln' },
+    { menge: 2, einheit: 'Zehe', name: 'Knoblauch' },
+    { menge: 200, einheit: 'g', name: 'Frischkäse', hinweis: 'natur' },
+    { menge: 100, einheit: 'ml', name: 'Sahne' },
+    { menge: 100, einheit: 'ml', name: 'Wasser' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+    { abschnitt: 'Zum Servieren' },
+    { menge: 40, einheit: 'g', name: 'Parmesan', hinweis: 'gerieben' },
+    { menge: 1, einheit: 'Handvoll', name: 'Petersilie', hinweis: 'gehackt', optional: true },
+  ],
+
+  schritte: [
+    { abschnitt: 'Vorbereiten' },
+    'Champignons putzen und in Scheiben schneiden. Zwiebel schälen und fein würfeln, Knoblauch schälen und hacken. Parmesan reiben.',
+    { abschnitt: 'Gnocchi braten' },
+    'Butter für die Gnocchi in einer **großen Pfanne** erhitzen und die Gnocchi darin bei mittlerer bis hoher Hitze unter gelegentlichem Wenden **8–10 Minuten** goldbraun und knusprig braten. Aus der Pfanne nehmen und warm halten.',
+    { abschnitt: 'Pilzsauce' },
+    'Butter für die Pilze in derselben Pfanne zerlassen, Champignons darin **5 Minuten** kräftig anbraten, bis sie Farbe nehmen und die Flüssigkeit verdampft ist.',
+    'Zwiebel und Knoblauch zugeben und **2 Minuten** mitbraten.',
+    'Frischkäse, Sahne und Wasser einrühren und die Sauce bei mittlerer Hitze **3–4 Minuten** cremig einköcheln lassen. Mit Salz und Pfeffer abschmecken.',
+    { abschnitt: 'Servieren' },
+    'Gnocchi zurück in die Pfanne geben, kurz in der Sauce schwenken und mit Parmesan und nach Belieben Petersilie bestreut servieren.',
+  ],
+
+  tipps: [
+    'Wird die Sauce zu dick, einen Schuss Wasser unterrühren.',
+  ],
+});

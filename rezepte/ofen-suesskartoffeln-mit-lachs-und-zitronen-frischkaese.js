@@ -1,0 +1,48 @@
+Rezept({
+  id: 'ofen-suesskartoffeln-mit-lachs-und-zitronen-frischkaese',
+  titel: 'Ofen-Süßkartoffeln mit Lachs und Zitronen-Frischkäse',
+  beschreibung: 'Knusprige Süßkartoffelspalten und Lachsfilets mit Zitrone und Knoblauch aus dem Ofen, dazu ein frischer Dip aus Frischkäse, Joghurt und Zitronenabrieb.',
+  kategorie: 'Hauptgericht',
+  tags: ['Fisch', 'Lachs', 'Süßkartoffeln', 'Ofengericht', 'Zitrone'],
+  personen: 4,
+  zeit: { vorbereitung: 15, backen: 35 },
+  schwierigkeit: 'einfach',
+
+  zutaten: [
+    { abschnitt: 'Süßkartoffeln' },
+    { menge: 800, einheit: 'g', name: 'Süßkartoffel', mehrzahl: 'Süßkartoffeln' },
+    { menge: 2, einheit: 'EL', name: 'Öl', hinweis: 'für die Süßkartoffeln' },
+    { menge: 1, einheit: 'TL', name: 'Paprikapulver' },
+    { abschnitt: 'Lachs' },
+    { menge: 4, name: 'Lachsfilet', mehrzahl: 'Lachsfilets', hinweis: 'je ca. 140 g' },
+    { menge: 1, einheit: 'EL', name: 'Öl', hinweis: 'für den Lachs' },
+    { menge: 2, einheit: 'Zehe', name: 'Knoblauch', hinweis: 'für den Lachs' },
+    { menge: 1, name: 'Zitrone', mehrzahl: 'Zitronen', hinweis: 'für den Lachs, in Scheiben' },
+    { abschnitt: 'Für den Dip' },
+    { menge: 150, einheit: 'g', name: 'Frischkäse', hinweis: 'natur' },
+    { menge: 150, einheit: 'g', name: 'Joghurt', hinweis: 'natur' },
+    { menge: 1, name: 'Zitrone', mehrzahl: 'Zitronen', hinweis: 'für den Dip, Bio, Schale und Saft' },
+    { menge: 1, einheit: 'Zehe', name: 'Knoblauch', hinweis: 'für den Dip' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+    { menge: 1, einheit: 'Handvoll', name: 'Dill', hinweis: 'gehackt', optional: true },
+  ],
+
+  schritte: [
+    { abschnitt: 'Süßkartoffeln' },
+    'Backofen auf **200 °C Ober-/Unterhitze** vorheizen. Süßkartoffeln waschen und samt Schale in Spalten schneiden.',
+    'Süßkartoffelspalten mit Öl für die Süßkartoffeln, Paprikapulver, Salz und Pfeffer vermengen, auf einem Backblech verteilen und **15 Minuten** vorbacken.',
+    { abschnitt: 'Lachs' },
+    'Lachsfilets trocken tupfen, mit Salz und Pfeffer würzen und mit Öl für den Lachs einreiben. Knoblauch für den Lachs schälen und hacken.',
+    'Die Süßkartoffeln wenden und etwas zusammenschieben. Zitrone für den Lachs in Scheiben schneiden. Lachs mit Knoblauch und Zitronenscheiben auf das Blech legen und alles weitere **15–20 Minuten** backen, bis der Lachs gar und die Spalten knusprig sind.',
+    { abschnitt: 'Dip' },
+    'Währenddessen die Zitrone für den Dip heiß waschen, die Schale fein abreiben und den Saft auspressen. Knoblauch für den Dip pressen.',
+    'Frischkäse und Joghurt mit Zitronenschale, Zitronensaft und Knoblauch für den Dip glatt rühren und mit Salz und Pfeffer abschmecken.',
+    { abschnitt: 'Servieren' },
+    'Lachs und Süßkartoffeln anrichten, mit Dill bestreuen und mit dem Dip servieren.',
+  ],
+
+  tipps: [
+    'Die Lachsfilets lassen sich auch in Alufolie einpacken, dann bleiben sie besonders saftig.',
+  ],
+});

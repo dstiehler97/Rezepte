@@ -117,6 +117,8 @@
     'burrata':       { k: KU, icon: 'kaese', kauf: 'Stück' },
     'gouda':         { k: KU, icon: 'kaese' },
     'feta':          { k: KU, icon: 'kaese' },
+    'frischkäse':    { k: KU, icon: 'kaese' },
+    'ravioli':       { k: KU, icon: 'nudeln' },
     'schafkäse':     { k: KU, icon: 'kaese' },
     'hefe':          { k: KU, icon: 'mehl' },
     'gnocchi':       { k: KU, icon: 'nudeln' },
@@ -197,6 +199,7 @@
     'pancetta':      { k: FF, icon: 'fleisch' },
     'fleisch':       { k: FF, icon: 'fleisch' },
     'lachs':         { k: FF, icon: 'fisch' },
+    'lachsfilet':    { k: FF, icon: 'fisch' },
     'fisch':         { k: FF, icon: 'fisch' },
     'garnele':       { k: FF, icon: 'fisch' },
 

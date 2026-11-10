@@ -6,6 +6,7 @@ window.REZEPT_DATEIEN = [
   "chinesische-pilzpfanne-mit-austernsauce-reis",
   "cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen",
   "crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree",
+  "gefuellte-aubergine-mit-tomaten-und-mozzarella",
   "gemuesegratin",
   "gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips",
   "guacamole-salat-bowl-mit-knusprigem-brot",
@@ -16,12 +17,16 @@ window.REZEPT_DATEIEN = [
   "linguine-mit-zitronenbutter-burrata",
   "low-carb-huehnchen-mit-mozzarella-tomaten-pesto",
   "mediterraner-salat-mit-geroestetem-pesto-gemuese",
+  "mini-gnocchi-in-pilz-frischkaese-sahnesauce",
+  "mini-gnocchi-mit-lachs-in-zitronen-frischkaese-sauce",
+  "ofen-suesskartoffeln-mit-lachs-und-zitronen-frischkaese",
   "one-pot-hackfleisch-porree-nudeln",
   "one-pot-reis-mit-spinat",
   "pasta-mit-rotwein-sauce-steak-streifen",
   "pfannkuchen",
   "pfifferlinge-mit-spinatknoedeln-in-salbeibutter",
   "pistazien-pesto-pasta-mit-burrata",
+  "ravioli-auflauf-mit-pilzen-tomaten-und-mozzarella",
   "rote-bete-carpaccio",
   "sanshoku-don-vegetarische-drei-farben-reisschale",
   "schupfnudelpfanne-mit-tomaten-und-mozzarella",
@@ -43,6 +48,7 @@ window.REZEPT_HINZU = {
   "chinesische-pilzpfanne-mit-austernsauce-reis": "2026-11-04",
   "cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen": "2026-11-04",
   "crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree": "2026-11-04",
+  "gefuellte-aubergine-mit-tomaten-und-mozzarella": "2026-11-10",
   "gemuesegratin": "2026-11-10",
   "gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips": "2026-11-04",
   "guacamole-salat-bowl-mit-knusprigem-brot": "2026-11-04",
@@ -53,12 +59,16 @@ window.REZEPT_HINZU = {
   "linguine-mit-zitronenbutter-burrata": "2026-11-04",
   "low-carb-huehnchen-mit-mozzarella-tomaten-pesto": "2026-11-04",
   "mediterraner-salat-mit-geroestetem-pesto-gemuese": "2026-11-04",
+  "mini-gnocchi-in-pilz-frischkaese-sahnesauce": "2026-11-10",
+  "mini-gnocchi-mit-lachs-in-zitronen-frischkaese-sauce": "2026-11-10",
+  "ofen-suesskartoffeln-mit-lachs-und-zitronen-frischkaese": "2026-11-10",
   "one-pot-hackfleisch-porree-nudeln": "2026-11-04",
   "one-pot-reis-mit-spinat": "2026-11-04",
   "pasta-mit-rotwein-sauce-steak-streifen": "2026-11-04",
   "pfannkuchen": "2026-11-04",
   "pfifferlinge-mit-spinatknoedeln-in-salbeibutter": "2026-11-04",
   "pistazien-pesto-pasta-mit-burrata": "2026-11-06",
+  "ravioli-auflauf-mit-pilzen-tomaten-und-mozzarella": "2026-11-10",
   "rote-bete-carpaccio": "2026-11-10",
   "sanshoku-don-vegetarische-drei-farben-reisschale": "2026-11-04",
   "schupfnudelpfanne-mit-tomaten-und-mozzarella": "2026-11-06",
@@ -71,6 +81,6 @@ window.REZEPT_HINZU = {
   "wuerziger-couscous-one-pot": "2026-11-04"
 };
 // Version der App (Prüfsumme aller Dateien) – vergleicht die App mit dem Service Worker (sw.js)
-window.APP_VERSION = "f67d842256f1";
+window.APP_VERSION = "1238a1a20cb7";
 // Stand: Tag, an dem sich diese Version zuletzt geändert hat (Mehr → Nach neuer Version suchen)
 window.APP_DATUM = "2026-11-10";

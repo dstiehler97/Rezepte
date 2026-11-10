@@ -1,0 +1,48 @@
+Rezept({
+  id: 'ravioli-auflauf-mit-pilzen-tomaten-und-mozzarella',
+  titel: 'Ravioli-Auflauf mit Pilzen, Tomaten und Mozzarella',
+  beschreibung: 'Frische Ravioli mit Champignons und Cherrytomaten in einer Frischkäse-Sahne-Sauce, mit Mozzarella überbacken.',
+  kategorie: 'Hauptgericht',
+  tags: ['Vegetarisch', 'Ravioli', 'Pilze', 'Mozzarella', 'Auflauf', 'Italienisch'],
+  personen: 4,
+  zeit: { vorbereitung: 15, backen: 25 },
+  schwierigkeit: 'einfach',
+
+  zutaten: [
+    { abschnitt: 'Auflauf' },
+    { menge: 500, einheit: 'g', name: 'Ravioli', hinweis: 'frisch aus dem Kühlregal, Käse- oder Gemüsefüllung' },
+    { menge: 300, einheit: 'g', name: 'Cherrytomate', mehrzahl: 'Cherrytomaten' },
+    { abschnitt: 'Für die Sauce' },
+    { menge: 1, einheit: 'EL', name: 'Öl' },
+    { menge: 250, einheit: 'g', name: 'Champignon', mehrzahl: 'Champignons' },
+    { menge: 1, name: 'Zwiebel', mehrzahl: 'Zwiebeln' },
+    { menge: 2, einheit: 'Zehe', name: 'Knoblauch' },
+    { menge: 150, einheit: 'g', name: 'Frischkäse', hinweis: 'natur' },
+    { menge: 200, einheit: 'ml', name: 'Sahne' },
+    { menge: 200, einheit: 'ml', name: 'Wasser' },
+    { name: 'Salz' },
+    { name: 'Pfeffer' },
+    { abschnitt: 'Zum Überbacken' },
+    { menge: 250, einheit: 'g', name: 'Mozzarella', hinweis: 'abgetropft' },
+    { menge: 1, einheit: 'Handvoll', name: 'Basilikum', optional: true },
+  ],
+
+  schritte: [
+    { abschnitt: 'Vorbereiten' },
+    'Backofen auf **200 °C Ober-/Unterhitze** vorheizen. Champignons putzen und in Scheiben schneiden, Cherrytomaten halbieren. Zwiebel würfeln, Knoblauch hacken, Mozzarella abtropfen lassen und in Stücke zupfen.',
+    { abschnitt: 'Sauce' },
+    'Öl in einer Pfanne erhitzen und die Champignons **5 Minuten** kräftig anbraten. Zwiebel und Knoblauch zugeben und **2 Minuten** mitbraten.',
+    'Frischkäse, Sahne und Wasser einrühren, aufkochen und mit Salz und Pfeffer würzen. **2–3 Minuten** köcheln lassen, bis die Sauce glatt ist.',
+    { abschnitt: 'Schichten' },
+    'Ravioli und Cherrytomaten in einer Auflaufform mischen und die Sauce darübergießen, sodass die Ravioli gut bedeckt sind.',
+    'Mozzarella darauf verteilen.',
+    { abschnitt: 'Backen' },
+    'Im Ofen **20–25 Minuten** backen, bis die Ravioli gar sind und die Oberfläche goldbraun ist. Kurz ruhen lassen.',
+    { abschnitt: 'Servieren' },
+    'Mit Basilikum bestreut servieren.',
+  ],
+
+  tipps: [
+    'Wird die Oberfläche zu schnell dunkel, den Auflauf die letzten Minuten mit Alufolie abdecken.',
+  ],
+});
