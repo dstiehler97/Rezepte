@@ -11,23 +11,26 @@
  */
 'use strict';
 // <automatisch> von tools/pruefen.js – nicht von Hand bearbeiten
-const VERSION = "142188740c0a";
+const VERSION = "9ff2227312db";
 const DATEIEN = [
   ["./","77cd73de6db1"],
   ["manifest.json","1df84bcab53b"],
   ["assets/app.js","1eb8624b0464"],
   ["assets/einheiten.js","cb08bff8d674"],
   ["assets/icons.js","ebf52db1418a"],
-  ["assets/naehrwerte.js","33086ddc8b92"],
+  ["assets/naehrwerte.js","675cecc9228c"],
   ["assets/style.css","d6bc5e05166a"],
   ["assets/timer.js","c771db408d36"],
-  ["assets/zutaten.js","59eddfdada9f"],
+  ["assets/zutaten.js","f72a1a1ed4c1"],
   ["rezepte/apfel-bananen-muffins.js","ad7ada067ab0"],
+  ["rezepte/apfeltarte.js","31ecf9ea92c9"],
   ["rezepte/chinesische-pilzpfanne-mit-austernsauce-reis.js","d4a1f01bbd21"],
   ["rezepte/cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen.js","65fd5f46f949"],
   ["rezepte/crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree.js","d9a1418ff771"],
+  ["rezepte/gemuesegratin.js","bfefedd0bfa3"],
   ["rezepte/gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips.js","9a446e2b6c5f"],
   ["rezepte/guacamole-salat-bowl-mit-knusprigem-brot.js","8caf054efa40"],
+  ["rezepte/kartoffel-rosen.js","b2729bae76e9"],
   ["rezepte/kaspressknoedel.js","0e9178236fa7"],
   ["rezepte/koettbullar.js","d43ed6be292f"],
   ["rezepte/linguine-in-paprika-mandel-sauce.js","046e30f6cb31"],
@@ -40,6 +43,7 @@ const DATEIEN = [
   ["rezepte/pfannkuchen.js","924093340e2a"],
   ["rezepte/pfifferlinge-mit-spinatknoedeln-in-salbeibutter.js","90fc59dc700e"],
   ["rezepte/pistazien-pesto-pasta-mit-burrata.js","63842326b90f"],
+  ["rezepte/rote-bete-carpaccio.js","a4473a0122cf"],
   ["rezepte/sanshoku-don-vegetarische-drei-farben-reisschale.js","a1c4714efca0"],
   ["rezepte/schupfnudelpfanne-mit-tomaten-und-mozzarella.js","ab9bc0179b15"],
   ["rezepte/semmelknoedel.js","9db08749fa0a"],
@@ -80,7 +84,7 @@ const DATEIEN = [
   ["bilder/klein/thai-kokos-suesskartoffelsuppe.jpg","944f23736cf7"],
   ["bilder/klein/tofu-scramble-mit-gemuese.jpg","2558b384b677"],
   ["bilder/klein/wuerziger-couscous-one-pot.jpg","e69df802bd58"],
-  ["rezepte/liste.js","49670109f252"],
+  ["rezepte/liste.js","097545c29569"],
 ];
 const BILDER = [
   ["bilder/apfel-bananen-muffins.jpg","8691047efc18"],

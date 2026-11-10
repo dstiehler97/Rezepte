@@ -1,11 +1,14 @@
 // Automatisch erzeugt von tools/pruefen.js – nicht von Hand bearbeiten.
 window.REZEPT_DATEIEN = [
   "apfel-bananen-muffins",
+  "apfeltarte",
   "chinesische-pilzpfanne-mit-austernsauce-reis",
   "cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen",
   "crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree",
+  "gemuesegratin",
   "gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips",
   "guacamole-salat-bowl-mit-knusprigem-brot",
+  "kartoffel-rosen",
   "kaspressknoedel",
   "koettbullar",
   "linguine-in-paprika-mandel-sauce",
@@ -18,6 +21,7 @@ window.REZEPT_DATEIEN = [
   "pfannkuchen",
   "pfifferlinge-mit-spinatknoedeln-in-salbeibutter",
   "pistazien-pesto-pasta-mit-burrata",
+  "rote-bete-carpaccio",
   "sanshoku-don-vegetarische-drei-farben-reisschale",
   "schupfnudelpfanne-mit-tomaten-und-mozzarella",
   "semmelknoedel",
@@ -33,11 +37,14 @@ window.REZEPT_BILDER = {"bilder/apfel-bananen-muffins.jpg":{"b":1136,"h":640,"kl
 // Hinzugefügt am (erster Commit der Rezeptdatei; Rezeptfeld hinzugefuegt überschreibt) – für „Zuletzt hinzugefügt“
 window.REZEPT_HINZU = {
   "apfel-bananen-muffins": "2026-11-04",
+  "apfeltarte": "2026-11-10",
   "chinesische-pilzpfanne-mit-austernsauce-reis": "2026-11-04",
   "cremige-parmesan-kartoffeln-mit-geroesteten-haselnuessen": "2026-11-04",
   "crunchy-gnocchi-mit-knusprigen-kaese-talern-tomaten-zucchini-pueree": "2026-11-04",
+  "gemuesegratin": "2026-11-10",
   "gnocchi-in-salbei-sahne-sauce-mit-knusprigen-gruenkohl-chips": "2026-11-04",
   "guacamole-salat-bowl-mit-knusprigem-brot": "2026-11-04",
+  "kartoffel-rosen": "2026-11-10",
   "kaspressknoedel": "2026-11-04",
   "koettbullar": "2026-11-04",
   "linguine-in-paprika-mandel-sauce": "2026-11-04",
@@ -50,6 +57,7 @@ window.REZEPT_HINZU = {
   "pfannkuchen": "2026-11-04",
   "pfifferlinge-mit-spinatknoedeln-in-salbeibutter": "2026-11-04",
   "pistazien-pesto-pasta-mit-burrata": "2026-11-06",
+  "rote-bete-carpaccio": "2026-11-10",
   "sanshoku-don-vegetarische-drei-farben-reisschale": "2026-11-04",
   "schupfnudelpfanne-mit-tomaten-und-mozzarella": "2026-11-06",
   "semmelknoedel": "2026-11-04",
@@ -61,6 +69,6 @@ window.REZEPT_HINZU = {
   "wuerziger-couscous-one-pot": "2026-11-04"
 };
 // Version der App (Prüfsumme aller Dateien) – vergleicht die App mit dem Service Worker (sw.js)
-window.APP_VERSION = "142188740c0a";
+window.APP_VERSION = "9ff2227312db";
 // Stand: Tag, an dem sich diese Version zuletzt geändert hat (Mehr → Nach neuer Version suchen)
-window.APP_DATUM = "2026-11-07";
+window.APP_DATUM = "2026-11-10";
